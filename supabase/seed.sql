@@ -1,0 +1,54 @@
+-- Seed data: quests and cosmetics only. The catalogue starts empty: no games are ever seeded.
+-- Safe to run more than once.
+
+insert into public.quests (code, period, title, description, rule, target, reward_points, sort) values
+  ('daily_play_1', 'daily', '{"en":"Play a game","hi":"एक गेम खेलें"}', '{"en":"Start any game today.","hi":"आज कोई भी गेम शुरू करें।"}', '{"kind":"play_sessions"}', 1, 10, 1),
+  ('daily_play_3', 'daily', '{"en":"Try 3 different games","hi":"3 अलग गेम आज़माएँ"}', '{"en":"Play three different games today.","hi":"आज तीन अलग-अलग गेम खेलें।"}', '{"kind":"play_distinct"}', 3, 25, 2),
+  ('daily_minutes_10', 'daily', '{"en":"Play for 10 minutes","hi":"10 मिनट खेलें"}', '{"en":"Reach 10 minutes of play in any games.","hi":"किसी भी गेम में कुल 10 मिनट खेलें।"}', '{"kind":"play_minutes"}', 10, 20, 3),
+  ('daily_puzzle_2', 'daily', '{"en":"Solve it","hi":"पहेली सुलझाएँ"}', '{"en":"Play 2 different puzzle games.","hi":"2 अलग पहेली गेम खेलें।"}', '{"kind":"play_distinct","category":"puzzle"}', 2, 20, 4),
+  ('daily_rate_1', 'daily', '{"en":"Have your say","hi":"अपनी राय दें"}', '{"en":"Like or dislike a game.","hi":"किसी गेम को पसंद या नापसंद करें।"}', '{"kind":"rate"}', 1, 10, 5),
+  ('daily_new_1', 'daily', '{"en":"Fresh pick","hi":"ताज़ा पसंद"}', '{"en":"Play a game released this week.","hi":"इस हफ़्ते रिलीज़ हुआ कोई गेम खेलें।"}', '{"kind":"play_new","days":7}', 1, 20, 6),
+  ('daily_arcade_2', 'daily', '{"en":"Arcade break","hi":"आर्केड ब्रेक"}', '{"en":"Play 2 different arcade games.","hi":"2 अलग आर्केड गेम खेलें।"}', '{"kind":"play_distinct","category":"arcade"}', 2, 20, 7),
+  ('weekly_play_10', 'weekly', '{"en":"Explorer","hi":"खोजी"}', '{"en":"Play 10 different games this week.","hi":"इस हफ़्ते 10 अलग गेम खेलें।"}', '{"kind":"play_distinct"}', 10, 100, 1),
+  ('weekly_minutes_60', 'weekly', '{"en":"Marathon","hi":"मैराथन"}', '{"en":"Reach 60 minutes of play this week.","hi":"इस हफ़्ते कुल 60 मिनट खेलें।"}', '{"kind":"play_minutes"}', 60, 80, 2),
+  ('weekly_new_3', 'weekly', '{"en":"Early bird","hi":"सबसे पहले"}', '{"en":"Play 3 games released in the last 7 days.","hi":"पिछले 7 दिनों में रिलीज़ हुए 3 गेम खेलें।"}', '{"kind":"play_new","days":7}', 3, 80, 3),
+  ('weekly_multiplayer_2', 'weekly', '{"en":"Team up","hi":"टीम बनाएँ"}', '{"en":"Play 2 different multiplayer games.","hi":"2 अलग मल्टीप्लेयर गेम खेलें।"}', '{"kind":"play_multiplayer"}', 2, 60, 4),
+  ('weekly_rate_5', 'weekly', '{"en":"Critic","hi":"समीक्षक"}', '{"en":"Rate 5 games.","hi":"5 गेम रेट करें।"}', '{"kind":"rate"}', 5, 50, 5),
+  ('weekly_favourite_3', 'weekly', '{"en":"Collector","hi":"संग्राहक"}', '{"en":"Add 3 games to your favourites.","hi":"3 गेम पसंदीदा में जोड़ें।"}', '{"kind":"favourite"}', 3, 40, 6),
+  ('weekly_strategy_3', 'weekly', '{"en":"Mastermind","hi":"मास्टरमाइंड"}', '{"en":"Play 3 different strategy games.","hi":"3 अलग रणनीति गेम खेलें।"}', '{"kind":"play_distinct","category":"strategy"}', 3, 60, 7),
+  ('weekly_sessions_20', 'weekly', '{"en":"Regular","hi":"नियमित खिलाड़ी"}', '{"en":"Start 20 play sessions this week.","hi":"इस हफ़्ते 20 बार गेम शुरू करें।"}', '{"kind":"play_sessions"}', 20, 70, 8)
+on conflict (code) do nothing;
+
+-- 30 avatar cosmetics. Codes match the art in packages/ui/src/mascot/MascotAvatar.tsx.
+insert into public.cosmetics (slot, code, name, cost_points, min_level, sort) values
+  ('colour', 'classic', '{"en":"Classic navy","hi":"क्लासिक नेवी"}', 0, 1, 1),
+  ('colour', 'ocean', '{"en":"Ocean","hi":"समुद्री"}', 60, 2, 2),
+  ('colour', 'forest', '{"en":"Forest","hi":"हरा-भरा"}', 60, 2, 3),
+  ('colour', 'sunset', '{"en":"Sunset","hi":"सूर्यास्त"}', 120, 3, 4),
+  ('colour', 'berry', '{"en":"Berry","hi":"बेरी"}', 120, 3, 5),
+  ('colour', 'royal', '{"en":"Royal","hi":"शाही"}', 200, 5, 6),
+  ('hat', 'cap', '{"en":"Cap","hi":"कैप"}', 40, 1, 1),
+  ('hat', 'beanie', '{"en":"Beanie","hi":"बीनी"}', 60, 2, 2),
+  ('hat', 'party', '{"en":"Party hat","hi":"पार्टी हैट"}', 80, 2, 3),
+  ('hat', 'graduation', '{"en":"Graduation cap","hi":"ग्रेजुएशन कैप"}', 150, 4, 4),
+  ('hat', 'wizard', '{"en":"Wizard hat","hi":"जादूगर की टोपी"}', 220, 5, 5),
+  ('hat', 'crown', '{"en":"Crown","hi":"ताज"}', 400, 8, 6),
+  ('glasses', 'round', '{"en":"Round glasses","hi":"गोल चश्मा"}', 40, 1, 1),
+  ('glasses', 'shades', '{"en":"Shades","hi":"काला चश्मा"}', 90, 2, 2),
+  ('glasses', 'pixel', '{"en":"Pixel shades","hi":"पिक्सेल चश्मा"}', 140, 4, 3),
+  ('glasses', 'star', '{"en":"Star glasses","hi":"सितारा चश्मा"}', 180, 5, 4),
+  ('glasses', 'monocle', '{"en":"Monocle","hi":"मोनोकल"}', 240, 6, 5),
+  ('headphones', 'studio', '{"en":"Studio headphones","hi":"स्टूडियो हेडफ़ोन"}', 0, 1, 1),
+  ('headphones', 'retro', '{"en":"Retro headphones","hi":"रेट्रो हेडफ़ोन"}', 70, 2, 2),
+  ('headphones', 'cat', '{"en":"Cat-ear headphones","hi":"बिल्ली-कान हेडफ़ोन"}', 160, 4, 3),
+  ('headphones', 'neon', '{"en":"Neon headphones","hi":"नियॉन हेडफ़ोन"}', 260, 6, 4),
+  ('glow', 'cyan', '{"en":"Cyan glow","hi":"सियान चमक"}', 0, 1, 1),
+  ('glow', 'lime', '{"en":"Lime glow","hi":"नींबू चमक"}', 80, 2, 2),
+  ('glow', 'pink', '{"en":"Pink glow","hi":"गुलाबी चमक"}', 80, 2, 3),
+  ('glow', 'violet', '{"en":"Violet glow","hi":"बैंगनी चमक"}', 150, 4, 4),
+  ('glow', 'gold', '{"en":"Gold glow","hi":"सुनहरी चमक"}', 300, 7, 5),
+  ('frame', 'ring-cyan', '{"en":"Cyan ring","hi":"सियान घेरा"}', 50, 1, 1),
+  ('frame', 'hex', '{"en":"Hex frame","hi":"षट्कोण फ़्रेम"}', 120, 3, 2),
+  ('frame', 'sparkle', '{"en":"Sparkle frame","hi":"चमकदार फ़्रेम"}', 220, 5, 3),
+  ('frame', 'ring-gold', '{"en":"Gold ring","hi":"सुनहरा घेरा"}', 500, 10, 4)
+on conflict (slot, code) do nothing;

@@ -1,0 +1,422 @@
+{
+  "meta": {
+    "siteDescription": "Play free online games instantly in your browser. No downloads, no login. New games from indie developers every week on Brainstorming Games.",
+    "titleTemplate": "{title} – Brainstorming Games"
+  },
+  "common": {
+    "play": "Play",
+    "playNow": "Play now",
+    "loading": "Loading",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "send": "Send",
+    "retry": "Try again",
+    "seeAll": "See all",
+    "back": "Back",
+    "copy": "Copy",
+    "more": "More",
+    "clear": "Clear",
+    "dismiss": "Dismiss",
+    "skipToContent": "Skip to content",
+    "mockMode": "Mock mode",
+    "mockModeHint": "Running on local demo data. Nothing leaves this browser.",
+    "errorTitle": "Something went wrong",
+    "errorBody": "Please try again in a moment.",
+    "rateLimited": "Slow down a little and try again.",
+    "previous": "Previous",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "optional"
+  },
+  "shell": {
+    "logoHome": "Brainstorming Games home",
+    "searchLabel": "Search games",
+    "searchPlaceholder": "Search games",
+    "searchShortcut": "Press / to search",
+    "searchNoResults": "No games match “{query}” yet.",
+    "searchSeeAll": "See all results for “{query}”",
+    "searchResults": "{count, plural, one {# result} other {# results}}",
+    "lowData": "Low-data mode",
+    "lowDataOn": "Low-data mode is on: smaller images, no video previews",
+    "lowDataOff": "Low-data mode is off",
+    "lowDataTurnedOn": "Low-data mode on. Smaller images, no video previews.",
+    "lowDataTurnedOff": "Low-data mode off.",
+    "language": "Language",
+    "themeToLight": "Switch to light theme",
+    "themeToDark": "Switch to dark theme",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "openMenu": "Open menu",
+    "menu": "Menu",
+    "greetingTitle": "Hi, I'm {name}!",
+    "greetingBody": "Pick any game and it starts in your browser. No downloads, no login.",
+    "greetingCta": "Let's play"
+  },
+  "nav": {
+    "primary": "Main",
+    "home": "Home",
+    "recent": "Recently played",
+    "favourites": "Favourites",
+    "new": "New",
+    "trending": "Trending",
+    "updated": "Updated",
+    "originals": "Originals",
+    "multiplayer": "Multiplayer",
+    "quests": "Quests",
+    "leaderboards": "Leaderboards",
+    "categories": "Categories",
+    "allTags": "All tags",
+    "more": "More"
+  },
+  "categories": {
+    "action": {
+      "name": "Action",
+      "intro": "Fast reflexes, close calls and big finishes. Action games throw you straight into the moment: dodge, jump, fight and chase your best run. Every game here starts in your browser in seconds, on a phone or a PC."
+    },
+    "adventure": {
+      "name": "Adventure",
+      "intro": "Explore new worlds one step at a time. Adventure games mix story, discovery and light puzzles, so there is always something around the next corner. Play free, with nothing to install."
+    },
+    "arcade": {
+      "name": "Arcade",
+      "intro": "Easy to learn, hard to put down. Arcade games are built for quick sessions and high scores, perfect for a short break. Tap play and chase one more run."
+    },
+    "puzzle": {
+      "name": "Puzzle",
+      "intro": "Give your brain a workout. From matching and merging to logic and physics, puzzle games reward a calm head and a clever idea. Play at your own pace, free in your browser."
+    },
+    "racing-driving": {
+      "name": "Racing & Driving",
+      "intro": "Start your engine. Race cars and bikes, drift through corners or just enjoy the drive. These racing and driving games run instantly, with no download."
+    },
+    "shooting": {
+      "name": "Shooting",
+      "intro": "Take aim and stay sharp. Shooting games test your accuracy and timing across targets, arenas and waves. All of them are suitable for ages 12 and up."
+    },
+    "sports": {
+      "name": "Sports",
+      "intro": "Cricket, football, basketball and more. Sports games bring quick matches and friendly rivalry to your browser. Play a full game in minutes."
+    },
+    "strategy": {
+      "name": "Strategy",
+      "intro": "Think two moves ahead. Build, defend, plan and outsmart. Strategy games reward patience and a good plan more than fast fingers."
+    },
+    "simulation": {
+      "name": "Simulation",
+      "intro": "Run a shop, fly a plane or build a city. Simulation games let you try a role and see what happens when you make the calls."
+    },
+    "clicker-idle": {
+      "name": "Clicker & Idle",
+      "intro": "Tap, upgrade, repeat. Clicker and idle games grow while you play and keep growing in the background, so every visit has a new upgrade waiting."
+    },
+    "io": {
+      "name": ".io",
+      "intro": "Drop into an arena with players from around the world. .io games are simple to start and competitive within seconds."
+    },
+    "card-board": {
+      "name": "Card & Board",
+      "intro": "Ludo, carrom, chess, solitaire and other table classics. Card and board games are the easiest way to play something familiar, alone or with a friend."
+    },
+    "word-trivia": {
+      "name": "Word & Trivia",
+      "intro": "Find the word, beat the quiz. Word and trivia games are quick, clever and great for learning something new."
+    },
+    "2-player": {
+      "name": "2-Player",
+      "intro": "Better with a friend. These games let two people play on the same device or join each other online. Start a party and send the link."
+    },
+    "made-in-india": {
+      "name": "Made in India",
+      "intro": "Games built by studios and solo developers from India. Play something made close to home and support the people who made it."
+    }
+  },
+  "footer": {
+    "label": "Footer",
+    "about": "About",
+    "developers": "Developers",
+    "parents": "Info for parents",
+    "schoolSafe": "School-safe mode",
+    "contact": "Contact",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookie preferences",
+    "developerTerms": "Developer terms",
+    "jams": "Jams",
+    "blog": "Blog",
+    "play": "Play",
+    "company": "Company",
+    "legal": "Legal",
+    "social": "Follow us",
+    "rights": "© {year} Brainstorming Studios. All rights reserved.",
+    "tagline": "Free games. Zero downloads. Play in one tap."
+  },
+  "home": {
+    "metaTitle": "Brainstorming Games – Free online games, no download",
+    "h1": "Free online games",
+    "heroPublishKicker": "Calling all game developers",
+    "heroPublishTitle": "Publish your game on Brainstorming Games",
+    "heroPublishBody": "Upload an HTML5 or WebGL build, get real players in days, and keep 70% or more of the ad revenue. Every game starts with a fair Spark Launch.",
+    "heroPublishCta": "Start publishing",
+    "heroPublishSecondary": "How it works",
+    "heroLabel": "Featured games",
+    "heroSlide": "Featured game {index} of {total}",
+    "continuePlaying": "Continue playing",
+    "categoriesTitle": "Browse by category",
+    "rails": {
+      "fresh": "Fresh games",
+      "trending": "Trending",
+      "new": "New",
+      "originals": "Brainstorming Originals",
+      "multiplayer": "Multiplayer",
+      "made-in-india": "Made in India",
+      "under-10mb": "Under 10 MB",
+      "updated": "Updated",
+      "top-rated": "Top rated"
+    },
+    "railScrollLeft": "Scroll {title} left",
+    "railScrollRight": "Scroll {title} right"
+  },
+  "empty": {
+    "gamesTitle": "Games are on the way",
+    "gamesBody": "Developers, publish yours and be one of the first on the shelf.",
+    "gamesCta": "Publish your game",
+    "railBody": "Nothing here yet. This shelf fills up as developers publish.",
+    "favouritesTitle": "No favourites yet",
+    "favouritesBody": "Tap the heart on any game to keep it here.",
+    "historyTitle": "Nothing played yet",
+    "historyBody": "Games you play show up here so you can jump back in.",
+    "browse": "Browse games",
+    "filteredTitle": "No games match these filters",
+    "filteredBody": "Try removing a filter.",
+    "clearFilters": "Clear filters"
+  },
+  "listing": {
+    "count": "{count, plural, =0 {No games yet} one {# game} other {# games}}",
+    "filters": "Filters",
+    "filterMultiplayer": "Multiplayer",
+    "filterMobile": "Mobile",
+    "filterUnder10mb": "Under 10 MB",
+    "filterNew": "New",
+    "sort": "Sort by",
+    "sortPopular": "Popular",
+    "sortNew": "New",
+    "sortRating": "Rating",
+    "loadingMore": "Loading more games",
+    "clearHistory": "Clear history",
+    "historyCleared": "History cleared.",
+    "pages": {
+      "new": {
+        "title": "New games",
+        "intro": "The latest games to land on Brainstorming Games, newest first. Be one of the first to play and rate them."
+      },
+      "trending": {
+        "title": "Trending games",
+        "intro": "What everyone is playing this week, ranked by plays and ratings from the last seven days."
+      },
+      "updated": {
+        "title": "Recently updated",
+        "intro": "Games that just got new levels, fixes or features from their developers."
+      },
+      "originals": {
+        "title": "Brainstorming Originals",
+        "intro": "Games made in-house by Brainstorming Studios."
+      },
+      "multiplayer": {
+        "title": "Multiplayer games",
+        "intro": "Play with friends or against players from around the world. Start a party and send the link."
+      },
+      "recent": {
+        "title": "Recently played",
+        "intro": "Your recent games, saved on this device."
+      },
+      "favourites": {
+        "title": "Favourites",
+        "intro": "Games you have saved, kept on this device."
+      }
+    },
+    "categoryMetaTitle": "{name} games – play free online",
+    "tagMetaTitle": "{name} games – play free online",
+    "tagIntro": "Free {name} games you can play instantly in your browser, with no download and no login.",
+    "tagsTitle": "All tags",
+    "tagsIntro": "Every tag developers have used, with the number of games under each.",
+    "tagsEmptyTitle": "No tags yet",
+    "tagsEmptyBody": "Tags appear here as developers publish games.",
+    "tagCount": "{count, plural, one {# game} other {# games}}",
+    "tagHeading": "{name} games"
+  },
+  "search": {
+    "title": "Search",
+    "metaTitle": "Search games",
+    "heading": "Results for “{query}”",
+    "headingEmpty": "Search games",
+    "prompt": "Type a game name, a tag or a category. Hindi and Hinglish work too: try “paheli” or “पहेली”.",
+    "noResultsTitle": "No games match “{query}”",
+    "noResultsBody": "Check the spelling or try a broader word."
+  },
+  "game": {
+    "metaTitle": "Play {title} free online",
+    "metaDescription": "Play {title} free in your browser on Brainstorming Games. No download, no login. {description}",
+    "play": "Play",
+    "playLabel": "Play {title}",
+    "lowDataNotice": "{size} · about {seconds}s to load",
+    "loadingTitle": "{name} is loading your game",
+    "loadingHint": "Hang tight, it starts in a moment.",
+    "frameTitle": "{title} game",
+    "unavailableTitle": "This game cannot start right now",
+    "unavailableBody": "The build is missing. Please try again later.",
+    "closeGame": "Close game",
+    "like": "Like",
+    "dislike": "Dislike",
+    "liked": "You liked this game",
+    "disliked": "You disliked this game",
+    "likeCount": "{count, plural, one {# like} other {# likes}}",
+    "dislikeCount": "{count, plural, one {# dislike} other {# dislikes}}",
+    "dislikeWhy": "What went wrong? (optional)",
+    "reasons": {
+      "bugs": "Bugs",
+      "slow": "Slow to load",
+      "boring": "Boring",
+      "hard": "Too hard",
+      "controls": "Bad controls",
+      "ads": "Too many ads",
+      "not-my-type": "Not my type"
+    },
+    "thanksFeedback": "Thanks, the developer will see this.",
+    "favourite": "Add to favourites",
+    "unfavourite": "Remove from favourites",
+    "favouriteAdded": "Added to favourites.",
+    "favouriteRemoved": "Removed from favourites.",
+    "share": "Share",
+    "shareTitle": "Share this game",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied.",
+    "shareWhatsapp": "Share on WhatsApp",
+    "shareX": "Share on X",
+    "shareText": "Play {title} free on Brainstorming Games",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "theatre": "Theatre mode",
+    "exitTheatre": "Exit theatre mode",
+    "report": "Report a bug",
+    "reportTitle": "Report a problem with {title}",
+    "reportIntro": "Your report goes to the developer with technical details of your session. Do not include personal information.",
+    "reportCategory": "What kind of problem?",
+    "reportCategories": {
+      "bug": "Something is broken",
+      "wont-load": "The game will not load",
+      "controls": "Controls do not work",
+      "content": "Inappropriate content",
+      "other": "Something else"
+    },
+    "reportMessage": "What happened?",
+    "reportMessageHint": "A sentence or two is enough.",
+    "reportTooShort": "Please write at least a few words.",
+    "reportSent": "Report sent. Thank you!",
+    "toolbar": "Game actions",
+    "breadcrumbs": "Breadcrumbs",
+    "info": {
+      "label": "Game details",
+      "developer": "Developer",
+      "rating": "Rating",
+      "ratingValue": "{rating} / 10",
+      "notRated": "Not rated yet",
+      "votes": "Votes",
+      "plays": "Plays",
+      "released": "Released",
+      "updated": "Updated",
+      "platforms": "Platforms",
+      "orientation": "Orientation",
+      "size": "Size",
+      "engine": "Made with"
+    },
+    "platforms": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "tablet": "Tablet"
+    },
+    "orientations": {
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "any": "Any"
+    },
+    "sections": {
+      "description": "About {title}",
+      "howToPlay": "How to play",
+      "controls": "Controls",
+      "features": "Features",
+      "tips": "Tips",
+      "faq": "Frequently asked questions",
+      "devlog": "Devlog and patch notes"
+    },
+    "controlsTable": {
+      "action": "Action",
+      "keyboard": "Keyboard / mouse",
+      "touch": "Touch"
+    },
+    "tags": "Tags",
+    "playNext": "Play next",
+    "similar": "Games like this",
+    "fromStudio": "More from {studio}",
+    "sparkBadge": "Fresh",
+    "sparkBadgeHint": "New on Brainstorming Games. Your plays and ratings help it grow.",
+    "multiplayerBadge": "Multiplayer",
+    "verifiedStudio": "Verified studio",
+    "notFoundTitle": "We could not find that game",
+    "notFoundBody": "It may have been renamed or removed."
+  },
+  "studio": {
+    "metaTitle": "{name} – games by this studio",
+    "games": "Games by {name}",
+    "gamesCount": "{count, plural, one {# game} other {# games}}",
+    "verified": "Verified studio",
+    "firstParty": "Brainstorming Original",
+    "noGamesTitle": "No games published yet",
+    "noGamesBody": "This studio has not released a game here yet.",
+    "notFoundTitle": "We could not find that studio",
+    "links": "Links"
+  },
+  "developers": {
+    "metaTitle": "Publish your game – for developers",
+    "metaDescription": "Publish your HTML5 or WebGL game on Brainstorming Games. Published revenue share from 70%, a fair Spark Launch for every game, monthly payouts from ₹2,000 / $25.",
+    "title": "Publish your game on Brainstorming Games",
+    "lead": "Reach players in days, keep 70% or more of the ad revenue, and always know why a decision was made.",
+    "cta": "Start publishing",
+    "docs": "Read the docs",
+    "footerCta": "Ready when you are",
+    "footerBody": "Create a studio, upload a build and get your pre-QA report in minutes."
+  },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "title": "This page wandered off",
+    "body": "{name} looked everywhere. The link may be old, or the page may have moved.",
+    "home": "Back to home",
+    "suggestions": "Play one of these instead"
+  },
+  "offline": {
+    "metaTitle": "You are offline",
+    "title": "You are offline",
+    "body": "Games need a connection to load. Check your internet and try again.",
+    "retry": "Try again"
+  },
+  "ads": {
+    "label": "Advertisement",
+    "placeholder": "Ad slot · {size} · {placement}"
+  },
+  "policy": {
+    "draft": "Draft, pending legal review.",
+    "updated": "Last updated {date}",
+    "englishOnly": "This document is currently available in English only.",
+    "titles": {
+      "about": "About Brainstorming Games",
+      "contact": "Contact",
+      "parents": "Info for parents",
+      "school-safe": "School-safe mode",
+      "terms": "Player terms",
+      "privacy": "Privacy policy",
+      "developer-terms": "Developer terms",
+      "cookies": "Cookie preferences"
+    }
+  }
+}

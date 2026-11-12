@@ -1,0 +1,247 @@
+/*
+ * Mascot animation, CSS only.
+ *
+ * .bg-mascot  the brand PNG with overlays:
+ *   - blink: two white patches with a navy line that cover the d-pad and the buttons for a moment.
+ *     Positions are percentages of the square brand output, measured from brand/mascot.png
+ *     (d-pad 36.2/46.9 19.1x18.9, buttons 70.7/45.6 16.4x16.8). If the art changes, re-measure.
+ *   - glow: a pulsing cyan halo over the brain.
+ * .bgm        the SVG mascot (MascotAvatar): its eyes and brain are real elements.
+ */
+
+@layer components {
+.bg-mascot {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  line-height: 0;
+  isolation: isolate;
+}
+.bg-mascot picture,
+.bg-mascot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.bg-mascot img {
+  object-fit: contain;
+  /* The navy outline disappears on a navy page, so give it a thin lighter edge and a soft glow. */
+  filter: drop-shadow(0 0 1px rgb(74 114 200 / 0.95)) drop-shadow(0 8px 22px rgb(0 192 240 / 0.22));
+}
+[data-theme='light'] .bg-mascot img {
+  filter: drop-shadow(0 8px 18px rgb(0 12 48 / 0.22));
+}
+
+.bg-mascot__glow {
+  position: absolute;
+  z-index: 1;
+  left: 24%;
+  top: 6%;
+  width: 63%;
+  height: 36%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 232 252 / 0.75), rgb(0 232 252 / 0) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.bg-mascot__blink {
+  position: absolute;
+  z-index: 2;
+  border-radius: 28%;
+  background: #fbfcfe;
+  opacity: 0;
+  pointer-events: none;
+}
+.bg-mascot__blink::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 14%;
+  border-radius: 999px;
+  background: #000c30;
+  transform: translateY(-50%);
+}
+.bg-mascot__blink--l {
+  left: 34.8%;
+  top: 45.4%;
+  width: 21.8%;
+  height: 21.8%;
+}
+.bg-mascot__blink--r {
+  left: 69.4%;
+  top: 44.3%;
+  width: 19.2%;
+  height: 19.6%;
+}
+
+.bg-mascot--animated {
+  animation: bg-mascot-float 4.6s ease-in-out infinite;
+}
+.bg-mascot--animated .bg-mascot__glow {
+  animation: bg-mascot-glow 2.6s ease-in-out infinite alternate;
+}
+.bg-mascot--animated .bg-mascot__blink {
+  animation: bg-mascot-blink 5.2s infinite;
+}
+.bg-mascot--celebrate {
+  animation: bg-mascot-bounce 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+
+/* SVG mascot */
+.bgm {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+.bgm__eyes-closed {
+  opacity: 0;
+}
+.bgm--animated .bgm__body {
+  transform-box: fill-box;
+  transform-origin: 50% 60%;
+  animation: bg-mascot-float 4.6s ease-in-out infinite;
+}
+.bgm--animated .bgm__eyes-open {
+  animation: bgm-eyes-open 5.2s infinite;
+}
+.bgm--animated .bgm__eyes-closed {
+  animation: bg-mascot-blink 5.2s infinite;
+}
+.bgm--animated .bgm__brain {
+  animation: bgm-brain 2.6s ease-in-out infinite alternate;
+}
+.bgm--celebrate .bgm__body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: bg-mascot-bounce 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+
+@keyframes bg-mascot-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.2deg);
+  }
+  50% {
+    transform: translateY(-5%) rotate(1.2deg);
+  }
+}
+@keyframes bg-mascot-glow {
+  from {
+    opacity: 0.12;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@keyframes bg-mascot-blink {
+  0%,
+  95.4%,
+  100% {
+    opacity: 0;
+  }
+  96.4%,
+  98.6% {
+    opacity: 1;
+  }
+}
+@keyframes bgm-eyes-open {
+  0%,
+  95.4%,
+  100% {
+    opacity: 1;
+  }
+  96.4%,
+  98.6% {
+    opacity: 0;
+  }
+}
+@keyframes bgm-brain {
+  from {
+    opacity: 0.72;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes bg-mascot-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    transform: translateY(-18%) scale(1.06, 0.95);
+  }
+  55% {
+    transform: translateY(0) scale(0.96, 1.05);
+  }
+  75% {
+    transform: translateY(-6%) scale(1.02, 0.99);
+  }
+}
+
+/* Confetti burst used by celebrations: 14 cyan and white pieces thrown from the centre. */
+.bg-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.bg-confetti i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 14px;
+  border-radius: 3px;
+  background: #00e8fc;
+  box-shadow: 0 0 12px rgb(0 232 252 / 0.8);
+  opacity: 0;
+  animation: bg-confetti 1.25s cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+  animation-delay: calc(var(--i) * 18ms);
+}
+.bg-confetti i:nth-child(3n) {
+  background: #fcfcfc;
+  box-shadow: 0 0 10px rgb(252 252 252 / 0.6);
+  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+}
+.bg-confetti i:nth-child(4n) {
+  background: #00c0f0;
+}
+@keyframes bg-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-mascot--animated,
+  .bg-mascot--celebrate,
+  .bg-mascot--animated .bg-mascot__glow,
+  .bg-mascot--animated .bg-mascot__blink,
+  .bgm--animated .bgm__body,
+  .bgm--animated .bgm__eyes-open,
+  .bgm--animated .bgm__eyes-closed,
+  .bgm--animated .bgm__brain,
+  .bgm--celebrate .bgm__body,
+  .bg-confetti i {
+    animation: none !important;
+  }
+  .bg-confetti {
+    display: none;
+  }
+}
+}

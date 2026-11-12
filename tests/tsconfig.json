@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["../apps/web/src/*"],
+      "@brainstorming/sdk": ["../packages/sdk/src/index.ts"],
+      "@brainstorming/sdk/*": ["../packages/sdk/src/*.ts"],
+      "@brainstorming/ui": ["../packages/ui/src/index.ts"]
+    },
+    "tsBuildInfoFile": "../node_modules/.cache/tsc/tests.tsbuildinfo"
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../playwright.config.ts", "../vitest.config.ts"],
+  "exclude": ["fixtures"]
+}

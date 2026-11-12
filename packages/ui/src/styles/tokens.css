@@ -1,0 +1,303 @@
+/*
+ * Brainstorming Games design tokens.
+ * Imported after `@import 'tailwindcss'` by the app's global stylesheet.
+ *
+ * Two layers:
+ *   1. Brand palette (fixed hex values from the brand guide) as Tailwind theme colours.
+ *   2. Semantic roles (--bg, --surface, --fg ...) that swap between the dark and light themes.
+ *      Components use the semantic utilities (bg-surface, text-fg, border-border) so they never
+ *      need a `dark:` variant.
+ */
+
+@theme {
+  /* Only brand colours exist. The default Tailwind palette is removed on purpose. */
+  --color-*: initial;
+
+  --color-navy-950: #000c30;
+  --color-navy-800: #0c2a6e;
+  --color-navy-600: #1e3f95;
+  --color-navy-400: #4a72c8;
+  --color-cyan-500: #00c0f0;
+  --color-cyan-300: #00e8fc;
+  --color-mist-100: #dce6f2;
+  --color-white: #fcfcfc;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-black: #000000;
+
+  --font-display: var(--font-fredoka), var(--font-deva-display), ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: var(--font-nunito), var(--font-deva-body), ui-sans-serif, 'Segoe UI', system-ui, sans-serif;
+
+  --radius-control: 12px;
+  --radius-card: 16px;
+
+  --shadow-card: 0 1px 2px rgb(0 12 48 / 0.18), 0 8px 24px -12px rgb(0 12 48 / 0.45);
+  --shadow-glow: 0 0 0 1px rgb(0 232 252 / 0.45), 0 10px 32px -8px rgb(0 192 240 / 0.55);
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --breakpoint-xs: 26rem;
+  --breakpoint-3xl: 120rem;
+  --breakpoint-4xl: 160rem;
+
+  --animate-pop-in: bg-pop-in 0.28s var(--ease-spring) both;
+  --animate-fade-in: bg-fade-in 0.2s ease-out both;
+  --animate-shimmer: bg-shimmer 1.6s linear infinite;
+
+  @keyframes bg-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bg-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes bg-shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Semantic roles exposed as Tailwind colours. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-link: var(--link);
+  --color-ring: var(--ring);
+  --color-glow: var(--glow);
+  --color-header: var(--header);
+  --color-overlay: var(--overlay);
+}
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
+@custom-variant low-data (&:where([data-low-data='true'], [data-low-data='true'] *));
+
+/* Dark is the default theme. */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #000c30;
+  --surface: #0c2a6e;
+  --surface-2: #1e3f95;
+  --surface-3: #071b4d;
+  --header: #0c2a6e;
+  --fg: #fcfcfc;
+  --fg-muted: #b9c7e6;
+  --border: rgb(74 114 200 / 0.45);
+  --primary: #00c0f0;
+  --primary-fg: #000c30;
+  --link: #00c0f0;
+  --ring: #00e8fc;
+  --ring-halo: rgb(0 232 252 / 0.25);
+  --glow: #00e8fc;
+  --overlay: rgb(0 12 48 / 0.72);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #fcfcfc;
+  --surface: #dce6f2;
+  --surface-2: #c9d7ea;
+  --surface-3: #eef3f9;
+  --header: #fcfcfc;
+  --fg: #000c30;
+  --fg-muted: #36456b;
+  --border: #b4c4dc;
+  --primary: #00c0f0;
+  --primary-fg: #000c30;
+  /* Never cyan text on white: links are navy on the light theme. */
+  --link: #1e3f95;
+  --ring: #000c30;
+  --ring-halo: rgb(0 232 252 / 0.9);
+  --glow: #00a9d6;
+  --overlay: rgb(0 12 48 / 0.55);
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button,
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+  ::selection {
+    background: #00c0f0;
+    color: #000c30;
+  }
+  /* One visible focus style everywhere: cyan on dark, navy with a cyan halo on light. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--ring-halo);
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@utility skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    100deg,
+    var(--surface) 30%,
+    color-mix(in srgb, var(--surface-2) 70%, var(--surface)) 50%,
+    var(--surface) 70%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@utility glow-hover {
+  transition:
+    box-shadow 0.2s var(--ease-out-soft),
+    transform 0.2s var(--ease-spring);
+  &:hover,
+  &:focus-visible {
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+@utility prose-bg {
+  line-height: 1.7;
+  & h2 {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 1.75rem 0 0.6rem;
+  }
+  & h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 1.4rem 0 0.5rem;
+  }
+  & p {
+    margin: 0.6rem 0;
+  }
+  & ul,
+  & ol {
+    margin: 0.6rem 0;
+    padding-left: 1.4rem;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & li {
+    margin: 0.25rem 0;
+  }
+  & a {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  & code {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.1em 0.35em;
+  }
+  & pre {
+    overflow-x: auto;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin: 0.8rem 0;
+    line-height: 1.5;
+  }
+  & pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+  & blockquote {
+    border-left: 3px solid var(--primary);
+    padding-left: 0.9rem;
+    color: var(--fg-muted);
+  }
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 0.95em;
+  }
+  & th,
+  & td {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  & th {
+    background: var(--surface-3);
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+}

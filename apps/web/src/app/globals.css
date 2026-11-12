@@ -1,0 +1,198 @@
+@import 'tailwindcss';
+@import '@brainstorming/ui/tokens.css';
+@import '@brainstorming/ui/mascot.css';
+
+/* The UI package lives outside this app, so Tailwind has to be told to scan it. */
+@source '../../../../packages/ui/src';
+
+:root {
+  --header-h: 60px;
+  --sidebar-w: 248px;
+  --sidebar-w-collapsed: 72px;
+  --tabs-h: 0px;
+}
+
+@media (max-width: 63.999rem) {
+  :root {
+    --tabs-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Low-data mode: no web fonts are downloaded, because nothing references them any more. */
+[data-low-data='true'] {
+  --font-fredoka: ui-rounded, 'Segoe UI';
+  --font-nunito: ui-sans-serif, 'Segoe UI';
+  --font-deva-display: 'Nirmala UI', 'Noto Sans Devanagari';
+}
+
+@layer base {
+  body {
+    overflow-x: hidden;
+  }
+  /* Hindi body text uses the device's own Devanagari font: zero bytes, and it is the one people
+     already read every day. */
+  :lang(hi) {
+    --font-deva-body: 'Noto Sans Devanagari', 'Nirmala UI', 'Kohinoor Devanagari', 'Mangal';
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: fixed;
+    left: 12px;
+    top: -80px;
+    z-index: 100;
+    border-radius: 12px;
+    background: var(--primary);
+    color: var(--primary-fg);
+    padding: 0.6rem 1rem;
+    font-weight: 800;
+    transition: top 0.15s ease-out;
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  /* ---- App frame: fixed header, fixed sidebar (desktop), fixed tab bar (mobile) ---- */
+  .app-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: var(--header-h);
+    padding: 0 0.75rem;
+    background: var(--header);
+    border-bottom: 1px solid var(--border);
+  }
+  .app-sidebar {
+    position: fixed;
+    top: var(--header-h);
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    display: none;
+    width: var(--sidebar-w);
+    background: var(--surface-3);
+    border-right: 1px solid var(--border);
+  }
+  .app-content {
+    padding-top: var(--header-h);
+    padding-bottom: var(--tabs-h);
+  }
+  .app-tabs {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    display: flex;
+    height: var(--tabs-h);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--header);
+    border-top: 1px solid var(--border);
+  }
+  @media (min-width: 64rem) {
+    .app-sidebar {
+      display: block;
+    }
+    .app-content {
+      padding-left: var(--sidebar-w);
+    }
+    .app-tabs {
+      display: none;
+    }
+    [data-sidebar='collapsed'] .app-sidebar {
+      width: var(--sidebar-w-collapsed);
+    }
+    [data-sidebar='collapsed'] .app-content {
+      padding-left: var(--sidebar-w-collapsed);
+    }
+    /* Collapsed: icons only. Labels stay in the accessibility tree. */
+    [data-sidebar='collapsed'] .app-sidebar .nav-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    [data-sidebar='collapsed'] .app-sidebar .nav-row {
+      justify-content: center;
+      padding-inline: 0;
+    }
+    [data-sidebar='collapsed'] .app-sidebar .nav-heading {
+      height: 1px;
+      margin: 0.75rem 0.5rem;
+      padding: 0;
+      overflow: hidden;
+      background: var(--border);
+      color: transparent;
+    }
+  }
+  .page {
+    width: 100%;
+    max-width: 150rem;
+    margin-inline: auto;
+    padding: 1rem 0.875rem 0;
+  }
+  @media (min-width: 40rem) {
+    .page {
+      padding: 1.25rem 1.5rem 0;
+    }
+  }
+
+  /* Horizontal game rail: native scrolling with snap, no scrollbar chrome. */
+  .rail-track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--tile-w, clamp(148px, 44vw, 232px));
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 4px;
+    padding: 6px 4px 10px;
+    margin: -6px -4px 0;
+    scrollbar-width: none;
+  }
+  .rail-track::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-track > * {
+    scroll-snap-align: start;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 42vw, 208px), 1fr));
+    gap: 12px;
+  }
+  @media (min-width: 120rem) {
+    .game-grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .rail-track {
+      --tile-w: 268px;
+      gap: 16px;
+    }
+  }
+  @media (min-width: 160rem) {
+    .game-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    .rail-track {
+      --tile-w: 320px;
+    }
+  }
+
+  /* Reserved boxes for ads so nothing shifts when one loads. */
+  .ad-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    contain: layout paint;
+  }
+}

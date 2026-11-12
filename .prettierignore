@@ -1,0 +1,15 @@
+node_modules
+.next
+.build
+out
+dist
+.local
+package-lock.json
+apps/web/public
+apps/web/src/generated
+apps/web/src/app/[locale]
+apps/web/src/lib/data/supabase/database.types.ts
+supabase/.temp
+test-results
+playwright-report
+*.md

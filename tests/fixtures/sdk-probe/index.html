@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDK probe</title>
+    <link rel="stylesheet" href="probe.css" />
+  </head>
+  <body>
+    <!--
+      Test fixture only. This is not a game and is never listed in the catalogue: automated tests
+      upload it, check that the platform talks to it correctly, then delete it.
+      Each button calls one SDK method and logs the result.
+    -->
+    <main>
+      <h1>SDK probe</h1>
+      <p id="env">environment: <strong data-testid="probe-env">starting</strong></p>
+      <div id="buttons"></div>
+      <ol id="log" data-testid="probe-log" aria-live="polite"></ol>
+    </main>
+    <script src="probe.js"></script>
+  </body>
+</html>

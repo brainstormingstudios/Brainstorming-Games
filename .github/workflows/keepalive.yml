@@ -1,0 +1,24 @@
+name: Keep Supabase awake
+
+# Supabase Free pauses a project after 7 idle days. One request a day keeps it running and
+# also runs the daily jobs (KPI roll-up, A/B test winners, cleanup) through the health function.
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping health function
+        env:
+          URL: ${{ secrets.SUPABASE_HEALTH_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$URL" ]; then echo "SUPABASE_HEALTH_URL not set; nothing to do"; exit 0; fi
+          curl --fail --silent --show-error --max-time 60 \
+            -H "apikey: $KEY" -H "authorization: Bearer $KEY" -H "x-cron-secret: $CRON_SECRET" \
+            "$URL?jobs=daily"

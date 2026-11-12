@@ -1,0 +1,47 @@
+name: Deploy
+
+# Builds the static site and deploys it to Cloudflare Pages (free plan allows commercial use).
+# Runs on every push to main and when the deploy-hook Edge Function asks for a rebuild after a
+# game is published (debounced to at most one build per 30 minutes).
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [rebuild]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_PLAY_ORIGIN: ${{ vars.NEXT_PUBLIC_PLAY_ORIGIN }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_ADSENSE_CLIENT: ${{ vars.NEXT_PUBLIC_ADSENSE_CLIENT }}
+      NEXT_PUBLIC_ADSENSE_SLOT_GAME_SIDE: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_GAME_SIDE }}
+      NEXT_PUBLIC_ADSENSE_SLOT_RESPONSIVE: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_RESPONSIVE }}
+      NEXT_PUBLIC_INGAME_ADS: ${{ vars.NEXT_PUBLIC_INGAME_ADS }}
+      NEXT_PUBLIC_CONTACT_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}
+      NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
+      # Read-only use at build time: the catalogue snapshot only selects public games.
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@3 pages deploy apps/web/out --project-name="${{ vars.CF_PAGES_PROJECT || 'brainstorming-games' }}" --branch=main

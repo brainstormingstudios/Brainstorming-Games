@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# builds and caches
+.next/
+.build/
+out/
+dist/
+.local/
+*.tsbuildinfo
+.eslintcache
+
+# generated at build (see scripts/)
+apps/web/public/brand/
+apps/web/public/sdk/
+apps/web/public/.well-known/
+apps/web/src/generated/
+apps/web/public/sw.js
+
+# tests
+test-results/
+playwright-report/
+blob-report/
+.lighthouse/
+coverage/
+
+# env and secrets
+.env
+.env.local
+.env.*.local
+supabase/.temp/
+supabase/.branches/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json

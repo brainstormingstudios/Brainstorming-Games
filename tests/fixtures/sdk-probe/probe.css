@@ -1,0 +1,41 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+}
+body {
+  margin: 0;
+  background: #000c30;
+  color: #fcfcfc;
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+#buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+button {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #00c0f0;
+  color: #000c30;
+  font-weight: 700;
+  cursor: pointer;
+}
+#log {
+  margin: 0;
+  padding-left: 22px;
+  font: 13px/1.5 ui-monospace, Consolas, monospace;
+}
+#banner-slot {
+  min-height: 50px;
+}

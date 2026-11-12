@@ -1,0 +1,37 @@
+{
+  "name": "@brainstorming/sdk",
+  "version": "1.0.0",
+  "description": "Brainstorming Games SDK: gameplay events, ads, users, cloud saves, leaderboards and quests for HTML5 games.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./host": {
+      "types": "./src/host.ts",
+      "default": "./src/host.ts"
+    },
+    "./protocol": {
+      "types": "./src/protocol.ts",
+      "default": "./src/protocol.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "zod": "^4.6.7"
+  }
+}

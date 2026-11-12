@@ -1,0 +1,57 @@
+{
+  "name": "brainstorming-games",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brainstorming Games: a free browser-game portal with a developer portal and SDK.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "build:sdk": "npm run build -w @brainstorming/sdk",
+    "start": "node scripts/serve-static.mjs",
+    "services": "node scripts/dev-services.mjs",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "node scripts/typecheck.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "brand": "tsx scripts/prepare-brand.ts",
+    "catalogue": "tsx scripts/build-catalogue.ts",
+    "gen:routes": "node scripts/gen-locale-routes.mjs",
+    "gen:db-types": "tsx scripts/gen-db-types.ts",
+    "gen:sdk-docs": "tsx scripts/gen-sdk-docs.ts",
+    "pre-qa": "tsx scripts/pre-qa.ts",
+    "budgets": "node scripts/check-budgets.mjs",
+    "lighthouse": "node scripts/lighthouse.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@eslint/js": "^9.39.5",
+    "@next/eslint-plugin-next": "^15.5.29",
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.14.0",
+    "happy-dom": "^21.0.4",
+    "lighthouse": "^13.6.0",
+    "prettier": "^3.10.1",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^3.2.7"
+  }
+}
