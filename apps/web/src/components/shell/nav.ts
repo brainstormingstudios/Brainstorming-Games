@@ -21,6 +21,8 @@ import {
   RefreshCw,
   Sparkles,
   Swords,
+  Target,
+  Trophy,
   Type,
   Users,
   type LucideIcon,
@@ -43,6 +45,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'updated', href: '/updated', icon: RefreshCw },
   { key: 'originals', href: '/originals', icon: Crown },
   { key: 'multiplayer', href: '/multiplayer', icon: Users },
+  { key: 'quests', href: '/quests', icon: Target },
+  { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
 ];
 
 export const TAGS_NAV: NavItem = { key: 'allTags', href: '/tags', icon: Hash };

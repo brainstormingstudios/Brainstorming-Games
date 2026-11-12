@@ -172,6 +172,16 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one timer per loading phase
   }, [phase]);
 
+  // Friends see what you are playing (and can join your party).
+  useEffect(() => {
+    if (phase !== 'playing' || preview) return;
+    const party = new URLSearchParams(window.location.search).get('party');
+    void getRepo().then((repo) =>
+      repo.social.setActivity({ gameId: game.id, gameSlug: game.slug, gameTitle: game.title, partyCode: party && /^[A-Za-z0-9]{4,6}$/.test(party) ? party.toUpperCase() : null }),
+    );
+    return () => void getRepo().then((repo) => repo.social.setActivity(null));
+  }, [phase, preview, game.id, game.slug, game.title]);
+
   useEffect(() => {
     if (phase !== 'playing') return;
     const onVisibility = () => {
@@ -239,10 +249,12 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       data-testid="game-frame"
       data-phase={phase}
       className={cn(
-        'relative flex items-center justify-center overflow-hidden bg-black',
+        'flex items-center justify-center overflow-hidden bg-black',
+        // Only one position utility at a time: with both, `relative` would win and collapse the
+        // immersive (phone) frame to zero height.
         immersive
           ? 'fixed inset-0 z-[90] rounded-none'
-          : 'aspect-video w-full rounded-card border border-border shadow-card',
+          : 'relative aspect-video w-full rounded-card border border-border shadow-card',
       )}
     >
       <div

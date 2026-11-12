@@ -26,6 +26,15 @@ import { functionsUrl, getSupabase } from './client';
 import { toRepoError } from './errors';
 import { supabaseAuth, supabaseQuests, supabaseSaves, supabaseScores } from './account';
 import { supabaseAdmin, supabaseDev } from './dev';
+import {
+  supabaseLeaderboards,
+  supabaseLocker,
+  supabaseNotifications,
+  supabaseParty,
+  supabaseProfiles,
+  supabaseQuestsExtra,
+  supabaseSocial,
+} from './social';
 
 /** Row of the `game_cards` view (see supabase/migrations/0001_core.sql). */
 export interface GameCardRow {
@@ -253,6 +262,25 @@ const catalogue: CatalogueRepo = {
   },
 };
 
+async function sessionUserId(): Promise<string | null> {
+  const { data } = await getSupabase().auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
+/** Copies guest favourites and history into the account once, at first sign-in on this device. */
+async function mergeGuestIntoAccount(): Promise<void> {
+  const favs = guestFavourites.list();
+  const history = guestHistory.list();
+  if (favs.length === 0 && history.length === 0) return;
+  const { error } = await getSupabase().rpc('merge_guest_data', { p_favourites: favs, p_history: history });
+  if (!error) {
+    guestFavourites.clear();
+    guestHistory.clear();
+    emitTopic('favourites', { local: true });
+    emitTopic('history', { local: true });
+  }
+}
+
 const player: PlayerRepo = {
   async myRating(gameId) {
     return guestRatings.get(gameId);
@@ -279,21 +307,48 @@ const player: PlayerRepo = {
     return stats;
   },
   async favourites() {
-    return guestFavourites.list();
+    if (!(await sessionUserId())) return guestFavourites.list();
+    const { data, error } = await getSupabase().from('favorites').select('game_id').order('created_at', { ascending: false });
+    if (error) throw toRepoError(error);
+    return (data ?? []).map((r) => String((r as { game_id: string }).game_id));
   },
   async setFavourite(gameId, on) {
-    guestFavourites.set(gameId, on);
+    const me = await sessionUserId();
+    if (!me) guestFavourites.set(gameId, on);
+    else {
+      const db = getSupabase().from('favorites');
+      const { error } = on ? await db.upsert({ user_id: me, game_id: gameId }) : await db.delete().eq('game_id', gameId);
+      if (error) throw toRepoError(error);
+    }
     emitTopic('favourites');
   },
   async history() {
-    return guestHistory.list();
+    if (!(await sessionUserId())) return guestHistory.list();
+    const { data, error } = await getSupabase()
+      .from('play_history')
+      .select('game_id, last_played_at, play_count, seconds_played, games(slug)')
+      .order('last_played_at', { ascending: false })
+      .limit(60);
+    if (error) throw toRepoError(error);
+    return (data ?? []).map((x) => {
+      const r = x as unknown as { game_id: string; last_played_at: string; play_count: number; seconds_played: number; games: { slug: string } | null };
+      return { gameId: r.game_id, slug: r.games?.slug ?? '', lastPlayedAt: r.last_played_at, playCount: r.play_count, secondsPlayed: r.seconds_played };
+    });
   },
   async recordPlay(game, seconds, newSession) {
-    guestHistory.record(game, seconds, newSession);
+    if (!(await sessionUserId())) guestHistory.record(game, seconds, newSession);
+    else {
+      const { error } = await getSupabase().rpc('record_play', { p_game_id: game.id, p_seconds: Math.round(seconds), p_new_session: newSession });
+      if (error) throw toRepoError(error);
+    }
     emitTopic('history');
   },
   async clearHistory() {
-    guestHistory.clear();
+    if (!(await sessionUserId())) guestHistory.clear();
+    else {
+      const { error } = await getSupabase().from('play_history').delete().gte('play_count', 0);
+      if (error) throw toRepoError(error);
+    }
     emitTopic('history');
   },
   async sendFeedback(input) {
@@ -370,8 +425,12 @@ const events: EventsRepo = {
 };
 
 export function createSupabaseRepo(): Repo {
-  // Session changes (login in another tab, token refresh, sign-out) refresh open screens.
-  getSupabase().auth.onAuthStateChange(() => emitTopic('session', { local: true }));
+  // Session changes (login in another tab, token refresh, sign-out) refresh open screens, and a
+  // first sign-in moves guest favourites and history into the account.
+  getSupabase().auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN') void mergeGuestIntoAccount();
+    emitTopic('session', { local: true });
+  });
   return {
     mode: 'supabase',
     catalogue,
@@ -380,7 +439,13 @@ export function createSupabaseRepo(): Repo {
     auth: supabaseAuth,
     saves: supabaseSaves,
     scores: supabaseScores,
-    quests: supabaseQuests,
+    quests: { ...supabaseQuests, ...supabaseQuestsExtra },
+    locker: supabaseLocker,
+    social: supabaseSocial,
+    party: supabaseParty,
+    notifications: supabaseNotifications,
+    profiles: supabaseProfiles((ids) => catalogue.byIds(ids)),
+    leaderboards: supabaseLeaderboards,
     dev: supabaseDev,
     admin: supabaseAdmin,
   };

@@ -157,7 +157,7 @@ export function friendIdsOf(userId: string): Set<string> {
   return out;
 }
 
-export const mockQuests: QuestsRepo = {
+export const mockQuests: Pick<QuestsRepo, 'track'> = {
   async track(event, value) {
     const user = currentMockUser();
     if (!user?.username) return;

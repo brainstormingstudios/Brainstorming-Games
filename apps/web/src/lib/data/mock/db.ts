@@ -245,6 +245,20 @@ export interface MockTables {
   scores: { id: string; boardId: string; userId: string; score: number; flagged: boolean; createdAt: string }[];
   questEvents: { userId: string; event: string; value: number; at: string }[];
   friendships: { requester: string; addressee: string; status: 'pending' | 'accepted'; createdAt: string }[];
+  ledger: { id: string; userId: string; delta: number; reason: string; ref: string | null; createdAt: string }[];
+  userCosmetics: { userId: string; code: string; slot: string; unlockedAt: string }[];
+  parties: {
+    code: string;
+    hostKey: string;
+    currentGameId: string | null;
+    members: { key: string; name: string; cosmetics: Record<string, string>; canChat: boolean }[];
+    votes: Record<string, string>;
+    chat: { key: string; name: string; phrase: string; at: string }[];
+    state: 'lobby' | 'playing';
+    expiresAt: string;
+  }[];
+  userFavourites: { userId: string; gameId: string; createdAt: string }[];
+  userHistory: { userId: string; gameId: string; slug: string; lastPlayedAt: string; playCount: number; secondsPlayed: number }[];
   referralVisits: { studioSlug: string; anonId: string; at: string }[];
 }
 

@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { expect, test, type Page } from '@playwright/test';
-import { resetSite } from './helpers';
+import { resetSite, signIn as signInDialog } from './helpers';
 
 const PROBE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'sdk-probe');
 
@@ -19,21 +19,8 @@ async function cover(): Promise<Buffer> {
   return sharp({ create: { width: 1920, height: 1080, channels: 3, background: { r: 12, g: 42, b: 110 } } }).png().toBuffer();
 }
 
-/** Signs in through the login dialog (mock mode signs in straight away). */
 async function signIn(page: Page, email: string, username: string, birthYear = '1990') {
-  const dialog = page.locator('dialog[open]');
-  await dialog.getByTestId('login-email').fill(email);
-  await dialog.getByTestId('login-submit').click();
-  const profile = dialog.getByTestId('signup-username');
-  const needsProfile = await profile
-    .waitFor({ state: 'visible', timeout: 4000 })
-    .then(() => true)
-    .catch(() => false);
-  if (needsProfile) {
-    await profile.fill(username);
-    await dialog.getByTestId('signup-birth-year').fill(birthYear);
-    await dialog.getByTestId('signup-submit').click();
-  }
+  await signInDialog(page, email, username, birthYear);
   await expect(page.locator('dialog[open]')).toHaveCount(0);
 }
 

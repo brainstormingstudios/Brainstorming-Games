@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AllMessages } from '@/components/shell/AllMessages';
 import { ClientFallback } from '@/components/shell/ClientFallback';
 import { initLocale, type RouteParams } from '@/i18n/server';
 import { SITE_NAME } from '@/lib/config';
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
  * it for any path that has no file, and it works out in the browser what that path should show.
  */
 export default async function FallbackPage({ params }: { params: RouteParams }) {
-  await initLocale(params);
-  return <ClientFallback />;
+  const { locale } = await initLocale(params);
+  return (
+    <AllMessages locale={locale}>
+      <ClientFallback />
+    </AllMessages>
+  );
 }

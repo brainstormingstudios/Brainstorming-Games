@@ -81,6 +81,23 @@ export async function resetSite(page: Page): Promise<void> {
   });
 }
 
+/** Signs in through the login dialog (mock mode signs in straight away), finishing signup if asked. */
+export async function signIn(page: Page, email: string, username: string, birthYear = '1990'): Promise<void> {
+  const dialog = page.locator('dialog[open]');
+  await dialog.getByTestId('login-email').fill(email);
+  await dialog.getByTestId('login-submit').click();
+  const profile = dialog.getByTestId('signup-username');
+  const needsProfile = await profile
+    .waitFor({ state: 'visible', timeout: 4000 })
+    .then(() => true)
+    .catch(() => false);
+  if (needsProfile) {
+    await profile.fill(username);
+    await dialog.getByTestId('signup-birth-year').fill(birthYear);
+    await dialog.getByTestId('signup-submit').click();
+  }
+}
+
 /** Shape of the mock tools the app exposes on `window` in mock mode. */
 interface MockWindow {
   __bgMock?: {

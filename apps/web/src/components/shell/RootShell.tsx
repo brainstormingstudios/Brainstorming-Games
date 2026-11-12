@@ -27,6 +27,10 @@ const CLIENT_NAMESPACES = [
   'notFound',
   'ads',
   'auth',
+  'player',
+  // Used on game pages (leaderboard, party invite). Account pages load the rest themselves.
+  'party',
+  'leaderboards',
 ] as const;
 
 function pick(messages: Record<string, unknown>, keys: readonly string[]) {

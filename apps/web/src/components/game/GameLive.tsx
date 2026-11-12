@@ -2,7 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { GameLeaderboard } from '@/components/player/Account';
+import { PartyBar } from '@/components/player/Social';
 import { chipClass, cn } from '@brainstorming/ui';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { GameCover } from '@/components/catalogue/GameCover';
@@ -114,6 +116,9 @@ export function GameView({ game, related }: GameViewProps) {
       ) : null}
 
       <div className="page">
+        <Suspense fallback={null}>
+          <PartyBar />
+        </Suspense>
         <nav aria-label={t('breadcrumbs')} className="mb-3 text-sm font-semibold text-fg-muted">
           <ol className="flex flex-wrap items-center gap-1">
             <li>
@@ -239,6 +244,7 @@ export function GameView({ game, related }: GameViewProps) {
                   </div>
                 </ContentSection>
               ) : null}
+              <GameLeaderboard gameId={game.id} category={game.category} />
               {game.devlogs.length > 0 ? (
                 <ContentSection id="devlog" title={t('sections.devlog')}>
                   {game.devlogs.map((log) => (

@@ -8,6 +8,7 @@ import {
   Maximize,
   MessageCircle,
   Minimize,
+  PartyPopper,
   RectangleHorizontal,
   Send,
   Share2,
@@ -41,6 +42,7 @@ import { formatCount } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { setPrefs, usePrefs } from '@/lib/prefs';
 import { useLocale } from '@/i18n/navigation';
+import { localizePath } from '@/i18n/config';
 
 export interface GameToolbarProps {
   game: GameSummary;
@@ -56,7 +58,7 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
   const tc = useTranslations('common');
   const toast = useToast();
   const locale = useLocale();
-  const { theatre } = usePrefs();
+  const { theatre, schoolSafe } = usePrefs();
   const [stats, setStats] = useState(game.stats);
   const [mine, setMine] = useState<MyRating | null>(null);
   const [askReason, setAskReason] = useState(false);
@@ -160,6 +162,20 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
         <IconButton label={t('share')} data-testid="share-button" onClick={() => void share()}>
           <Share2 aria-hidden="true" className="size-5" />
         </IconButton>
+        {!schoolSafe ? (
+          <IconButton
+            label={t('invite')}
+            data-testid="party-button"
+            onClick={() =>
+              void getRepo()
+                .then((repo) => repo.party.create(game.id))
+                .then((party) => window.location.assign(localizePath(`/party/${party.code}`, locale)))
+                .catch(fail)
+            }
+          >
+            <PartyPopper aria-hidden="true" className="size-5" />
+          </IconButton>
+        ) : null}
         <span className="ml-auto flex items-center gap-1">
           <IconButton label={t('report')} data-testid="report-button" onClick={() => setReportOpen(true)}>
             <Bug aria-hidden="true" className="size-5" />

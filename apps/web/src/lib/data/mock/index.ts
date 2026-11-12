@@ -6,7 +6,18 @@ import { mockAdmin } from './admin';
 import { currentUserId, mockAuth } from './auth';
 import { mockDev } from './dev';
 import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
-import type { ControlRow, FaqItem, GameStatus, MediaAsset, Orientation, Platform } from '../types';
+import {
+  afterEvents,
+  mockLeaderboards,
+  mockLocker,
+  mockNotifications,
+  mockParty,
+  mockProfiles,
+  mockQuestsRepo,
+  mockSocial,
+  refreshQuests,
+} from './social';
+import type { ControlRow, FaqItem, GameStatus, MediaAsset, MyRating, Orientation, Platform } from '../types';
 import { mockCatalogue, readCatalogueTables, statsFor } from './catalogue';
 import {
   dayKey,
@@ -21,11 +32,18 @@ import {
   type MockVersion,
 } from './db';
 
-const voterKey = () => `anon:${getAnonId()}`;
+/** Signed-in players vote as themselves; guests with their anonymous browser id. */
+const voterKey = () => {
+  const id = currentUserId();
+  return id ? `user:${id}` : `anon:${getAnonId()}`;
+};
 
 const player: PlayerRepo = {
   async myRating(gameId) {
-    return guestRatings.get(gameId);
+    const key = voterKey();
+    if (key.startsWith('anon:')) return guestRatings.get(gameId);
+    const row = readTable('ratings').find((r) => r.voterKey === key && r.gameId === gameId);
+    return row ? { value: row.value, reason: (row.reason as MyRating['reason']) ?? null } : null;
   },
   async rate(gameId, value, reason = null) {
     if (!takeToken(`rate:${voterKey()}`, 20, 60_000)) throw new RepoError('rate_limited');
@@ -37,26 +55,54 @@ const player: PlayerRepo = {
       }
       return rest;
     });
-    guestRatings.set(gameId, value === 0 ? null : { value, reason: value === -1 ? reason : null });
+    if (key.startsWith('anon:')) guestRatings.set(gameId, value === 0 ? null : { value, reason: value === -1 ? reason : null });
+    else refreshQuests(key.slice(5));
     emitTopic('ratings');
     return statsFor(gameId, readCatalogueTables());
   },
   async favourites() {
-    return guestFavourites.list();
+    const id = currentUserId();
+    if (!id) return guestFavourites.list();
+    return readTable('userFavourites').filter((f) => f.userId === id).map((f) => f.gameId);
   },
   async setFavourite(gameId, on) {
-    guestFavourites.set(gameId, on);
+    const id = currentUserId();
+    if (!id) guestFavourites.set(gameId, on);
+    else {
+      mutateTable('userFavourites', (rows) => {
+        const rest = rows.filter((f) => !(f.userId === id && f.gameId === gameId));
+        if (on) rest.push({ userId: id, gameId, createdAt: nowIso() });
+        return rest;
+      });
+      refreshQuests(id);
+    }
     emitTopic('favourites');
   },
   async history() {
-    return guestHistory.list();
+    const id = currentUserId();
+    if (!id) return guestHistory.list();
+    return readTable('userHistory')
+      .filter((h) => h.userId === id)
+      .sort((a, b) => b.lastPlayedAt.localeCompare(a.lastPlayedAt))
+      .map((h) => ({ gameId: h.gameId, slug: h.slug, lastPlayedAt: h.lastPlayedAt, playCount: h.playCount, secondsPlayed: h.secondsPlayed }));
   },
   async recordPlay(game, seconds, newSession) {
-    guestHistory.record(game, seconds, newSession);
+    const id = currentUserId();
+    if (!id) guestHistory.record(game, seconds, newSession);
+    else {
+      mutateTable('userHistory', (rows) => {
+        const row = rows.find((h) => h.userId === id && h.gameId === game.id);
+        const add = Math.max(0, Math.round(seconds));
+        if (row) Object.assign(row, { lastPlayedAt: nowIso(), playCount: row.playCount + (newSession ? 1 : 0), secondsPlayed: row.secondsPlayed + add, slug: game.slug });
+        else rows.push({ userId: id, gameId: game.id, slug: game.slug, lastPlayedAt: nowIso(), playCount: 1, secondsPlayed: add });
+      });
+    }
     emitTopic('history');
   },
   async clearHistory() {
-    guestHistory.clear();
+    const id = currentUserId();
+    if (!id) guestHistory.clear();
+    else mutateTable('userHistory', (rows) => rows.filter((h) => h.userId !== id));
     emitTopic('history');
   },
   async sendFeedback(input) {
@@ -96,6 +142,8 @@ const events: EventsRepo = {
         }
       }
     });
+    const uid = currentUserId();
+    if (uid) afterEvents(uid, batch.map((e) => e.type));
     if (playsByGame.size > 0) {
       const today = dayKey();
       const cutoff = dayKey(new Date(Date.now() - 30 * 86_400_000));
@@ -275,19 +323,46 @@ declare global {
   }
 }
 
-/** Guest saves move into the account the first time a player signs in. */
+/** Guest favourites, history and saves move into the account when a player signs in. */
+function mergeGuest(id: string) {
+  mergeGuestSaves(id);
+  const favs = guestFavourites.list();
+  const history = guestHistory.list();
+  mutateTable('userFavourites', (rows) => {
+    for (const gameId of favs) if (!rows.some((f) => f.userId === id && f.gameId === gameId)) rows.push({ userId: id, gameId, createdAt: nowIso() });
+  });
+  mutateTable('userHistory', (rows) => {
+    for (const h of history) {
+      const row = rows.find((x) => x.userId === id && x.gameId === h.gameId);
+      if (row) Object.assign(row, { playCount: row.playCount + h.playCount, secondsPlayed: row.secondsPlayed + h.secondsPlayed });
+      else rows.push({ userId: id, ...h });
+    }
+  });
+  guestFavourites.clear();
+  guestHistory.clear();
+}
+
 const auth: AuthRepo = {
   ...mockAuth,
   async signInWithEmail(email, next) {
     const result = await mockAuth.signInWithEmail(email, next);
     const id = currentUserId();
-    if (id) mergeGuestSaves(id);
+    if (id) mergeGuest(id);
     return result;
   },
   async signInWithProvider(provider, next) {
     await mockAuth.signInWithProvider(provider, next);
     const id = currentUserId();
-    if (id) mergeGuestSaves(id);
+    if (id) mergeGuest(id);
+  },
+};
+
+const quests = {
+  ...mockQuestsRepo,
+  async track(event: string, value: number) {
+    await mockQuests.track(event, value);
+    const id = currentUserId();
+    if (id) refreshQuests(id);
   },
 };
 
@@ -301,7 +376,13 @@ export function createMockRepo(): Repo {
     auth,
     saves: mockSaves,
     scores: mockScores,
-    quests: mockQuests,
+    quests,
+    locker: mockLocker,
+    social: mockSocial,
+    party: mockParty,
+    notifications: mockNotifications,
+    profiles: mockProfiles,
+    leaderboards: mockLeaderboards,
     dev: mockDev,
     admin: mockAdmin,
   };

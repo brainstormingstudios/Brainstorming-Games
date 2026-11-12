@@ -237,14 +237,14 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 ### Phase 3: Accounts + social + progression
 
-- [ ] Auth (magic link, Google, Discord), guest merge, age gate, parental consent flow
-- [ ] Profiles, settings (data export, account delete), privacy controls
-- [ ] Brain Quests, Brain Points ledger, levels, streaks, locker with 30 cosmetics
-- [ ] Friends, presence, join; party rooms with preset chat; notifications
-- [ ] Leaderboards with server-side validation; cloud saves with guest merge
-- [ ] School-safe mode with PIN; low-data mode
-- [ ] Migrations 0004–0006, Edge Functions (game-token, parental-consent)
-- [ ] Check: two sessions befriend, see each other online, start a party, move to a game together, both earn quest progress; a minor is restricted until consent
+- [x] Auth (magic link, Google, Discord), guest merge, age gate, parental consent flow
+- [x] Profiles, settings (data export, account delete), privacy controls
+- [x] Brain Quests, Brain Points ledger, levels, streaks, locker with 30 cosmetics
+- [x] Friends, presence, join; party rooms with preset chat; notifications
+- [x] Leaderboards with server-side validation; cloud saves with guest merge
+- [x] School-safe mode with PIN; low-data mode
+- [x] Migrations 0004–0006, Edge Functions (game-token, parental-consent)
+- [x] Check: two sessions befriend, see each other online, start a party, move to a game together, both earn quest progress; a minor is restricted until consent
 
 ### Phase 4: Monetisation + revenue + payouts
 
@@ -292,3 +292,4 @@ written, type-checked and unit-tested here but not exercised against the live se
 
 - **Phase 1 (2026-11-12):** done. 6 e2e, 22 unit and 12 database tests pass; lint and typecheck clean; home first-load JS 143 KB gzipped. Lighthouse mobile: accessibility 100, best practices 100, SEO 100; performance 80s locally on simulated slow 4G, tuned again in the Phase 5 performance re-audit.
 - **Phase 2 (2026-11-12):** done. SDK 5.4 KB gzipped (local, brainstorming and disabled environments, mock ads, debug overlay, CrazyGames shim); host bridge with zod validation; developer portal (studio signup, wizard with autosave, browser-side cover crop and WebP variants, zip validation and upload, private preview with live SDK log, versions and rollback, KPIs with percentiles and CSV, feedback, devlogs, studio page, referral link, docs with a TSDoc-generated SDK reference); pre-QA bot (desktop + Pixel 7) and workflow; admin QA queue, review, Spark decisions, audit log; Edge Functions. E2E: studio signup to Spark to KPIs passes. The developer portal is English for now; its Hindi strings come in the Phase 5 Hindi pass.
+- **Phase 3 (2026-11-12):** done. Accounts (magic link, Google, Discord), birth-year age gate with conservative minor rule, parental consent by e-mailed link, guest merge (favourites, history, saves), public profiles with privacy, locker with 30 layered SVG cosmetics, Brain Quests (3 daily, 5 weekly), append-only Brain Points ledger, levels and streaks, friends with live presence and Join, party rooms with votes, host start and preset-phrase chat, global and per-game leaderboards with friends filter, cloud saves, school-safe mode with PIN, notifications. Profiles and party rooms are served by the client fallback page with a 200 (dynamic shells break the App Router after a rewrite). Fixed: the phone immersive frame collapsed to zero height (relative + fixed). E2E: 15 pass on desktop and Pixel 7.

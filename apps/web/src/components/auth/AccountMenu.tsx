@@ -43,6 +43,8 @@ export function LoginDialog() {
 /** Header account control: "Log in" for guests, an avatar menu for players. */
 export function AccountMenu() {
   const t = useTranslations('auth');
+  const tp = useTranslations('player');
+  const tparty = useTranslations('party');
   const { user, ready } = useSession();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -96,9 +98,20 @@ export function AccountMenu() {
           className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 animate-pop-in rounded-card border border-border bg-surface-3 p-1.5 shadow-card"
         >
           <p className="truncate px-3 py-2 text-xs text-fg-muted">{t('signedInAs', { name })}</p>
-          <Link role="menuitem" href="/dev" className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2" onClick={() => setOpen(false)}>
-            {t('devPortal')}
-          </Link>
+          {(
+            [
+              [`/u/${user.username}`, tp('profile'), true],
+              ['/locker', tp('locker'), false],
+              ['/friends', tp('friends'), false],
+              ['/party', tparty('title'), false],
+              ['/settings', tp('settings'), false],
+              ['/dev', t('devPortal'), false],
+            ] as const
+          ).map(([href, label, hard]) => (
+            <Link key={href} role="menuitem" href={href} hard={hard} className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2" onClick={() => setOpen(false)}>
+              {label}
+            </Link>
+          ))}
           {isStaff(user) ? (
             <Link role="menuitem" href="/admin" className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2" onClick={() => setOpen(false)} data-testid="admin-link">
               {t('adminConsole')}

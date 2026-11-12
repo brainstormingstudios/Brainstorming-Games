@@ -38,10 +38,13 @@ for (const prefix of ['', ...PREFIXED]) {
 
 // ---- 2. _redirects ------------------------------------------------------------------------------
 // Namespaces that are never pre-rendered get their shell with a 200 instead of the 404 fallback.
+// Profiles (/u/<name>) and party rooms (/party/<code>) are never pre-rendered: they are served by
+// the client fallback page with a 200. One path segment only, so /party/ keeps its own page.
 const redirects = [];
 for (const ns of ['u', 'party']) {
   for (const prefix of ['', ...PREFIXED.map((l) => `/${l}`)]) {
-    if (existsSync(join(OUT, prefix, ns, '_', 'index.html'))) redirects.push(`${prefix}/${ns}/* ${prefix}/${ns}/_/ 200`);
+    if (!existsSync(join(OUT, prefix, 'fallback', 'index.html'))) continue;
+    redirects.push(`${prefix}/${ns}/:id ${prefix}/fallback/ 200`, `${prefix}/${ns}/:id/ ${prefix}/fallback/ 200`);
   }
 }
 writeFileSync(join(OUT, '_redirects'), redirects.length ? `${redirects.join('\n')}\n` : '');

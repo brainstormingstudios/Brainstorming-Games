@@ -15,6 +15,12 @@ const StudioLive = dynamic(() => import('@/components/catalogue/StudioLive').the
 const ListingLive = dynamic(() => import('@/components/catalogue/ListingLive').then((m) => m.ListingLive), {
   loading: () => <PageSkeleton />,
 });
+const ProfilePage = dynamic(() => import('@/components/player/Account').then((m) => m.ProfilePage), {
+  loading: () => <PageSkeleton />,
+});
+const PartyRoom = dynamic(() => import('@/components/player/Social').then((m) => m.PartyRoom), {
+  loading: () => <PageSkeleton />,
+});
 
 export function PageSkeleton() {
   return (
@@ -31,6 +37,8 @@ type Resolved =
   | { kind: 'game'; slug: string }
   | { kind: 'studio'; slug: string }
   | { kind: 'tag'; tag: string }
+  | { kind: 'profile' }
+  | { kind: 'party' }
   | { kind: 'none' };
 
 /** Maps a pathname (without its locale prefix) onto a page that can render in the browser. */
@@ -38,6 +46,8 @@ export function resolvePath(pathname: string): Resolved {
   const { path } = splitLocale(pathname);
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
   const [a, b] = parts;
+  if (parts.length === 2 && a === 'u' && b && /^[a-z0-9_]{3,20}$/i.test(b)) return { kind: 'profile' };
+  if (parts.length === 2 && a === 'party' && b && /^[a-z0-9]{4,6}$/i.test(b)) return { kind: 'party' };
   if (parts.length === 2 && b && /^[a-z0-9][a-z0-9-]{0,63}$/.test(b)) {
     if (a === 'game') return { kind: 'game', slug: b };
     if (a === 'studio') return { kind: 'studio', slug: b };
@@ -62,6 +72,18 @@ export function ClientFallback() {
       return <StudioLive slug={route.slug} initial={null} initialGames={[]} />;
     case 'tag':
       return <ListingLive kind="tag" slug={route.tag} initial={[]} />;
+    case 'profile':
+      return (
+        <div className="page">
+          <ProfilePage />
+        </div>
+      );
+    case 'party':
+      return (
+        <div className="page">
+          <PartyRoom />
+        </div>
+      );
     default:
       return <NotFoundView />;
   }

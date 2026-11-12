@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { AccountMenu } from '@/components/auth/AccountMenu';
+import { HeaderChips } from '@/components/player/common';
 import { IS_MOCK } from '@/lib/config';
 import { Logo } from './Logo';
 import { SearchBox } from './SearchBox';
@@ -27,6 +28,7 @@ export function Header() {
         <LocaleSwitch />
         <ThemeToggle />
       </div>
+      <HeaderChips />
       <AccountMenu />
     </header>
   );

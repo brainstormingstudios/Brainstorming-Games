@@ -75,8 +75,13 @@ function parseHeaders() {
   return rules;
 }
 
-const matches = (pattern, path) =>
-  pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : pattern === path;
+/** Cloudflare Pages patterns: a trailing `*` splat or `:name` placeholders (one segment each). */
+const matches = (pattern, path) => {
+  if (pattern.endsWith('*')) return path.startsWith(pattern.slice(0, -1));
+  if (!pattern.includes(':')) return pattern === path;
+  const re = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/:[A-Za-z]\w*/g, '[^/]+')}$`);
+  return re.test(path);
+};
 
 const redirects = parseRedirects();
 const headerRules = parseHeaders();

@@ -219,7 +219,7 @@ export const supabaseScores: ScoresRepo = {
   },
 };
 
-export const supabaseQuests: QuestsRepo = {
+export const supabaseQuests: Pick<QuestsRepo, 'track'> = {
   async track(event, value) {
     const { error } = await getSupabase().rpc('track_quest_event', { p_event: event, p_value: value });
     if (error) throw toRepoError(error);

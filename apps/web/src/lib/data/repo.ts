@@ -186,8 +186,166 @@ export interface ScoresRepo {
   ): Promise<{ entries: LeaderboardRow[]; me: LeaderboardRow | null }>;
 }
 
+export interface QuestView {
+  code: string;
+  period: 'daily' | 'weekly';
+  title: string;
+  description: string;
+  target: number;
+  reward: number;
+  progress: number;
+  completed: boolean;
+  /** Games this quest counts (null when any game counts). */
+  category: string | null;
+}
+
+export interface ProgressSummary {
+  quests: QuestView[];
+  brainPoints: number;
+  level: number;
+  lifetimePoints: number;
+  streakDays: number;
+  playedToday: boolean;
+}
+
+export interface LedgerRow {
+  delta: number;
+  reason: string;
+  createdAt: string;
+}
+
 export interface QuestsRepo {
   track(event: string, value: number): Promise<void>;
+  /** The caller's quests with progress (guests get the quests with zero progress). */
+  mine(locale: string): Promise<ProgressSummary>;
+  ledger(): Promise<LedgerRow[]>;
+}
+
+export interface LockerItem {
+  id: string;
+  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+  code: string;
+  name: string;
+  cost: number;
+  minLevel: number;
+  owned: boolean;
+  equipped: boolean;
+}
+
+export interface LockerRepo {
+  items(locale: string): Promise<LockerItem[]>;
+  unlock(itemId: string): Promise<void>;
+  equip(cosmetics: AvatarCosmetics): Promise<void>;
+}
+
+export interface FriendRow {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: AvatarCosmetics;
+  level: number;
+  status: 'pending' | 'accepted';
+  direction: 'incoming' | 'outgoing';
+}
+
+export interface Activity {
+  gameId: string;
+  gameSlug: string;
+  gameTitle: string;
+  partyCode?: string | null;
+}
+
+export interface PresenceInfo {
+  online: boolean;
+  activity: Activity | null;
+}
+
+export interface SocialRepo {
+  friends(): Promise<FriendRow[]>;
+  request(username: string): Promise<'pending' | 'accepted'>;
+  respond(userId: string, accept: boolean): Promise<void>;
+  remove(userId: string): Promise<void>;
+  /** Live presence of everyone the caller can see (friends). */
+  watchPresence(cb: (presence: Record<string, PresenceInfo>) => void): () => void;
+  /** What the caller is doing now (shown to friends). Null clears it. */
+  setActivity(activity: Activity | null): void;
+}
+
+export interface PartyMember {
+  key: string;
+  name: string;
+  cosmetics: AvatarCosmetics;
+  canChat: boolean;
+}
+
+export interface PartyView {
+  code: string;
+  hostKey: string;
+  meKey: string;
+  members: PartyMember[];
+  votes: Record<string, string>;
+  chat: { key: string; name: string; phrase: string; at: string }[];
+  state: 'lobby' | 'playing';
+  currentGameId: string | null;
+  expiresAt: string;
+}
+
+export interface PartyRepo {
+  create(gameId?: string | null): Promise<PartyView>;
+  get(code: string): Promise<PartyView | null>;
+  join(code: string): Promise<PartyView>;
+  leave(code: string): Promise<void>;
+  act(code: string, action: 'vote' | 'chat' | 'set_game' | 'start' | 'lobby', options?: { gameId?: string; phrase?: string }): Promise<PartyView>;
+  watch(code: string, cb: () => void): () => void;
+}
+
+export interface NotificationRow {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsRepo {
+  list(): Promise<NotificationRow[]>;
+  markRead(id?: string): Promise<void>;
+}
+
+export interface PublicProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: AvatarCosmetics;
+  level: number;
+  brainPoints: number;
+  streakDays: number;
+  createdAt: string;
+  favourites: GameSummary[];
+  recent: GameSummary[];
+  stats: { gamesPlayed: number; minutesPlayed: number; questsCompleted: number };
+  badges: string[];
+}
+
+export interface ProfilesRepo {
+  get(username: string): Promise<PublicProfile | null>;
+}
+
+export interface PointsRow {
+  rank: number;
+  name: string;
+  points: number;
+  level: number;
+  isMe: boolean;
+  cosmetics: AvatarCosmetics;
+}
+
+export interface LeaderboardsRepo {
+  points(period: 'week' | 'all', friends: boolean): Promise<{ entries: PointsRow[]; me: PointsRow | null }>;
+  /** Board keys a game has used. */
+  boards(gameId: string): Promise<string[]>;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -253,6 +411,12 @@ export interface Repo {
   saves: SavesRepo;
   scores: ScoresRepo;
   quests: QuestsRepo;
+  locker: LockerRepo;
+  social: SocialRepo;
+  party: PartyRepo;
+  notifications: NotificationsRepo;
+  profiles: ProfilesRepo;
+  leaderboards: LeaderboardsRepo;
   dev: DevRepo;
   admin: AdminRepo;
 }
