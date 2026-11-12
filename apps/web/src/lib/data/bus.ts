@@ -22,7 +22,8 @@ export type Topic =
   | 'admin'
   | 'revenue'
   | 'jams'
-  | 'devlogs';
+  | 'devlogs'
+  | 'saves';
 
 type Listener = () => void;
 

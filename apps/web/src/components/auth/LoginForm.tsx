@@ -1,0 +1,239 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { Mail } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Button, Mascot, TextField } from '@brainstorming/ui';
+import { useLocale } from '@/i18n/navigation';
+import { AGE_GATE, IS_MOCK, MASCOT_NAME } from '@/lib/config';
+import { getRepo, RepoError } from '@/lib/data';
+import type { SessionUser } from '@/lib/data/repo';
+
+export interface LoginFormProps {
+  /** Called once the player is signed in with a complete profile. */
+  onDone: (user: SessionUser) => void;
+  /** Where the magic link returns to. */
+  next?: string;
+  /** The current session, when the form opens for a signed-in player with no profile yet. */
+  initialUser?: SessionUser | null;
+}
+
+type Step = 'start' | 'inbox' | 'profile' | 'consent';
+
+const errorText = (err: unknown, fallback: string) =>
+  err instanceof RepoError && err.message && err.message !== err.code ? err.message : fallback;
+
+/** E-mail magic link or Google / Discord, then username and birth year, then parental consent. */
+export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
+  const t = useTranslations('auth');
+  const tc = useTranslations('common');
+  const locale = useLocale();
+  const [step, setStep] = useState<Step>(initialUser && !initialUser.username ? 'profile' : 'start');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
+  const [user, setUser] = useState<SessionUser | null>(initialUser ?? null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [devLink, setDevLink] = useState<string | null>(null);
+  const [consentSent, setConsentSent] = useState(false);
+
+  const afterSignIn = async () => {
+    const repo = await getRepo();
+    const session = await repo.auth.session();
+    setUser(session);
+    if (session?.username) onDone(session);
+    else setStep('profile');
+  };
+
+  const submitEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t('invalidEmail'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const repo = await getRepo();
+      const result = await repo.auth.signInWithEmail(email.trim(), next);
+      if (result.status === 'email_sent') setStep('inbox');
+      else await afterSignIn();
+    } catch (err) {
+      setError(errorText(err, tc('errorBody')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const provider = async (p: 'google' | 'discord') => {
+    setBusy(true);
+    setError(null);
+    try {
+      const repo = await getRepo();
+      await repo.auth.signInWithProvider(p, next);
+      // Supabase redirects away; mock mode signs in straight away.
+      if (repo.mode === 'mock') await afterSignIn();
+    } catch (err) {
+      setError(errorText(err, tc('errorBody')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    const year = Number(birthYear);
+    const now = new Date().getUTCFullYear();
+    if (!Number.isInteger(year) || year < AGE_GATE.minBirthYear || year > now) {
+      setError(t('invalidYear'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const repo = await getRepo();
+      const created = await repo.auth.completeSignup(username, year, locale);
+      setUser(created);
+      if (created.isMinor && created.consent !== 'granted') setStep('consent');
+      else onDone(created);
+    } catch (err) {
+      setError(err instanceof RepoError && err.code === 'conflict' ? t('usernameTaken') : errorText(err, tc('errorBody')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitConsent = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const repo = await getRepo();
+      const result = await repo.auth.requestParentalConsent(parentEmail.trim());
+      setConsentSent(true);
+      setDevLink(result.devLink ?? null);
+    } catch (err) {
+      setError(errorText(err, t('invalidEmail')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4" data-testid="login-form">
+      {step === 'start' ? (
+        <>
+          <form onSubmit={submitEmail} className="flex flex-col gap-3" noValidate>
+            <TextField
+              label={t('emailLabel')}
+              type="email"
+              autoComplete="email"
+              placeholder={t('emailPlaceholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={error}
+              data-testid="login-email"
+              required
+            />
+            <Button type="submit" size="lg" loading={busy} icon={<Mail aria-hidden="true" className="size-5" />} data-testid="login-submit">
+              {t('continueEmail')}
+            </Button>
+          </form>
+          <p className="text-center text-sm text-fg-muted">{t('or')}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button variant="outline" onClick={() => void provider('google')} disabled={busy}>
+              {t('google')}
+            </Button>
+            <Button variant="outline" onClick={() => void provider('discord')} disabled={busy}>
+              {t('discord')}
+            </Button>
+          </div>
+          {IS_MOCK ? <p className="rounded-control bg-surface-3 px-3 py-2 text-xs text-fg-muted">{t('mockHint')}</p> : null}
+        </>
+      ) : null}
+
+      {step === 'inbox' ? (
+        <div className="flex flex-col items-center gap-3 py-4 text-center" role="status">
+          <Mascot size={96} />
+          <h3 className="text-lg font-semibold">{t('checkInbox')}</h3>
+          <p className="text-sm text-fg-muted">{t('checkInboxBody', { email })}</p>
+        </div>
+      ) : null}
+
+      {step === 'profile' ? (
+        <form onSubmit={submitProfile} className="flex flex-col gap-3" noValidate>
+          <div>
+            <h3 className="text-lg font-semibold">{t('signupTitle')}</h3>
+            <p className="text-sm text-fg-muted">{t('signupIntro')}</p>
+          </div>
+          <TextField
+            label={t('usernameLabel')}
+            hint={t('usernameHint')}
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            pattern="[a-z0-9_]{3,20}"
+            autoComplete="username"
+            maxLength={20}
+            data-testid="signup-username"
+            required
+          />
+          <TextField
+            label={t('birthYearLabel')}
+            hint={t('birthYearHint')}
+            inputMode="numeric"
+            value={birthYear}
+            onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            error={error}
+            data-testid="signup-birth-year"
+            required
+          />
+          <Button type="submit" size="lg" loading={busy} data-testid="signup-submit">
+            {t('create')}
+          </Button>
+        </form>
+      ) : null}
+
+      {step === 'consent' ? (
+        <form onSubmit={submitConsent} className="flex flex-col gap-3" noValidate data-testid="consent-step">
+          <div>
+            <h3 className="text-lg font-semibold">{t('minorTitle')}</h3>
+            <p className="text-sm text-fg-muted">{t('minorBody')}</p>
+          </div>
+          {consentSent ? (
+            <div role="status" className="rounded-control border border-border bg-surface-3 p-3 text-sm">
+              <p className="font-bold">{t('consentSent')}</p>
+              {devLink ? (
+                <p className="mt-1 text-fg-muted">
+                  {t('consentDevLink')}{' '}
+                  <a href={devLink} className="font-bold text-link underline" data-testid="consent-dev-link">
+                    {devLink}
+                  </a>
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <TextField
+                label={t('parentEmailLabel')}
+                type="email"
+                value={parentEmail}
+                onChange={(e) => setParentEmail(e.target.value)}
+                error={error}
+                data-testid="parent-email"
+              />
+              <Button type="submit" loading={busy} data-testid="consent-submit">
+                {t('sendConsent')}
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" onClick={() => user && onDone(user)} data-testid="consent-done">
+            {consentSent ? t('done') : t('later')}
+          </Button>
+        </form>
+      ) : null}
+      <p className="sr-only">{MASCOT_NAME}</p>
+    </div>
+  );
+}

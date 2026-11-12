@@ -4,6 +4,7 @@
  * straight away.
  */
 import { local, uuid } from '../local';
+import { RepoError, type RepoErrorCode } from '../repo';
 import {
   DEFAULT_SITE_CONFIG,
   type ControlRow,
@@ -67,6 +68,7 @@ export interface MockGame {
   exclusiveUntil: string | null;
   currentVersionId: string | null;
   maxScorePerSec: number | null;
+  wantsExclusive?: boolean;
   createdAt: string;
   releasedAt: string | null;
   updatedAt: string;
@@ -85,6 +87,7 @@ export interface MockVersion {
   qaStatus: string;
   qaNotes: string | null;
   previewToken: string;
+  minorUpdate?: boolean;
   createdAt: string;
 }
 
@@ -132,6 +135,92 @@ export interface MockFeedback extends FeedbackInput {
   createdAt: string;
 }
 
+export interface MockUser {
+  id: string;
+  email: string;
+  username: string | null;
+  displayName: string;
+  birthYear: number | null;
+  isMinor: boolean;
+  consent: 'not_required' | 'pending' | 'granted' | 'denied';
+  role: 'player' | 'moderator' | 'admin';
+  brainPoints: number;
+  level: number;
+  streakDays: number;
+  streakLastDay: string | null;
+  avatar: Record<string, string>;
+  profilePublic: boolean;
+  playtestOptIn: boolean;
+  schoolSafe: boolean;
+  lowData: boolean;
+  locale: string;
+  lastActive: string | null;
+  bannedAt: string | null;
+  createdAt: string;
+}
+
+export interface MockConsent {
+  token: string;
+  userId: string;
+  status: 'pending' | 'granted' | 'denied';
+  requestedAt: string;
+  expiresAt: string;
+}
+
+export interface MockReview {
+  id: string;
+  versionId: string;
+  gameId: string;
+  reviewerId: string;
+  action: 'approve' | 'changes' | 'reject';
+  checklist: Record<string, boolean>;
+  notes: string;
+  createdAt: string;
+}
+
+export interface MockLaunch {
+  id: string;
+  gameId: string;
+  tier: 'spark' | 'rise' | 'featured';
+  startedAt: string;
+  endedAt: string | null;
+  decision: 'promoted' | 'declined' | null;
+  reason: string | null;
+  kpiSnapshot: Record<string, unknown> | null;
+  decidedBy: string | null;
+}
+
+export interface MockAudit {
+  id: string;
+  actorId: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  detail: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface MockDevlog {
+  id: string;
+  studioId: string;
+  gameId: string | null;
+  title: string;
+  bodyMd: string;
+  publishedAt: string;
+  hiddenAt: string | null;
+}
+
+export interface MockNotification {
+  id: string;
+  userId: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
 export interface MockTables {
   studios: MockStudio[];
   games: MockGame[];
@@ -143,12 +232,52 @@ export interface MockTables {
   feedback: MockFeedback[];
   siteConfig: SiteConfig[];
   rateLimits: { key: string; tokens: number; updatedAt: number }[];
+  users: MockUser[];
+  consents: MockConsent[];
+  reviews: MockReview[];
+  launches: MockLaunch[];
+  audit: MockAudit[];
+  devlogs: MockDevlog[];
+  notifications: MockNotification[];
+  cloudSaves: { userId: string; gameId: string; key: string; value: unknown; updatedAt: string }[];
+  playSessions: { id: string; userId: string | null; gameId: string; startedAt: string }[];
+  leaderboards: { id: string; gameId: string; key: string; sortDesc: boolean; maxScorePerSec: number | null }[];
+  scores: { id: string; boardId: string; userId: string; score: number; flagged: boolean; createdAt: string }[];
+  questEvents: { userId: string; event: string; value: number; at: string }[];
+  friendships: { requester: string; addressee: string; status: 'pending' | 'accepted'; createdAt: string }[];
+  referralVisits: { studioSlug: string; anonId: string; at: string }[];
 }
 
 export type TableName = keyof MockTables;
 
 /** Caps so a long session never fills the 5 MB localStorage quota. */
-const CAPS: Partial<Record<TableName, number>> = { events: 4000, feedback: 500 };
+const CAPS: Partial<Record<TableName, number>> = {
+  events: 4000,
+  feedback: 500,
+  audit: 1000,
+  notifications: 500,
+  scores: 2000,
+  questEvents: 2000,
+  referralVisits: 2000,
+};
+
+/** Mock "server" errors carry the same codes as the Postgres functions. */
+export function fail(code: RepoErrorCode, message?: string): never {
+  throw new RepoError(code, message);
+}
+
+export function audit(actorId: string | null, action: string, targetType: string, targetId: string, detail: Record<string, unknown> = {}): void {
+  mutateTable('audit', (rows) => {
+    rows.push({ id: newId(), actorId, action, targetType, targetId, detail, createdAt: nowIso() });
+  });
+}
+
+export function notify(userId: string | null | undefined, kind: string, title: string, body = '', link: string | null = null): void {
+  if (!userId) return;
+  mutateTable('notifications', (rows) => {
+    rows.push({ id: newId(), userId, kind, title, body, link, readAt: null, createdAt: nowIso() });
+  });
+}
 
 export function readTable<K extends TableName>(name: K): MockTables[K] {
   const rows = local.get<MockTables[K] | null>(PREFIX + name, null);

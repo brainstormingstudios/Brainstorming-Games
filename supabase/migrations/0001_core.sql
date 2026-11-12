@@ -135,6 +135,12 @@ begin
   return true;
 end $$;
 
+/** take_token for Edge Functions (service role only; see 0009_grants.sql). */
+create or replace function public.take_token_public(p_key text, p_capacity double precision, p_window_seconds double precision)
+returns boolean language sql security definer set search_path = '' as $$
+  select app.take_token(p_key, p_capacity, p_window_seconds);
+$$;
+
 /** Rate-limit by caller and, when the request came through the API, by a hash of the IP too. */
 create or replace function app.guard(p_action text, p_caller text, p_capacity double precision, p_window_seconds double precision)
 returns void language plpgsql security definer set search_path = '' as $$

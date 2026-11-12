@@ -1,6 +1,6 @@
 # Brainstorming Games: build plan
 
-Status legend: `[ ]` not started Â· `[~]` in progress Â· `[x]` done and verified.
+Status legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified.
 
 This file is the single source of truth for scope and progress. Each phase is ticked only after
 `npm run build`, `npm run lint`, `npm run typecheck` and the tests pass.
@@ -42,75 +42,75 @@ These are the places where the brief leaves a choice or where two requirements p
 
 ```
 brainstorming-games/
-â”œâ”€ package.json                 npm workspaces + root scripts
-â”œâ”€ tsconfig.base.json  eslint.config.mjs  .prettierrc.json  vitest.config.ts  playwright.config.ts
-â”œâ”€ .env.example                 every variable, one line each on how to get it
-â”œâ”€ brand/                       logo-full.png, mascot.png (sources)
-â”œâ”€ apps/web/
-â”‚  â”œâ”€ next.config.ts  postcss.config.mjs  tsconfig.json
-â”‚  â”œâ”€ messages/                 en.json, hi.json
-â”‚  â”œâ”€ public/                   generated brand assets, sdk/v1/, sw.js
-â”‚  â””â”€ src/
-â”‚     â”œâ”€ app/
-â”‚     â”‚  â”œâ”€ layout.tsx  not-found.tsx  manifest.ts  robots.ts
-â”‚     â”‚  â”œâ”€ (en)/               canonical routes (see below)
-â”‚     â”‚  â””â”€ [locale]/           generated wrappers for hi (and future locales)
-â”‚     â”œâ”€ routes/                page implementations shared by both trees
-â”‚     â”œâ”€ components/
-â”‚     â”‚  â”œâ”€ shell/              Header, Sidebar, BottomTabs, Footer, SearchBox, ThemeToggle, LocaleSwitch
-â”‚     â”‚  â”œâ”€ catalogue/          GameTile, Rail, GameGrid, HeroCarousel, CategoryGrid, FilterBar, EmptyState
-â”‚     â”‚  â”œâ”€ game/               GameFrame, Toolbar, InfoStrip, SeoContent, RightRail, GameLeaderboard, SdkHost
-â”‚     â”‚  â”œâ”€ player/             Quests, Locker, Profile, Friends, Party, Leaderboards, Notifications
-â”‚     â”‚  â”œâ”€ dev/                wizard steps, KPI charts, pre-QA report, docs
-â”‚     â”‚  â”œâ”€ admin/              QA queue, Spark decisions, featured editor, revenue, moderation
-â”‚     â”‚  â”œâ”€ ads/                AdSlot, ConsentBanner, InGameAdOverlay
-â”‚     â”‚  â””â”€ seo/                JsonLd
-â”‚     â”œâ”€ i18n/                  config.ts, request.ts, navigation.tsx
-â”‚     â”œâ”€ lib/
-â”‚     â”‚  â”œâ”€ config.ts           MASCOT_NAME, site URL, play origin, flags, AGE_GATE
-â”‚     â”‚  â”œâ”€ catalogue/          categories.ts, snapshot.ts, listings.ts, search.ts
-â”‚     â”‚  â”œâ”€ data/               types.ts, repo.ts (the one interface), index.ts (picks the implementation)
-â”‚     â”‚  â”‚  â”œâ”€ mock/            localStorage tables, seeds, "server" logic, realtime
-â”‚     â”‚  â”‚  â””â”€ supabase/        supabase-js implementation, generated database.types.ts
-â”‚     â”‚  â”œâ”€ domain/             rating, kpis, quests, revenue, spark, ageGate, markdown, zipValidation, preqa
-â”‚     â”‚  â”œâ”€ sdk-host/           postMessage bridge (zod schemas), ad manager, session tracker
-â”‚     â”‚  â”œâ”€ events/             client queue and transports
-â”‚     â”‚  â””â”€ hooks/              useRepoQuery, useSession, usePrefs, useToast
-â”‚     â””â”€ generated/             catalogue snapshot, SDK reference JSON (git-ignored)
-â”œâ”€ packages/
-â”‚  â”œâ”€ sdk/                      @brainstorming/sdk
-â”‚  â”‚  â””â”€ src/                   index.ts, env.ts, transport.ts, protocol.ts, game.ts, ad.ts, ads/*, user.ts,
-â”‚  â”‚                            data.ts, leaderboard.ts, quests.ts, debugOverlay.ts, host.ts (zod, host only),
-â”‚  â”‚                            crazygames-shim.ts
-â”‚  â””â”€ ui/                       @brainstorming/ui: tokens.css, Button, Card, Chip, Dialog, Tabs, Toast, Field,
-â”‚                               Mascot, MascotAvatar (layered SVG cosmetics), Skeleton, ProgressBar, EmptyState
-â”œâ”€ supabase/
-â”‚  â”œâ”€ config.toml  seed.sql
-â”‚  â”œâ”€ migrations/               0001_core â€¦ 0010_growth (one per area, see section 3)
-â”‚  â””â”€ functions/                events, presign-upload, game-token, pre-qa-dispatch, pre-qa-report,
-â”‚                               deploy-hook, parental-consent, payout-profile, health, _shared/
-â”œâ”€ tests/
-â”‚  â”œâ”€ fixtures/sdk-probe/       the only "game": a bare page that calls every SDK method (tests only)
-â”‚  â”œâ”€ e2e/                      Playwright specs
-â”‚  â””â”€ db/                       PGlite tests: migrations apply, RLS on every table, RPC behaviour
-â”œâ”€ scripts/                     prepare-brand.ts, build-catalogue.ts, pre-qa.ts, gen-locale-routes.mjs,
-â”‚                               gen-db-types.ts, gen-sdk-docs.ts, dev.mjs, dev-services.mjs, serve-static.mjs,
-â”‚                               postbuild.mjs, check-budgets.mjs, lighthouse.mjs
-â”œâ”€ .github/workflows/           ci.yml, pre-qa.yml, keepalive.yml, deploy.yml
-â””â”€ docs/                        PLAN.md, SDK.md, DEPLOY.md, DEVELOPER_TERMS.md, PRIVACY.md, PLAYER_TERMS.md
+├─ package.json                 npm workspaces + root scripts
+├─ tsconfig.base.json  eslint.config.mjs  .prettierrc.json  vitest.config.ts  playwright.config.ts
+├─ .env.example                 every variable, one line each on how to get it
+├─ brand/                       logo-full.png, mascot.png (sources)
+├─ apps/web/
+│  ├─ next.config.ts  postcss.config.mjs  tsconfig.json
+│  ├─ messages/                 en.json, hi.json
+│  ├─ public/                   generated brand assets, sdk/v1/, sw.js
+│  └─ src/
+│     ├─ app/
+│     │  ├─ layout.tsx  not-found.tsx  manifest.ts  robots.ts
+│     │  ├─ (en)/               canonical routes (see below)
+│     │  └─ [locale]/           generated wrappers for hi (and future locales)
+│     ├─ routes/                page implementations shared by both trees
+│     ├─ components/
+│     │  ├─ shell/              Header, Sidebar, BottomTabs, Footer, SearchBox, ThemeToggle, LocaleSwitch
+│     │  ├─ catalogue/          GameTile, Rail, GameGrid, HeroCarousel, CategoryGrid, FilterBar, EmptyState
+│     │  ├─ game/               GameFrame, Toolbar, InfoStrip, SeoContent, RightRail, GameLeaderboard, SdkHost
+│     │  ├─ player/             Quests, Locker, Profile, Friends, Party, Leaderboards, Notifications
+│     │  ├─ dev/                wizard steps, KPI charts, pre-QA report, docs
+│     │  ├─ admin/              QA queue, Spark decisions, featured editor, revenue, moderation
+│     │  ├─ ads/                AdSlot, ConsentBanner, InGameAdOverlay
+│     │  └─ seo/                JsonLd
+│     ├─ i18n/                  config.ts, request.ts, navigation.tsx
+│     ├─ lib/
+│     │  ├─ config.ts           MASCOT_NAME, site URL, play origin, flags, AGE_GATE
+│     │  ├─ catalogue/          categories.ts, snapshot.ts, listings.ts, search.ts
+│     │  ├─ data/               types.ts, repo.ts (the one interface), index.ts (picks the implementation)
+│     │  │  ├─ mock/            localStorage tables, seeds, "server" logic, realtime
+│     │  │  └─ supabase/        supabase-js implementation, generated database.types.ts
+│     │  ├─ domain/             rating, kpis, quests, revenue, spark, ageGate, markdown, zipValidation, preqa
+│     │  ├─ sdk-host/           postMessage bridge (zod schemas), ad manager, session tracker
+│     │  ├─ events/             client queue and transports
+│     │  └─ hooks/              useRepoQuery, useSession, usePrefs, useToast
+│     └─ generated/             catalogue snapshot, SDK reference JSON (git-ignored)
+├─ packages/
+│  ├─ sdk/                      @brainstorming/sdk
+│  │  └─ src/                   index.ts, env.ts, transport.ts, protocol.ts, game.ts, ad.ts, ads/*, user.ts,
+│  │                            data.ts, leaderboard.ts, quests.ts, debugOverlay.ts, host.ts (zod, host only),
+│  │                            crazygames-shim.ts
+│  └─ ui/                       @brainstorming/ui: tokens.css, Button, Card, Chip, Dialog, Tabs, Toast, Field,
+│                               Mascot, MascotAvatar (layered SVG cosmetics), Skeleton, ProgressBar, EmptyState
+├─ supabase/
+│  ├─ config.toml  seed.sql
+│  ├─ migrations/               0001_core … 0010_growth (one per area, see section 3)
+│  └─ functions/                events, presign-upload, game-token, pre-qa-dispatch, pre-qa-report,
+│                               deploy-hook, parental-consent, payout-profile, health, _shared/
+├─ tests/
+│  ├─ fixtures/sdk-probe/       the only "game": a bare page that calls every SDK method (tests only)
+│  ├─ e2e/                      Playwright specs
+│  └─ db/                       PGlite tests: migrations apply, RLS on every table, RPC behaviour
+├─ scripts/                     prepare-brand.ts, build-catalogue.ts, pre-qa.ts, gen-locale-routes.mjs,
+│                               gen-db-types.ts, gen-sdk-docs.ts, dev.mjs, dev-services.mjs, serve-static.mjs,
+│                               postbuild.mjs, check-budgets.mjs, lighthouse.mjs
+├─ .github/workflows/           ci.yml, pre-qa.yml, keepalive.yml, deploy.yml
+└─ docs/                        PLAN.md, SDK.md, DEPLOY.md, DEVELOPER_TERMS.md, PRIVACY.md, PLAYER_TERMS.md
 ```
 
 ### Routes
 
 | Area | Routes |
 |---|---|
-| Catalogue | `/` Â· `/game/[slug]` Â· `/c/[category]` Â· `/t/[tag]` Â· `/tags` Â· `/new` Â· `/trending` Â· `/updated` Â· `/originals` Â· `/multiplayer` Â· `/recent` Â· `/favourites` Â· `/search` |
-| Player | `/quests` Â· `/leaderboards` Â· `/u/[username]` Â· `/locker` Â· `/friends` Â· `/party` Â· `/party/[code]` Â· `/notifications` Â· `/settings` Â· `/login` Â· `/signup` Â· `/parents/consent` |
-| Studios | `/studio/[slug]` Â· `/developers` Â· `/jams` Â· `/jams/[slug]` Â· `/blog` |
-| Developer portal | `/dev` Â· `/dev/signup` Â· `/dev/games/new` Â· `/dev/games/edit` Â· `/dev/games/view` Â· `/dev/games/kpi` Â· `/dev/games/versions` Â· `/dev/preview` Â· `/dev/feedback` Â· `/dev/devlogs` Â· `/dev/studio` Â· `/dev/referrals` Â· `/dev/payouts` Â· `/dev/docs/[page]` |
-| Admin | `/admin` Â· `/admin/qa` Â· `/admin/qa/review` Â· `/admin/spark` Â· `/admin/featured` Â· `/admin/quests` Â· `/admin/cosmetics` Â· `/admin/jams` Â· `/admin/reports` Â· `/admin/users` Â· `/admin/studios` Â· `/admin/revenue` Â· `/admin/audit` |
-| Policies | `/about` Â· `/contact` Â· `/parents` Â· `/school-safe` Â· `/terms` Â· `/privacy` Â· `/developer-terms` Â· `/cookies` |
-| System | `/offline` Â· `/fallback` (becomes `404.html`) Â· `/og/game/[slug]/image.png` |
+| Catalogue | `/` · `/game/[slug]` · `/c/[category]` · `/t/[tag]` · `/tags` · `/new` · `/trending` · `/updated` · `/originals` · `/multiplayer` · `/recent` · `/favourites` · `/search` |
+| Player | `/quests` · `/leaderboards` · `/u/[username]` · `/locker` · `/friends` · `/party` · `/party/[code]` · `/notifications` · `/settings` · `/login` · `/signup` · `/parents/consent` |
+| Studios | `/studio/[slug]` · `/developers` · `/jams` · `/jams/[slug]` · `/blog` |
+| Developer portal | `/dev` · `/dev/signup` · `/dev/games/new` · `/dev/games/edit` · `/dev/games/view` · `/dev/games/kpi` · `/dev/games/versions` · `/dev/preview` · `/dev/feedback` · `/dev/devlogs` · `/dev/studio` · `/dev/referrals` · `/dev/payouts` · `/dev/docs/[page]` |
+| Admin | `/admin` · `/admin/qa` · `/admin/qa/review` · `/admin/spark` · `/admin/featured` · `/admin/quests` · `/admin/cosmetics` · `/admin/jams` · `/admin/reports` · `/admin/users` · `/admin/studios` · `/admin/revenue` · `/admin/audit` |
+| Policies | `/about` · `/contact` · `/parents` · `/school-safe` · `/terms` · `/privacy` · `/developer-terms` · `/cookies` |
+| System | `/offline` · `/fallback` (becomes `404.html`) · `/og/game/[slug]/image.png` |
 
 Private pages (`/dev`, `/admin`) take ids in the query string, so each is one static file.
 
@@ -123,16 +123,16 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 ### 0001_core: enums and catalogue
 
-- Enums: `game_status` (draft, in_review, changes_requested, spark, rise, featured, paused, removed) Â· `game_orientation` (landscape, portrait, any) Â· `game_platform` (desktop, mobile, tablet) Â· `media_kind` (cover_landscape, cover_portrait, cover_square, preview_landscape, preview_portrait) Â· `qa_status` (uploaded, pre_qa_running, pre_qa_passed, pre_qa_warn, pre_qa_failed, in_review, approved, changes_requested, rejected) Â· `studio_level` (rookie, pro, partner) Â· `user_role` (player, moderator, admin) Â· `consent_status` (not_required, pending, granted, denied) Â· `event_type` (the 12 briefed types).
-- `profiles` (id â†’ auth.users, username unique, display_name, avatar_cosmetics jsonb, birth_year, is_minor, parental_consent_status, locale, low_data, school_safe, school_safe_pin_hash, brain_points, level, streak_days, streak_last_day, last_active, role, banned_at, profile_public, playtest_opt_in, created_at). Users can read public columns through the `public_profiles` view and update only their own safe columns (column grants); `role`, `brain_points`, `level`, `is_minor`, `parental_consent_status` change only through functions.
+- Enums: `game_status` (draft, in_review, changes_requested, spark, rise, featured, paused, removed) · `game_orientation` (landscape, portrait, any) · `game_platform` (desktop, mobile, tablet) · `media_kind` (cover_landscape, cover_portrait, cover_square, preview_landscape, preview_portrait) · `qa_status` (uploaded, pre_qa_running, pre_qa_passed, pre_qa_warn, pre_qa_failed, in_review, approved, changes_requested, rejected) · `studio_level` (rookie, pro, partner) · `user_role` (player, moderator, admin) · `consent_status` (not_required, pending, granted, denied) · `event_type` (the 12 briefed types).
+- `profiles` (id → auth.users, username unique, display_name, avatar_cosmetics jsonb, birth_year, is_minor, parental_consent_status, locale, low_data, school_safe, school_safe_pin_hash, brain_points, level, streak_days, streak_last_day, last_active, role, banned_at, profile_public, playtest_opt_in, created_at). Users can read public columns through the `public_profiles` view and update only their own safe columns (column grants); `role`, `brain_points`, `level`, `is_minor`, `parental_consent_status` change only through functions.
 - `studios` (id, owner_id, name, slug unique, bio, avatar_url, country, contact_email, links jsonb, verified, is_first_party, level, suspended_at, terms_version, terms_accepted_at, guardian_name, created_at)
 - `studio_payout_profiles` (studio_id pk, ciphertext, iv, key_version, method, currency, updated_at): AES-GCM encrypted by the `payout-profile` Edge Function; no client policy at all.
 - `studio_followers` (studio_id, user_id, created_at)
 - `games` (id, studio_id, slug unique, title, short_description, description_md, how_to_play_md, controls jsonb, faq jsonb, features_md, tips_md, category, tags text[], orientation, platforms game_platform[], engine, is_multiplayer, has_progress, school_safe, size_bytes, initial_load_bytes, status, spark_started_at, rise_started_at, exclusive_until, current_version_id, max_score_per_sec, created_at, released_at, updated_at, search tsvector generated). `status` and launch columns are not client-writable.
 - `game_versions` (id, game_id, version, storage_prefix, file_count, total_bytes, entry_file, uses_sdk, pre_qa_report jsonb, qa_status, qa_notes, preview_token_hash, created_by, created_at)
 - `game_media` (id, game_id, kind, url, widths int[], width, height, placeholder, variant_label, is_active, created_at)
-- `ratings` (voter_key, game_id, user_id null, value Â±1, reason, created_at; pk voter_key + game_id). `voter_key` is the user id or `anon:<id>`.
-- `favorites` (user_id, game_id, created_at) Â· `play_history` (user_id, game_id, last_played_at, play_count, seconds_played)
+- `ratings` (voter_key, game_id, user_id null, value ±1, reason, created_at; pk voter_key + game_id). `voter_key` is the user id or `anon:<id>`.
+- `favorites` (user_id, game_id, created_at) · `play_history` (user_id, game_id, last_played_at, play_count, seconds_played)
 - `site_config` (key, value jsonb, updated_by, updated_at): hero, rails order, featured ids, ad weights, deploy debounce.
 - `rate_limits` (bucket_key pk, tokens, updated_at): the Postgres token bucket.
 
@@ -155,7 +155,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 - `quests` (id, period, code, title jsonb, description jsonb, rule jsonb, target, reward_points, active, sort)
 - `quest_progress` (user_key, quest_id, period_start, progress, completed_at, claimed_at)
-- `cosmetics` (id, slot, code, name jsonb, cost_points, min_level, spec jsonb, active, sort) Â· `user_cosmetics` (user_id, cosmetic_id, unlocked_at)
+- `cosmetics` (id, slot, code, name jsonb, cost_points, min_level, spec jsonb, active, sort) · `user_cosmetics` (user_id, cosmetic_id, unlocked_at)
 - `brain_point_ledger` (id, user_id, delta, reason, ref_type, ref_id, created_at): append-only; `profiles.brain_points` is its running sum.
 
 ### 0005_social
@@ -170,7 +170,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 - `play_sessions` (id, user_id, anon_id, game_id, version_id, started_at, last_seen_at)
 - `leaderboards` (id, game_id, key, title, sort_desc, max_score, max_score_per_sec, created_at)
 - `scores` (id, leaderboard_id, user_id, score, session_id, flagged, created_at)
-- `cloud_saves` (user_id, game_id, key, value jsonb â‰¤ 1 MB, updated_at)
+- `cloud_saves` (user_id, game_id, key, value jsonb ≤ 1 MB, updated_at)
 
 ### 0007_revenue
 
@@ -182,7 +182,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 ### 0008_growth
 
 - `devlogs` (id, studio_id, game_id null, title, body_md, published_at, hidden_at)
-- `jams` (id, slug, title, theme, description_md, starts_at, ends_at, status) Â· `jam_entries` (jam_id, game_id, studio_id, submitted_at, rank)
+- `jams` (id, slug, title, theme, description_md, starts_at, ends_at, status) · `jam_entries` (jam_id, game_id, studio_id, submitted_at, rank)
 - `media_variant_stats` (game_id, variant_label, impressions, clicks, decided_at, winner)
 - `playtest_responses` (id, game_id, user_id, fun, clarity, play_again, created_at)
 
@@ -194,10 +194,10 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 - **Playtime** = cumulative seconds between `gameplay_start` and `gameplay_stop`. Games without the SDK get synthetic start and stop events from the host while the frame is visible.
 - **Conversion** = share of plays with at least 60 s of playtime. **Average session** = mean playtime per play.
 - **D1 / D7 retention** = share of a day's new players (by anon id) who play the same game again 1 / 7 days later.
-- **Rating out of 10** = `10 Ã— (20 Ã— 0.7 + likes) / (20 + votes)`, votes from the last 180 days only.
+- **Rating out of 10** = `10 × (20 × 0.7 + likes) / (20 + votes)`, votes from the last 180 days only.
 - **Spark window** ends at (7 days and 1,000 plays) or 14 days, whichever comes first. Spark games fill the "Fresh games" rail and 1 in 10 slots of the other homepage rails, least-exposed first.
 - **Ad rules**: midgame at most once every 3 minutes per player and never in the first 60 s of gameplay; rewarded pays only on finish and never twice in a row; at most 2 banners and only while gameplay is stopped; every ad call during Spark resolves `{ shown: false, reason: 'spark' }`.
-- **Revenue split**: net = gross âˆ’ refunds âˆ’ invalid traffic. Each country's net is shared across games by attributed ad impressions; a global row uses impressions Ã— country weight. Share: 85 % referral traffic, 80 % inside the 60-day web-exclusive window, 70 % otherwise. Payout threshold â‚¹2,000 / $25, smaller amounts roll over.
+- **Revenue split**: net = gross − refunds − invalid traffic. Each country's net is shared across games by attributed ad impressions; a global row uses impressions × country weight. Share: 85 % referral traffic, 80 % inside the 60-day web-exclusive window, 70 % otherwise. Payout threshold ₹2,000 / $25, smaller amounts roll over.
 
 ---
 
@@ -212,7 +212,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 - [x] i18n scaffolding (en + hi), locale wrapper generator, hreflang
 - [x] Site shell: header, instant search, sidebar, bottom tabs, footer
 - [x] Data layer: repository interface, mock implementation, Supabase implementation, catalogue snapshot
-- [x] Migrations 0001â€“0002 with RLS, seed, PGlite tests, generated database types
+- [x] Migrations 0001–0002 with RLS, seed, PGlite tests, generated database types
 - [x] Home, category, tag, tags, listing pages, search, recent, favourites
 - [x] Game page: frame, toolbar (ratings, favourites, share, fullscreen, theatre, report), info strip, SEO content, right rail
 - [x] AdSlot placeholders with reserved space
@@ -224,16 +224,16 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 ### Phase 2: SDK + developer portal + pre-QA + admin QA
 
-- [ ] `@brainstorming/sdk`: all modules, three environments, mock ad provider, debug overlay, size under 15 KB gzipped
-- [ ] Host bridge with zod schemas and strict origin checks; in-game ad overlay
-- [ ] CrazyGames shim and `docs/SDK.md`; SDK reference generated from TSDoc
-- [ ] `sdk-probe` fixture
-- [ ] Developer portal: signup and terms, dashboard, new-game wizard with autosave, media validation and crop, zip validation and upload, private preview with the debug overlay, versions and rollback, feedback inbox, devlogs editor, studio page editor, referral link, docs
-- [ ] Pre-QA bot (Playwright, desktop + Pixel 7) and its workflow; report UI
-- [ ] Admin: QA queue, review screen, checklist, approve / request changes / reject, school-safe flag, audit log
-- [ ] Spark Launch exposure logic, events pipeline, KPI aggregation job, KPI page
-- [ ] Migration 0003, Edge Functions (events, presign-upload, pre-qa-dispatch, pre-qa-report, deploy-hook, health)
-- [ ] Check: studio signs up â†’ uploads the probe zip â†’ sees the pre-QA report â†’ submits â†’ admin approves to Spark â†’ played from "Fresh games" â†’ KPIs update
+- [x] `@brainstorming/sdk`: all modules, three environments, mock ad provider, debug overlay, size under 15 KB gzipped
+- [x] Host bridge with zod schemas and strict origin checks; in-game ad overlay
+- [x] CrazyGames shim and `docs/SDK.md`; SDK reference generated from TSDoc
+- [x] `sdk-probe` fixture
+- [x] Developer portal: signup and terms, dashboard, new-game wizard with autosave, media validation and crop, zip validation and upload, private preview with the debug overlay, versions and rollback, feedback inbox, devlogs editor, studio page editor, referral link, docs
+- [x] Pre-QA bot (Playwright, desktop + Pixel 7) and its workflow; report UI
+- [x] Admin: QA queue, review screen, checklist, approve / request changes / reject, school-safe flag, audit log
+- [x] Spark Launch exposure logic, events pipeline, KPI aggregation job, KPI page
+- [x] Migration 0003, Edge Functions (events, presign-upload, pre-qa-dispatch, pre-qa-report, deploy-hook, health)
+- [x] Check: studio signs up → uploads the probe zip → sees the pre-QA report → submits → admin approves to Spark → played from "Fresh games" → KPIs update
 
 ### Phase 3: Accounts + social + progression
 
@@ -243,14 +243,14 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 - [ ] Friends, presence, join; party rooms with preset chat; notifications
 - [ ] Leaderboards with server-side validation; cloud saves with guest merge
 - [ ] School-safe mode with PIN; low-data mode
-- [ ] Migrations 0004â€“0006, Edge Functions (game-token, parental-consent)
+- [ ] Migrations 0004–0006, Edge Functions (game-token, parental-consent)
 - [ ] Check: two sessions befriend, see each other online, start a party, move to a game together, both earn quest progress; a minor is restricted until consent
 
 ### Phase 4: Monetisation + revenue + payouts
 
 - [ ] AdSense display adapter behind flags; non-personalised logic; consent banner
 - [ ] `adsense-h5` in-game provider behind a flag
-- [ ] Spark â†’ Rise decision flow with written reasons; exclusivity flag
+- [ ] Spark → Rise decision flow with written reasons; exclusivity flag
 - [ ] Revenue engine, statements (PDF), payout tracking, referral attribution
 - [ ] `/developers` with the published share table
 - [ ] Migration 0007, Edge Function (payout-profile)
@@ -270,7 +270,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 ### Final deliverables
 
 - [ ] `npm run build && npm run lint && npm run typecheck && npm test && npm run e2e` all pass
-- [ ] E2E covers: play, rate, favourite, search, upload â†’ pre-QA â†’ submit â†’ approve â†’ Spark, friend + party, minor consent gate
+- [ ] E2E covers: play, rate, favourite, search, upload → pre-QA → submit → approve → Spark, friend + party, minor consent gate
 - [ ] README with screenshots, architecture, free-tier limits and upgrade triggers
 - [ ] `docs/DEPLOY.md`
 - [ ] No paid service; every external service behind an env flag with a mock fallback
@@ -291,3 +291,4 @@ written, type-checked and unit-tested here but not exercised against the live se
 ## 7. Progress notes
 
 - **Phase 1 (2026-11-12):** done. 6 e2e, 22 unit and 12 database tests pass; lint and typecheck clean; home first-load JS 143 KB gzipped. Lighthouse mobile: accessibility 100, best practices 100, SEO 100; performance 80s locally on simulated slow 4G, tuned again in the Phase 5 performance re-audit.
+- **Phase 2 (2026-11-12):** done. SDK 5.4 KB gzipped (local, brainstorming and disabled environments, mock ads, debug overlay, CrazyGames shim); host bridge with zod validation; developer portal (studio signup, wizard with autosave, browser-side cover crop and WebP variants, zip validation and upload, private preview with live SDK log, versions and rollback, KPIs with percentiles and CSV, feedback, devlogs, studio page, referral link, docs with a TSDoc-generated SDK reference); pre-QA bot (desktop + Pixel 7) and workflow; admin QA queue, review, Spark decisions, audit log; Edge Functions. E2E: studio signup to Spark to KPIs passes. The developer portal is English for now; its Hindi strings come in the Phase 5 Hindi pass.

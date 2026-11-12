@@ -1,4 +1,3 @@
-import type { PostgrestError } from '@supabase/supabase-js';
 import { EVENTS_TRANSPORT, SUPABASE_ANON_KEY } from '@/lib/config';
 import { emitTopic } from '../bus';
 import { getAnonId, guestFavourites, guestHistory, guestRatings } from '../local';
@@ -24,6 +23,9 @@ import {
   type StudioDetail,
 } from '../types';
 import { functionsUrl, getSupabase } from './client';
+import { toRepoError } from './errors';
+import { supabaseAuth, supabaseQuests, supabaseSaves, supabaseScores } from './account';
+import { supabaseAdmin, supabaseDev } from './dev';
 
 /** Row of the `game_cards` view (see supabase/migrations/0001_core.sql). */
 export interface GameCardRow {
@@ -151,19 +153,7 @@ export function pageToDetail(row: GamePageRow): GameDetail {
   };
 }
 
-/** Maps a PostgREST error onto the UI's error codes. */
-export function toRepoError(error: PostgrestError | { message: string; code?: string }): RepoError {
-  const text = `${error.code ?? ''} ${error.message}`.toLowerCase();
-  if (text.includes('rate_limited')) return new RepoError('rate_limited');
-  if (text.includes('login_required') || error.code === 'PGRST301') return new RepoError('login_required');
-  if (text.includes('not_allowed') || error.code === '42501') return new RepoError('not_allowed');
-  if (text.includes('not_found')) return new RepoError('not_found');
-  if (text.includes('conflict') || error.code === '23505') return new RepoError('conflict');
-  if (text.includes('invalid') || error.code === '23514' || error.code === '22023') {
-    return new RepoError('invalid', error.message);
-  }
-  return new RepoError('unavailable', error.message);
-}
+export { toRepoError } from './errors';
 
 const SORT_COLUMN = {
   popular: 'popular_score',
@@ -380,5 +370,18 @@ const events: EventsRepo = {
 };
 
 export function createSupabaseRepo(): Repo {
-  return { mode: 'supabase', catalogue, player, events };
+  // Session changes (login in another tab, token refresh, sign-out) refresh open screens.
+  getSupabase().auth.onAuthStateChange(() => emitTopic('session', { local: true }));
+  return {
+    mode: 'supabase',
+    catalogue,
+    player,
+    events,
+    auth: supabaseAuth,
+    saves: supabaseSaves,
+    scores: supabaseScores,
+    quests: supabaseQuests,
+    dev: supabaseDev,
+    admin: supabaseAdmin,
+  };
 }

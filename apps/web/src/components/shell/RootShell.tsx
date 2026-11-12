@@ -26,6 +26,7 @@ const CLIENT_NAMESPACES = [
   'studio',
   'notFound',
   'ads',
+  'auth',
 ] as const;
 
 function pick(messages: Record<string, unknown>, keys: readonly string[]) {

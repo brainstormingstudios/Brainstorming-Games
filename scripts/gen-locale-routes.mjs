@@ -23,10 +23,16 @@ function walk(dir, found = []) {
     if (statSync(full).isDirectory()) {
       if (dir === SRC && SKIP.has(name)) continue;
       walk(full, found);
-    } else if (name === 'page.tsx') found.push(full);
+    } else if (name === 'page.tsx' || (name === 'layout.tsx' && dir !== SRC)) {
+      // Nested layouts are copied too; the root (en)/layout.tsx has its own [locale] twin.
+      found.push(full);
+    }
   }
   return found;
 }
+
+const exportsName = (source, name) =>
+  new RegExp(`export\\s+(async\\s+)?function\\s+${name}\\b|export\\s+const\\s+${name}\\b|export\\s*\\{[^}]*\\b${name}\\b[^}]*\\}`).test(source);
 
 const wanted = new Set();
 let written = 0;
@@ -36,11 +42,8 @@ for (const page of walk(SRC)) {
   wanted.add(target);
   const source = readFileSync(page, 'utf8');
   const names = ['default'];
-  if (/export\s+(async\s+)?function\s+generateMetadata\b|export\s+const\s+generateMetadata\b/.test(source)) {
-    names.push('generateMetadata');
-  }
-  if (/export\s+(async\s+)?function\s+generateStaticParams\b|export\s+const\s+generateStaticParams\b/.test(source)) {
-    names.push('generateStaticParams');
+  for (const name of ['generateMetadata', 'generateStaticParams', 'metadata', 'dynamic']) {
+    if (exportsName(source, name)) names.push(name);
   }
   const spec = `@/app/(en)/${rel.split(sep).join('/').replace(/\.tsx$/, '')}`;
   const content = `${HEADER}export { ${names.join(', ')} } from '${spec}';\n`;
@@ -59,7 +62,7 @@ function prune(dir) {
     if (statSync(full).isDirectory()) {
       prune(full);
       if (readdirSync(full).length === 0) rmSync(full, { recursive: true });
-    } else if (name === 'page.tsx' && !wanted.has(full) && readFileSync(full, 'utf8').startsWith(HEADER)) {
+    } else if ((name === 'page.tsx' || name === 'layout.tsx') && !wanted.has(full) && readFileSync(full, 'utf8').startsWith(HEADER)) {
       rmSync(full);
       removed++;
     }

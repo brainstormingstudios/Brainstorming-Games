@@ -1,0 +1,47 @@
+name: Pre-QA
+
+# Triggered by the pre-qa-dispatch Edge Function (repository_dispatch) for every uploaded build.
+# Runs the bot on desktop Chromium and an emulated Pixel 7 and posts the report back to the
+# pre-qa-report Edge Function, which stores it with the version.
+on:
+  repository_dispatch:
+    types: [pre-qa]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Build URL (index.html on the play origin)
+        required: true
+      version_id:
+        description: Version id to attach the report to (optional)
+        required: false
+
+concurrency:
+  group: pre-qa-${{ github.event.client_payload.version_id || github.event.inputs.version_id || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pre-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      URL: ${{ github.event.client_payload.url || github.event.inputs.url }}
+      VERSION_ID: ${{ github.event.client_payload.version_id || github.event.inputs.version_id }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      PRE_QA_CALLBACK_SECRET: ${{ secrets.PRE_QA_CALLBACK_SECRET }}
+      REPORT_URL: ${{ secrets.PRE_QA_REPORT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build:sdk
+      - name: Run the bot
+        run: |
+          if [ -n "$VERSION_ID" ] && [ -n "$REPORT_URL" ]; then
+            npm run pre-qa -- "$URL" --report-to "$REPORT_URL" --version-id "$VERSION_ID"
+          else
+            npm run pre-qa -- "$URL"
+          fi

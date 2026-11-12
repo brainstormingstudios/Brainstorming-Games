@@ -199,7 +199,19 @@ writeFileSync(
   ].join('\n'),
 );
 
-// ---- 5. Service worker ----------------------------------------------------------------------------
+// ---- 5. Public key for game user tokens -----------------------------------------------------------
+if (process.env.GAME_JWT_PUBLIC_JWK) {
+  try {
+    const key = JSON.parse(process.env.GAME_JWT_PUBLIC_JWK);
+    delete key.d; // never publish a private key by mistake
+    mkdirSync(join(OUT, '.well-known'), { recursive: true });
+    writeFileSync(join(OUT, '.well-known', 'bg-game-jwks.json'), JSON.stringify({ keys: [key] }));
+  } catch {
+    console.warn('[postbuild] GAME_JWT_PUBLIC_JWK is not valid JSON; JWKS not written');
+  }
+}
+
+// ---- 6. Service worker ----------------------------------------------------------------------------
 const buildId = existsSync(join(ROOT, 'apps', 'web', '.next', 'BUILD_ID'))
   ? readFileSync(join(ROOT, 'apps', 'web', '.next', 'BUILD_ID'), 'utf8').trim()
   : String(Date.now());

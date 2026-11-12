@@ -7,8 +7,31 @@
  *   - Throw `RepoError` with a stable `code` for failures the UI should explain.
  *   - Emit the matching bus topic after every mutation so open screens refresh.
  */
+import type { AvatarCosmetics } from '@brainstorming/ui';
+import type { KpiResult } from '@/lib/domain/kpis';
+import type { PreQaReport } from '@/lib/domain/preqa';
+import type {
+  AuditRecord,
+  CreateStudioInput,
+  DevGame,
+  DevGameDetail,
+  DevlogRecord,
+  DevMedia,
+  DevStudio,
+  FeedbackRecord,
+  GameEditable,
+  MediaUpload,
+  NewVersionInput,
+  PreviewInfo,
+  QaChecklistItem,
+  QaQueueItem,
+  QaReviewItem,
+  ReferralStats,
+  SparkRow,
+} from './devTypes';
 import type {
   DeviceClass,
+  GameStatus,
   DislikeReason,
   EventInput,
   FeedbackInput,
@@ -78,9 +101,158 @@ export interface EventsRepo {
   ingestOnUnload(batch: EventInput[], context: EventContext): void;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Accounts
+// ---------------------------------------------------------------------------------------------
+
+export type ConsentStatus = 'not_required' | 'pending' | 'granted' | 'denied';
+export type UserRole = 'player' | 'moderator' | 'admin';
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  /** Null until the player picks a username and birth year (signup is incomplete). */
+  username: string | null;
+  displayName: string;
+  role: UserRole;
+  isMinor: boolean;
+  consent: ConsentStatus;
+  brainPoints: number;
+  level: number;
+  streakDays: number;
+  avatar: AvatarCosmetics;
+  profilePublic: boolean;
+  playtestOptIn: boolean;
+  createdAt: string;
+}
+
+export type OAuthProvider = 'google' | 'discord';
+
+export interface SignInResult {
+  /** A magic link was e-mailed (Supabase), or the session already started (mock). */
+  status: 'email_sent' | 'signed_in';
+  /** Mock mode only: the link that would have been e-mailed. */
+  devLink?: string;
+}
+
+export interface ProfilePatch {
+  displayName?: string;
+  locale?: string;
+  lowData?: boolean;
+  schoolSafe?: boolean;
+  profilePublic?: boolean;
+  playtestOptIn?: boolean;
+}
+
+export interface AuthRepo {
+  session(): Promise<SessionUser | null>;
+  signInWithEmail(email: string, next?: string): Promise<SignInResult>;
+  signInWithProvider(provider: OAuthProvider, next?: string): Promise<void>;
+  completeSignup(username: string, birthYear: number, locale: string): Promise<SessionUser>;
+  usernameAvailable(username: string): Promise<boolean>;
+  signOut(): Promise<void>;
+  updateProfile(patch: ProfilePatch): Promise<void>;
+  /** Sends the parental-consent e-mail. Mock mode returns the link instead. */
+  requestParentalConsent(parentEmail: string): Promise<{ devLink?: string }>;
+  consentView(token: string): Promise<{ username: string; status: ConsentStatus; expired: boolean } | null>;
+  consentResolve(token: string, approve: boolean): Promise<ConsentStatus>;
+  exportData(): Promise<Record<string, unknown>>;
+  deleteAccount(): Promise<void>;
+  /** Short-lived ES256 token `{ sub, gameId, exp }` for a game's own server. */
+  gameToken(gameId: string): Promise<string | null>;
+}
+
+export interface SavesRepo {
+  get(gameId: string, key: string): Promise<unknown>;
+  set(gameId: string, key: string, value: unknown): Promise<void>;
+  remove(gameId: string, key: string): Promise<void>;
+}
+
+export interface LeaderboardRow {
+  rank: number;
+  name: string;
+  score: number;
+  isMe: boolean;
+  cosmetics?: AvatarCosmetics;
+}
+
+export interface ScoresRepo {
+  startSession(gameId: string, versionId: string | null): Promise<string | null>;
+  submit(gameId: string, board: string, score: number, sessionId: string): Promise<{ accepted: boolean }>;
+  top(
+    gameId: string,
+    board: string,
+    options: { limit: number; friends: boolean; period: 'week' | 'all' },
+  ): Promise<{ entries: LeaderboardRow[]; me: LeaderboardRow | null }>;
+}
+
+export interface QuestsRepo {
+  track(event: string, value: number): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Developer portal and admin
+// ---------------------------------------------------------------------------------------------
+
+export interface DevRepo {
+  myStudio(): Promise<DevStudio | null>;
+  createStudio(input: CreateStudioInput): Promise<DevStudio>;
+  updateStudio(patch: Partial<Pick<DevStudio, 'name' | 'bio' | 'avatarUrl' | 'links' | 'contactEmail'>>): Promise<void>;
+  myGames(): Promise<DevGame[]>;
+  game(gameId: string): Promise<DevGameDetail | null>;
+  createGame(input: GameEditable): Promise<string>;
+  updateGame(gameId: string, patch: Partial<GameEditable>): Promise<void>;
+  deleteGame(gameId: string): Promise<void>;
+  slugAvailable(slug: string, exceptGameId?: string): Promise<boolean>;
+  uploadMedia(gameId: string, media: MediaUpload, onProgress?: (fraction: number) => void): Promise<DevMedia>;
+  removeMedia(gameId: string, mediaId: string): Promise<void>;
+  createVersion(
+    input: NewVersionInput,
+    onProgress?: (fraction: number) => void,
+  ): Promise<{ versionId: string; previewToken: string }>;
+  /** Starts the pre-QA bot. Mock mode runs it locally and resolves with the report. */
+  runPreQa(versionId: string): Promise<PreQaReport | null>;
+  submitForReview(gameId: string): Promise<void>;
+  rollback(gameId: string, versionId: string): Promise<void>;
+  setStatus(gameId: string, status: 'paused' | 'removed'): Promise<void>;
+  kpis(gameId: string, from: string, to: string): Promise<KpiResult>;
+  feedback(): Promise<FeedbackRecord[]>;
+  resolveFeedback(id: string, resolved: boolean): Promise<void>;
+  devlogs(): Promise<DevlogRecord[]>;
+  saveDevlog(input: { id?: string; gameId: string | null; title: string; bodyMd: string }): Promise<void>;
+  deleteDevlog(id: string): Promise<void>;
+  referralStats(): Promise<ReferralStats | null>;
+  preview(versionId: string, token: string): Promise<PreviewInfo | null>;
+}
+
+export interface AdminRepo {
+  qaQueue(): Promise<QaQueueItem[]>;
+  qaItem(versionId: string): Promise<QaReviewItem | null>;
+  qaDecide(input: {
+    versionId: string;
+    action: 'approve' | 'changes' | 'reject';
+    notes: string;
+    checklist: Partial<Record<QaChecklistItem, boolean>>;
+    schoolSafe: boolean;
+  }): Promise<void>;
+  sparkGames(): Promise<SparkRow[]>;
+  sparkDecide(gameId: string, promote: boolean, reason: string, kpis: Record<string, unknown>): Promise<void>;
+  setGameStatus(gameId: string, status: GameStatus, reason: string): Promise<void>;
+  saveSiteConfig(config: SiteConfig): Promise<void>;
+  audit(limit?: number): Promise<AuditRecord[]>;
+  /** Re-run yesterday's and today's KPI roll-up now (the daily job). */
+  runDailyJobs(): Promise<void>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
   catalogue: CatalogueRepo;
   player: PlayerRepo;
   events: EventsRepo;
+  auth: AuthRepo;
+  saves: SavesRepo;
+  scores: ScoresRepo;
+  quests: QuestsRepo;
+  dev: DevRepo;
+  admin: AdminRepo;
 }

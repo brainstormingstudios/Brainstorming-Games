@@ -1,7 +1,11 @@
 import { PLAY_ORIGIN } from '@/lib/config';
 import { emitTopic } from '../bus';
 import { getAnonId, guestFavourites, guestHistory, guestRatings } from '../local';
-import { RepoError, type EventsRepo, type PlayerRepo, type Repo } from '../repo';
+import { RepoError, type AuthRepo, type EventsRepo, type PlayerRepo, type Repo } from '../repo';
+import { mockAdmin } from './admin';
+import { currentUserId, mockAuth } from './auth';
+import { mockDev } from './dev';
+import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
 import type { ControlRow, FaqItem, GameStatus, MediaAsset, Orientation, Platform } from '../types';
 import { mockCatalogue, readCatalogueTables, statsFor } from './catalogue';
 import {
@@ -76,7 +80,7 @@ const events: EventsRepo = {
         rows.push({
           id: newId(),
           anonId: context.anonId,
-          userId: null,
+          userId: currentUserId(),
           sessionId: e.sessionId,
           gameId: e.gameId,
           versionId: e.versionId,
@@ -271,7 +275,34 @@ declare global {
   }
 }
 
+/** Guest saves move into the account the first time a player signs in. */
+const auth: AuthRepo = {
+  ...mockAuth,
+  async signInWithEmail(email, next) {
+    const result = await mockAuth.signInWithEmail(email, next);
+    const id = currentUserId();
+    if (id) mergeGuestSaves(id);
+    return result;
+  },
+  async signInWithProvider(provider, next) {
+    await mockAuth.signInWithProvider(provider, next);
+    const id = currentUserId();
+    if (id) mergeGuestSaves(id);
+  },
+};
+
 export function createMockRepo(): Repo {
   if (typeof window !== 'undefined') window.__bgMock = mockTools;
-  return { mode: 'mock', catalogue: mockCatalogue, player, events };
+  return {
+    mode: 'mock',
+    catalogue: mockCatalogue,
+    player,
+    events,
+    auth,
+    saves: mockSaves,
+    scores: mockScores,
+    quests: mockQuests,
+    dev: mockDev,
+    admin: mockAdmin,
+  };
 }

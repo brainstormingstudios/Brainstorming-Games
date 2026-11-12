@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Mascot, ToastProvider } from '@brainstorming/ui';
+import { LoginDialog } from '@/components/auth/AccountMenu';
 import { MASCOT_NAME } from '@/lib/config';
 import { referral } from '@/lib/data/local';
 import { track } from '@/lib/events/client';
@@ -67,6 +68,7 @@ export function Providers({ children, dismissLabel }: { children: ReactNode; dis
       <AppEffects />
       {children}
       <MascotGreeting />
+      <LoginDialog />
     </ToastProvider>
   );
 }

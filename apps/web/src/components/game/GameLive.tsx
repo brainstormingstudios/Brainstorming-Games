@@ -149,6 +149,7 @@ export function GameView({ game, related }: GameViewProps) {
               game={{ ...game, stats }}
               fullscreen={fullscreen}
               onToggleFullscreen={() => frame.current?.toggleFullscreen()}
+              getContext={() => frame.current?.context() ?? null}
               onStats={setStats}
             />
 

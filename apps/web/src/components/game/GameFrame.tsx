@@ -12,19 +12,26 @@ import type { GameSummary } from '@/lib/data/types';
 import { track } from '@/lib/events/client';
 import { estimateLoadSeconds, formatBytes, playUrl } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
+import { attachHost, type HostBridge, type HostLogEntry } from '@/lib/sdk-host/bridge';
+import { useLocale } from '@/i18n/navigation';
 
 export interface GameFrameHandle {
   toggleFullscreen: () => void;
   isPlaying: () => boolean;
+  /** The context the game set through the SDK, for bug reports. */
+  context: () => Record<string, unknown> | null;
 }
 
 export interface GameFrameProps {
   game: GameSummary;
-  /** Called with the iframe once the game document has loaded (the SDK host attaches here). */
-  onFrame?: (frame: HTMLIFrameElement | null, sessionId: string) => void;
   onFullscreenChange?: (on: boolean) => void;
   /** Override the build URL (private previews). */
   src?: string | null;
+  /** Private preview: mock ads with the normal rules, and every SDK call is logged. */
+  preview?: boolean;
+  onSdkLog?: (entry: HostLogEntry) => void;
+  /** Start without the Play button (previews and the QA console). */
+  autoStart?: boolean;
 }
 
 type Phase = 'idle' | 'loading' | 'playing';
@@ -38,11 +45,15 @@ const HEARTBEAT_MS = 15_000;
  * Display ads are never placed over or inside this element.
  */
 export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function GameFrame(
-  { game, onFrame, onFullscreenChange, src },
+  { game, onFullscreenChange, src, preview, onSdkLog, autoStart },
   ref,
 ) {
   const t = useTranslations('game');
+  const locale = useLocale();
   const { lowData } = usePrefs();
+  const bridge = useRef<HostBridge | null>(null);
+  const logRef = useRef(onSdkLog);
+  logRef.current = onSdkLog;
   const [phase, setPhase] = useState<Phase>('idle');
   const [immersive, setImmersive] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -77,7 +88,9 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     (final: boolean) => {
       const s = session.current;
       if (!s) return;
-      const totalSeconds = settle();
+      const visible = settle();
+      // Games that report gameplay through the SDK get real playtime; others get visible time.
+      const totalSeconds = bridge.current?.usesGameplayEvents() ? bridge.current.gameplaySeconds() : visible;
       const delta = totalSeconds - s.reported;
       s.reported = totalSeconds;
       if (delta >= 1 || final) {
@@ -85,8 +98,8 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       }
       if (final) {
         const ids = { gameId: game.id, versionId: game.versionId, sessionId: s.id };
-        // Games without the SDK get host-measured playtime, flagged as synthetic.
-        track('gameplay_stop', { ...ids, payload: { t: Math.round(totalSeconds), synthetic: true } });
+        const synthetic = !bridge.current?.usesGameplayEvents();
+        track('gameplay_stop', { ...ids, payload: { t: Math.round(totalSeconds), synthetic } });
         track('session_end', { ...ids, payload: { t: Math.round(totalSeconds) }, immediate: true });
         session.current = null;
       }
@@ -94,27 +107,60 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     [game, settle],
   );
 
+  const clickedAt = useRef(0);
+
   const start = () => {
     if (!url || phase !== 'idle') return;
     const id = uuid();
     session.current = { id, seconds: 0, visibleSince: null, reported: 0 };
-    const ids = { gameId: game.id, versionId: game.versionId, sessionId: id };
-    track('play_click', { ...ids, payload: { lowData }, immediate: true });
-    track('loading_start', ids);
-    void getRepo().then((repo) => repo.player.recordPlay(game, 0, true));
+    clickedAt.current = Date.now();
+    if (!preview) {
+      const ids = { gameId: game.id, versionId: game.versionId, sessionId: id };
+      track('play_click', { ...ids, payload: { lowData }, immediate: true });
+      track('loading_start', ids);
+      void getRepo().then((repo) => repo.player.recordPlay(game, 0, true));
+    }
     setPhase('loading');
-    if (window.matchMedia('(max-width: 639px)').matches) setImmersive(true);
+    if (!preview && window.matchMedia('(max-width: 639px)').matches) setImmersive(true);
   };
+
+  useEffect(() => {
+    if (autoStart) start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- start once on mount
+  }, []);
+
+  // The SDK host attaches as soon as the iframe exists, before the game sends its first message.
+  useEffect(() => {
+    if (phase !== 'loading' || !frame.current || bridge.current || !stage.current || !session.current) return;
+    bridge.current = attachHost(frame.current, {
+      game,
+      sessionId: session.current.id,
+      locale,
+      container: stage.current,
+      preview,
+      onLog: (entry) => logRef.current?.(entry),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one bridge per play session
+  }, [phase]);
+
+  useEffect(
+    () => () => {
+      bridge.current?.destroy();
+      bridge.current = null;
+    },
+    [],
+  );
 
   const onLoad = () => {
     const s = session.current;
     if (!s || phase === 'playing') return;
-    const ids = { gameId: game.id, versionId: game.versionId, sessionId: s.id };
-    track('loading_stop', ids);
-    track('gameplay_start', { ...ids, payload: { synthetic: true } });
+    if (!preview) {
+      const ids = { gameId: game.id, versionId: game.versionId, sessionId: s.id };
+      track('loading_stop', { ...ids, payload: { ms: Date.now() - clickedAt.current, synthetic: true } });
+      track('gameplay_start', { ...ids, payload: { synthetic: true } });
+    }
     s.visibleSince = Date.now();
     setPhase('playing');
-    onFrame?.(frame.current, s.id);
     frame.current?.focus();
   };
 
@@ -132,6 +178,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       settle();
       if (document.visibilityState === 'hidden') report(false);
     };
+    if (preview) return;
     const beat = window.setInterval(() => report(false), HEARTBEAT_MS);
     const onHide = () => report(true);
     document.addEventListener('visibilitychange', onVisibility);
@@ -141,7 +188,6 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onHide);
       report(true);
-      onFrame?.(null, '');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tied to the play phase only
   }, [phase]);
@@ -177,10 +223,15 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     };
   }, [immersive]);
 
-  useImperativeHandle(ref, () => ({ toggleFullscreen, isPlaying: () => phase === 'playing' }), [
-    toggleFullscreen,
-    phase,
-  ]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      toggleFullscreen,
+      isPlaying: () => phase === 'playing',
+      context: () => bridge.current?.context() ?? null,
+    }),
+    [toggleFullscreen, phase],
+  );
 
   return (
     <div
