@@ -26,6 +26,7 @@ import { functionsUrl, getSupabase } from './client';
 import { toRepoError } from './errors';
 import { supabaseAuth, supabaseQuests, supabaseSaves, supabaseScores } from './account';
 import { supabaseAdmin, supabaseDev } from './dev';
+import { supabaseRevenue } from './revenue';
 import {
   supabaseLeaderboards,
   supabaseLocker,
@@ -351,6 +352,10 @@ const player: PlayerRepo = {
     }
     emitTopic('history');
   },
+  async recordReferral(studioSlug) {
+    const { error } = await getSupabase().rpc('record_referral_visit', { p_studio_slug: studioSlug, p_anon_id: getAnonId(), p_game_id: null });
+    if (error) throw toRepoError(error);
+  },
   async sendFeedback(input) {
     const { error } = await getSupabase().rpc('send_feedback', {
       p_game_id: input.gameId,
@@ -433,6 +438,7 @@ export function createSupabaseRepo(): Repo {
   });
   return {
     mode: 'supabase',
+    revenue: supabaseRevenue,
     catalogue,
     player,
     events,

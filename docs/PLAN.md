@@ -248,13 +248,13 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 ### Phase 4: Monetisation + revenue + payouts
 
-- [ ] AdSense display adapter behind flags; non-personalised logic; consent banner
-- [ ] `adsense-h5` in-game provider behind a flag
-- [ ] Spark → Rise decision flow with written reasons; exclusivity flag
-- [ ] Revenue engine, statements (PDF), payout tracking, referral attribution
-- [ ] `/developers` with the published share table
-- [ ] Migration 0007, Edge Function (payout-profile)
-- [ ] Check: a fake monthly revenue CSV produces correct per-studio statements in a unit-tested split
+- [x] AdSense display adapter behind flags; non-personalised logic; consent banner
+- [x] `adsense-h5` in-game provider behind a flag
+- [x] Spark → Rise decision flow with written reasons; exclusivity flag
+- [x] Revenue engine, statements (PDF), payout tracking, referral attribution
+- [x] `/developers` with the published share table
+- [x] Migration 0007, Edge Function (payout-profile)
+- [x] Check: a fake monthly revenue CSV produces correct per-studio statements in a unit-tested split
 
 ### Phase 5: Growth polish
 
@@ -293,3 +293,4 @@ written, type-checked and unit-tested here but not exercised against the live se
 - **Phase 1 (2026-11-12):** done. 6 e2e, 22 unit and 12 database tests pass; lint and typecheck clean; home first-load JS 143 KB gzipped. Lighthouse mobile: accessibility 100, best practices 100, SEO 100; performance 80s locally on simulated slow 4G, tuned again in the Phase 5 performance re-audit.
 - **Phase 2 (2026-11-12):** done. SDK 5.4 KB gzipped (local, brainstorming and disabled environments, mock ads, debug overlay, CrazyGames shim); host bridge with zod validation; developer portal (studio signup, wizard with autosave, browser-side cover crop and WebP variants, zip validation and upload, private preview with live SDK log, versions and rollback, KPIs with percentiles and CSV, feedback, devlogs, studio page, referral link, docs with a TSDoc-generated SDK reference); pre-QA bot (desktop + Pixel 7) and workflow; admin QA queue, review, Spark decisions, audit log; Edge Functions. E2E: studio signup to Spark to KPIs passes. The developer portal is English for now; its Hindi strings come in the Phase 5 Hindi pass.
 - **Phase 3 (2026-11-12):** done. Accounts (magic link, Google, Discord), birth-year age gate with conservative minor rule, parental consent by e-mailed link, guest merge (favourites, history, saves), public profiles with privacy, locker with 30 layered SVG cosmetics, Brain Quests (3 daily, 5 weekly), append-only Brain Points ledger, levels and streaks, friends with live presence and Join, party rooms with votes, host start and preset-phrase chat, global and per-game leaderboards with friends filter, cloud saves, school-safe mode with PIN, notifications. Profiles and party rooms are served by the client fallback page with a 200 (dynamic shells break the App Router after a rewrite). Fixed: the phone immersive frame collapsed to zero height (relative + fixed). E2E: 15 pass on desktop and Pixel 7.
+- **Phase 4 (2026-11-13):** done. AdSense display slots behind a flag (lazy, never on game frames, /dev, /admin or policy pages), Consent Mode v2 with a banner for EU and UK visitors, non-personalised ads for minors, unknown ages and school-safe mode; adsense-h5 in-game provider behind a flag sharing the SDK ad rules; Spark to Rise decisions with written reasons and an exclusivity flag; revenue engine in minor units with a largest-remainder split, monthly statements with browser-made PDFs, payout tracking, encrypted payout details, referral attribution; published share table on /developers. Fixed: the CSP blocked the PDF layout engine (WebAssembly), now allowed with 'wasm-unsafe-eval'. 17 e2e and 67 unit and database tests pass.

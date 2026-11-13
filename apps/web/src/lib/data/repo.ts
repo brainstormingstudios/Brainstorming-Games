@@ -10,6 +10,7 @@
 import type { AvatarCosmetics } from '@brainstorming/ui';
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
+import type { Currency, GameImpressions, GameLine, RevenueRow, RevenueRun } from '@/lib/domain/revenue';
 import type {
   AuditRecord,
   CreateStudioInput,
@@ -86,6 +87,8 @@ export interface PlayerRepo {
   recordPlay(game: { id: string; slug: string }, seconds: number, newSession: boolean): Promise<void>;
   clearHistory(): Promise<void>;
   sendFeedback(input: FeedbackInput): Promise<void>;
+  /** Records a visit that arrived through a studio's referral link. */
+  recordReferral(studioSlug: string): Promise<void>;
 }
 
 export interface EventContext {
@@ -402,8 +405,74 @@ export interface AdminRepo {
   runDailyJobs(): Promise<void>;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Revenue and payouts
+// ---------------------------------------------------------------------------------------------
+
+export interface RevenueMonthRow {
+  studioId: string;
+  studioName: string;
+  month: string;
+  currency: Currency;
+  gross: number;
+  net: number;
+  earned: number;
+  sharePct: number;
+  carryIn: number;
+  payoutDue: number;
+  status: 'finalised' | 'rolled_over' | 'paid';
+  games: GameLine[];
+}
+
+export interface PayoutRow {
+  id: string;
+  studioId: string;
+  studioName: string;
+  amount: number;
+  currency: Currency;
+  method: PayoutMethod;
+  reference: string;
+  months: string[];
+  paidAt: string;
+}
+
+export type PayoutMethod = 'bank' | 'paypal' | 'wise' | 'payoneer';
+
+export interface PayoutProfileInput {
+  method: PayoutMethod;
+  currency: Currency;
+  accountName: string;
+  /** Bank: account number and IFSC. PayPal, Wise, Payoneer: the account e-mail. */
+  details: Record<string, string>;
+}
+
+export interface PayoutProfileSummary {
+  method: PayoutMethod;
+  currency: Currency;
+  /** Masked, e.g. "Bank ••••4321 (HDFC0001234)". The full details never come back. */
+  summary: string;
+  updatedAt: string;
+}
+
+export interface RevenueRepo {
+  /** Admin: impressions per game and country for a month, country weights and carried balances. */
+  inputs(month: string): Promise<{ games: GameImpressions[]; weights: Record<string, number>; carry: Record<string, number> }>;
+  /** Admin: stores a month's statements (replaces an earlier run of that month if none is paid). */
+  finalise(run: RevenueRun, rows: RevenueRow[], fxInr: number | null): Promise<void>;
+  /** Admin: every statement. */
+  months(): Promise<RevenueMonthRow[]>;
+  recordPayout(studioId: string, months: string[], method: PayoutMethod, reference: string): Promise<void>;
+  payouts(): Promise<PayoutRow[]>;
+  /** Developer: own statements and payouts. */
+  myStatements(): Promise<RevenueMonthRow[]>;
+  myPayouts(): Promise<PayoutRow[]>;
+  payoutProfile(): Promise<PayoutProfileSummary | null>;
+  savePayoutProfile(input: PayoutProfileInput): Promise<void>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
+  revenue: RevenueRepo;
   catalogue: CatalogueRepo;
   player: PlayerRepo;
   events: EventsRepo;

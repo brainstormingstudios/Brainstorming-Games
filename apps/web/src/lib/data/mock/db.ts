@@ -257,6 +257,23 @@ export interface MockTables {
     state: 'lobby' | 'playing';
     expiresAt: string;
   }[];
+  revenueMonths: {
+    studioId: string;
+    studioName: string;
+    month: string;
+    currency: 'INR' | 'USD';
+    gross: number;
+    net: number;
+    earned: number;
+    sharePct: number;
+    carryIn: number;
+    payoutDue: number;
+    status: 'finalised' | 'rolled_over' | 'paid';
+    games: { gameId: string; title: string; impressions: number; net: number; share: number; earned: number }[];
+  }[];
+  revenueImports: { month: string; currency: string; fxInr: number | null; rows: unknown[]; at: string }[];
+  payouts: { id: string; studioId: string; studioName: string; amount: number; currency: 'INR' | 'USD'; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; reference: string; months: string[]; paidAt: string }[];
+  payoutProfiles: { studioId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
   userFavourites: { userId: string; gameId: string; createdAt: string }[];
   userHistory: { userId: string; gameId: string; slug: string; lastPlayedAt: string; playCount: number; secondsPlayed: number }[];
   referralVisits: { studioSlug: string; anonId: string; at: string }[];

@@ -4,8 +4,10 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Mascot, ToastProvider } from '@brainstorming/ui';
+import { ConsentBanner } from '@/components/ads/ConsentBanner';
 import { LoginDialog } from '@/components/auth/AccountMenu';
 import { MASCOT_NAME } from '@/lib/config';
+import { getRepo } from '@/lib/data';
 import { referral } from '@/lib/data/local';
 import { track } from '@/lib/events/client';
 import { getPrefs, setPrefs } from '@/lib/prefs';
@@ -14,7 +16,11 @@ import { getPrefs, setPrefs } from '@/lib/prefs';
 function AppEffects() {
   const pathname = usePathname();
   useEffect(() => {
+    const before = referral.current();
     referral.capture(window.location.search);
+    const after = referral.current();
+    // A new referral visit is credited to the studio (85% share on its players' ad revenue).
+    if (after && after !== before) void getRepo().then((repo) => repo.player.recordReferral(after)).catch(() => {});
     if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
       const register = () => void navigator.serviceWorker.register('/sw.js').catch(() => {});
       if (document.readyState === 'complete') register();
@@ -69,6 +75,7 @@ export function Providers({ children, dismissLabel }: { children: ReactNode; dis
       {children}
       <MascotGreeting />
       <LoginDialog />
+      <ConsentBanner />
     </ToastProvider>
   );
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { TriangleAlert } from 'lucide-react';
+import { CookieChoicesButton } from '@/components/ads/ConsentBanner';
 import { defaultLocale, type Locale } from '@/i18n/config';
 import { initLocale, type RouteParams } from '@/i18n/server';
 import { CONTACT_EMAIL } from '@/lib/config';
@@ -96,6 +97,11 @@ export function createPolicyPage(slug: PolicySlug) {
         <div className="prose-bg mt-2" lang={translated ? undefined : 'en'}>
           <Markdown source={body} baseHeading={2} />
         </div>
+        {slug === 'cookies' ? (
+          <div className="mt-6">
+            <CookieChoicesButton />
+          </div>
+        ) : null}
       </article>
     );
   }

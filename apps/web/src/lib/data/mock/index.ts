@@ -5,6 +5,7 @@ import { RepoError, type AuthRepo, type EventsRepo, type PlayerRepo, type Repo }
 import { mockAdmin } from './admin';
 import { currentUserId, mockAuth } from './auth';
 import { mockDev } from './dev';
+import { mockRevenue } from './revenue';
 import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
 import {
   afterEvents,
@@ -104,6 +105,9 @@ const player: PlayerRepo = {
     if (!id) guestHistory.clear();
     else mutateTable('userHistory', (rows) => rows.filter((h) => h.userId !== id));
     emitTopic('history');
+  },
+  async recordReferral() {
+    // Mock mode counts referral visits from the events that carry the studio slug.
   },
   async sendFeedback(input) {
     if (!takeToken(`feedback:${voterKey()}`, 5, 600_000)) throw new RepoError('rate_limited');
@@ -370,6 +374,7 @@ export function createMockRepo(): Repo {
   if (typeof window !== 'undefined') window.__bgMock = mockTools;
   return {
     mode: 'mock',
+    revenue: mockRevenue,
     catalogue: mockCatalogue,
     player,
     events,

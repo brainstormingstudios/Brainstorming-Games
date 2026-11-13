@@ -32,6 +32,7 @@ const NAV = [
   { key: 'feedback', href: '/dev/feedback' },
   { key: 'devlogs', href: '/dev/devlogs' },
   { key: 'studio', href: '/dev/studio' },
+  { key: 'payouts', href: '/dev/payouts' },
   { key: 'docs', href: '/dev/docs/quick-start' },
 ] as const;
 

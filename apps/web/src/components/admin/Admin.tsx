@@ -39,6 +39,7 @@ const NAV = [
   ['overview', '/admin'],
   ['qa', '/admin/qa'],
   ['spark', '/admin/spark'],
+  ['revenue', '/admin/revenue'],
   ['audit', '/admin/audit'],
 ] as const;
 

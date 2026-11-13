@@ -52,7 +52,8 @@ writeFileSync(join(OUT, '_redirects'), redirects.length ? `${redirects.join('\n'
 // ---- 3. _headers --------------------------------------------------------------------------------
 const supabaseHost = SUPABASE_URL ? new URL(SUPABASE_URL).host : '';
 const src = {
-  script: ["'self'", "'unsafe-inline'"],
+  // 'wasm-unsafe-eval' lets the statement PDF renderer compile its layout engine (WebAssembly).
+  script: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
   style: ["'self'", "'unsafe-inline'"],
   img: ["'self'", 'data:', 'blob:', PLAY_ORIGIN],
   media: ["'self'", 'blob:', PLAY_ORIGIN],

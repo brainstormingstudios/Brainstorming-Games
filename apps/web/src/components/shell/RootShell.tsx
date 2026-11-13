@@ -26,6 +26,7 @@ const CLIENT_NAMESPACES = [
   'studio',
   'notFound',
   'ads',
+  'cookieBanner',
   'auth',
   'player',
   // Used on game pages (leaderboard, party invite). Account pages load the rest themselves.

@@ -8,6 +8,7 @@ import { Badge, Card, EmptyState, Skeleton, buttonClass } from '@brainstorming/u
 import { GameCover } from '@/components/catalogue/GameCover';
 import { Link, useLocale } from '@/i18n/navigation';
 import { addDays } from '@/lib/domain/kpis';
+import { formatMoney } from '@/lib/domain/revenue';
 import { formatCount, formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useDev } from './DevShell';
@@ -21,6 +22,7 @@ export function Dashboard() {
   const { studio } = useDev();
   const games = useRepoQuery((repo) => repo.dev.myGames(), [], { topics: ['dev-games', 'catalogue'] });
   const feedback = useRepoQuery((repo) => repo.dev.feedback(), [], { topics: ['dev-games'] });
+  const statements = useRepoQuery((repo) => repo.revenue.myStatements(), [], { topics: ['revenue'] });
   const today = new Date().toISOString().slice(0, 10);
   const from = addDays(today, -29);
   const live = (games.data ?? []).filter((g) => ['spark', 'rise', 'featured'].includes(g.status));
@@ -74,11 +76,25 @@ export function Dashboard() {
         ))}
       </dl>
 
-      {live.length > 0 ? (
-        <Card className="mt-6 p-4">
-          <h2 className="mb-3 text-lg font-semibold">{t('playsChart')}</h2>
-          <TrendChart data={series} series={[{ key: 'plays', name: t('plays7d') }]} label={t('playsChart')} />
-        </Card>
+      {live.length > 0 || (statements.data ?? []).length > 0 ? (
+        <div className="mt-6 grid gap-4 xl:grid-cols-2">
+          <Card className="p-4">
+            <h2 className="mb-3 text-lg font-semibold">{t('playsChart')}</h2>
+            <TrendChart data={series} series={[{ key: 'plays', name: t('plays7d') }]} label={t('playsChart')} />
+          </Card>
+          {(statements.data ?? []).length > 0 ? (
+            <Card className="p-4">
+              <h2 className="mb-3 text-lg font-semibold">{t('revenueChart')}</h2>
+              <TrendChart
+                data={(statements.data ?? []).slice(0, 12).reverse().map((s) => ({ label: s.month, earned: s.earned / 100 }))}
+                series={[{ key: 'earned', name: t('revenueChart') }]}
+                kind="bar"
+                format={(v) => formatMoney(Math.round(v * 100), statements.data![0]!.currency)}
+                label={t('revenueChart')}
+              />
+            </Card>
+          ) : null}
+        </div>
       ) : null}
 
       <section aria-labelledby="dev-games" className="mt-8">
