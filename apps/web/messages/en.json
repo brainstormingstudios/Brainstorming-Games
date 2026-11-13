@@ -68,7 +68,8 @@
     "leaderboards": "Leaderboards",
     "categories": "Categories",
     "allTags": "All tags",
-    "more": "More"
+    "more": "More",
+    "jams": "Game jams"
   },
   "categories": {
     "action": {
@@ -163,6 +164,7 @@
     "heroLabel": "Featured games",
     "heroSlide": "Featured game {index} of {total}",
     "continuePlaying": "Continue playing",
+    "featured": "Featured",
     "categoriesTitle": "Browse by category",
     "rails": {
       "fresh": "Fresh games",
@@ -251,7 +253,7 @@
     "metaTitle": "Search games",
     "heading": "Results for “{query}”",
     "headingEmpty": "Search games",
-    "prompt": "Type a game name, a tag or a category. Hindi and Hinglish work too: try “paheli” or “पहेली”.",
+    "prompt": "Type a game name, a tag or a category.",
     "noResultsTitle": "No games match “{query}”",
     "noResultsBody": "Check the spelling or try a broader word."
   },
@@ -376,7 +378,9 @@
     "noGamesTitle": "No games published yet",
     "noGamesBody": "This studio has not released a game here yet.",
     "notFoundTitle": "We could not find that studio",
-    "links": "Links"
+    "links": "Links",
+    "followers": "{count, plural, =0 {No followers yet} one {# follower} other {# followers}}",
+    "devlogs": "Devlog"
   },
   "auth": {
     "logIn": "Log in",
@@ -429,7 +433,8 @@
       "studio": "Studio page",
       "referrals": "Referrals",
       "payouts": "Payouts",
-      "docs": "Docs"
+      "docs": "Docs",
+      "jams": "Jams"
     },
     "signup": {
       "title": "Create your studio",
@@ -454,7 +459,11 @@
       "title": "Dashboard",
       "welcome": "Welcome back, {studio}",
       "level": "Level: {level}",
-      "levels": { "rookie": "Rookie", "pro": "Pro", "partner": "Partner" },
+      "levels": {
+        "rookie": "Rookie",
+        "pro": "Pro",
+        "partner": "Partner"
+      },
       "games": "Your games",
       "noGamesTitle": "Publish your first game",
       "noGamesBody": "Upload an HTML5 or WebGL build, add covers and a description, and our pre-QA bot checks it in minutes.",
@@ -495,7 +504,13 @@
     "wizard": {
       "titleNew": "New game",
       "titleEdit": "Edit {title}",
-      "steps": { "details": "Details", "content": "Page content", "media": "Covers and videos", "build": "Build", "submit": "Review and submit" },
+      "steps": {
+        "details": "Details",
+        "content": "Page content",
+        "media": "Covers and videos",
+        "build": "Build",
+        "submit": "Review and submit"
+      },
       "saved": "Draft saved",
       "saving": "Saving…",
       "next": "Next",
@@ -652,7 +667,12 @@
       "loadDistribution": "Load time, median and 90th percentile",
       "percentile": "Better than {pct}% of {category} games",
       "benchmark": "Great: {value}",
-      "grade": { "great": "Great", "ok": "OK", "low": "Needs work", "unknown": "Not enough data" },
+      "grade": {
+        "great": "Great",
+        "ok": "OK",
+        "low": "Needs work",
+        "unknown": "Not enough data"
+      },
       "noData": "No plays in this range yet.",
       "minutes": "{count} min"
     },
@@ -671,7 +691,13 @@
       "reopen": "Reopen",
       "open": "Open",
       "resolved": "Resolved",
-      "categories": { "bug": "Bug", "wont-load": "Won’t load", "controls": "Controls", "content": "Content", "other": "Other" }
+      "categories": {
+        "bug": "Bug",
+        "wont-load": "Won’t load",
+        "controls": "Controls",
+        "content": "Content",
+        "other": "Other"
+      }
     },
     "devlogs": {
       "title": "Devlogs and patch notes",
@@ -711,7 +737,12 @@
       "profile": "Payout details",
       "noProfile": "Add your payout details so we can pay you.",
       "method": "Method",
-      "methods": { "bank": "Indian bank (NEFT/IMPS)", "paypal": "PayPal", "wise": "Wise", "payoneer": "Payoneer" },
+      "methods": {
+        "bank": "Indian bank (NEFT/IMPS)",
+        "paypal": "PayPal",
+        "wise": "Wise",
+        "payoneer": "Payoneer"
+      },
       "currency": "Currency",
       "accountName": "Account holder’s full name",
       "guardianName": "Guardian’s full name (account holder)",
@@ -725,10 +756,33 @@
       "noStatements": "No statements yet. They appear after your first month with ads (Rise Launch).",
       "earned": "Earned {amount}",
       "due": "Due {amount}",
-      "status": { "finalised": "Due", "rolled_over": "Rolled over", "paid": "Paid" },
+      "status": {
+        "finalised": "Due",
+        "rolled_over": "Rolled over",
+        "paid": "Paid"
+      },
       "pdf": "PDF",
       "payouts": "Payouts",
       "noPayouts": "No payouts yet."
+    },
+    "growth": {
+      "abTitle": "Thumbnail test",
+      "abIntro": "Upload two or more landscape covers (A, B, C) in the game editor. Each visitor sees one of them. When every cover has {count, number} impressions, the cover with the best click rate becomes your only cover.",
+      "abNone": "No test running. Add a second cover to start one.",
+      "abCover": "Cover",
+      "abImpressions": "Impressions",
+      "abClicks": "Clicks",
+      "abCtr": "Click rate",
+      "abWinner": "Winner",
+      "abRunning": "Test running.",
+      "abDone": "Test finished.",
+      "playtestTitle": "Playtest panel",
+      "playtestIntro": "During Spark Launch, players who joined the playtest panel answer three questions about your game.",
+      "playtestNone": "No answers yet.",
+      "playtestResponses": "Answers",
+      "playtestFun": "Fun",
+      "playtestClarity": "Clarity",
+      "playtestAgain": "Would play again"
     }
   },
   "admin": {
@@ -746,7 +800,9 @@
       "users": "Users",
       "studios": "Studios",
       "revenue": "Revenue",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "moderation": "Moderation",
+      "progression": "Quests & locker"
     },
     "notAllowedTitle": "Staff only",
     "notAllowedBody": "This console is for the Brainstorming Games team.",
@@ -843,20 +899,141 @@
       "previewTitle": "Statements for {month}",
       "totals": "Gross {gross} · net {net} · unattributed (no impressions) {unattributed}",
       "noImpressions": "No ad impressions were recorded this month.",
-      "cols": { "studio": "Studio", "net": "Net", "share": "Share", "earned": "Earned", "carry": "Carried in", "due": "Payout due" },
+      "cols": {
+        "studio": "Studio",
+        "net": "Net",
+        "share": "Share",
+        "earned": "Earned",
+        "carry": "Carried in",
+        "due": "Payout due"
+      },
       "rollsOver": "Rolls over",
       "finalise": "Finalise and publish statements",
       "finalised": "Statements published to studios.",
       "statements": "Statements",
       "none": "No statements yet.",
-      "status": { "finalised": "Due", "rolled_over": "Rolled over", "paid": "Paid" },
+      "status": {
+        "finalised": "Due",
+        "rolled_over": "Rolled over",
+        "paid": "Paid"
+      },
       "recordPayout": "Record a payout",
       "nothingDue": "Nothing due right now.",
       "method": "Method",
-      "methods": { "bank": "Indian bank", "paypal": "PayPal", "wise": "Wise", "payoneer": "Payoneer" },
+      "methods": {
+        "bank": "Indian bank",
+        "paypal": "PayPal",
+        "wise": "Wise",
+        "payoneer": "Payoneer"
+      },
       "reference": "Transfer reference",
       "markPaid": "Mark as paid",
       "paid": "Payout recorded."
+    },
+    "featured": {
+      "title": "Homepage",
+      "intro": "Choose the hero games, the featured row and the order of the rails. Changes show for everyone straight away.",
+      "hero": "Hero games",
+      "featured": "Featured row",
+      "rails": "Rails",
+      "none": "Nothing picked. The homepage falls back to the most played games.",
+      "unknownGame": "Game no longer public",
+      "addGame": "Game",
+      "add": "Add",
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove",
+      "shown": "Shown",
+      "save": "Save homepage",
+      "saved": "Homepage saved."
+    },
+    "jams": {
+      "title": "Game jams",
+      "intro": "Create a jam, publish it, then rank the entries when it ends.",
+      "new": "New jam",
+      "empty": "No jams yet",
+      "fieldTitle": "Title",
+      "fieldSlug": "Address",
+      "slugHint": "Lowercase letters, numbers and hyphens.",
+      "fieldTheme": "Theme",
+      "fieldStatus": "Status",
+      "fieldStarts": "Starts",
+      "fieldEnds": "Ends",
+      "fieldDescription": "Description and rules (Markdown)",
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "closed": "Closed"
+      },
+      "save": "Save jam",
+      "saved": "Jam saved.",
+      "edit": "Edit",
+      "delete": "Delete jam",
+      "deleted": "Jam deleted.",
+      "entryCount": "{count, plural, one {# entry} other {# entries}}",
+      "ranksDraft": "Publish the jam to collect entries.",
+      "noEntries": "No entries yet.",
+      "notPublic": "Game not public yet",
+      "rank": "Rank",
+      "unranked": "No rank"
+    },
+    "moderation": {
+      "title": "Moderation",
+      "intro": "Reports from players, and the tools to act on them. Every action is written to the audit log.",
+      "tabReports": "Reports",
+      "tabUsers": "Players",
+      "tabStudios": "Studios",
+      "tabDevlogs": "Devlogs",
+      "noReports": "No reports",
+      "noReason": "No reason given.",
+      "reportStatus": {
+        "open": "Open",
+        "actioned": "Actioned",
+        "dismissed": "Dismissed"
+      },
+      "markActioned": "Mark as actioned",
+      "dismiss": "Dismiss",
+      "resolved": "Report closed.",
+      "searchUsers": "Find a player by name",
+      "noUsers": "No players found",
+      "minor": "Minor",
+      "banned": "Banned",
+      "ban": "Ban",
+      "unban": "Lift ban",
+      "bannedDone": "Player banned.",
+      "unbanned": "Ban lifted.",
+      "resetName": "Reset name",
+      "nameReset": "Name reset to a neutral one.",
+      "searchStudios": "Find a studio",
+      "noStudios": "No studios found",
+      "verified": "Verified",
+      "suspended": "Suspended",
+      "verify": "Verify",
+      "unverify": "Remove verified",
+      "suspend": "Suspend",
+      "unsuspend": "Lift suspension",
+      "studioSaved": "Studio updated.",
+      "noDevlogs": "No devlogs",
+      "hidden": "Hidden",
+      "hide": "Hide",
+      "unhide": "Show again",
+      "hiddenDone": "Devlog hidden.",
+      "shownDone": "Devlog visible again."
+    },
+    "progression": {
+      "title": "Quests & locker",
+      "intro": "Tune Brain Quests and locker items. Points are earned by playing only; nothing here can be bought.",
+      "tabQuests": "Quests",
+      "tabCosmetics": "Locker items",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "target": "Target",
+      "reward": "Points",
+      "cost": "Cost",
+      "minLevel": "Level",
+      "active": "Active",
+      "save": "Save",
+      "saved": "Saved."
     }
   },
   "player": {
@@ -894,7 +1071,11 @@
     "streakNotYet": "Play a game today to keep your streak.",
     "levelProgress": "{points} / {next} BP to level {level}",
     "history": "Recent Brain Points",
-    "reasons": { "quest": "Quest complete", "cosmetic": "Locker unlock", "playtest": "Playtest feedback" },
+    "reasons": {
+      "quest": "Quest complete",
+      "cosmetic": "Locker unlock",
+      "playtest": "Playtest feedback"
+    },
     "noHistory": "Complete a quest to earn your first points.",
     "guestBody": "Log in to track quests and earn Brain Points. Playing as a guest is fine; your games count once you log in today."
   },
@@ -903,7 +1084,14 @@
     "title": "Locker",
     "intro": "Dress up your mascot with looks unlocked by Brain Points.",
     "preview": "Your mascot",
-    "slots": { "colour": "Colour", "hat": "Hats", "glasses": "Glasses", "headphones": "Headphones", "glow": "Brain glow", "frame": "Frames" },
+    "slots": {
+      "colour": "Colour",
+      "hat": "Hats",
+      "glasses": "Glasses",
+      "headphones": "Headphones",
+      "glow": "Brain glow",
+      "frame": "Frames"
+    },
     "equip": "Wear",
     "unequip": "Take off",
     "unlock": "Unlock for {cost} BP",
@@ -1139,5 +1327,66 @@
       "developer-terms": "Developer terms",
       "cookies": "Cookie preferences"
     }
+  },
+  "growth": {
+    "follow": "Follow",
+    "following": "Following",
+    "followed": "You will be notified about new devlogs.",
+    "unfollowed": "You no longer follow this studio.",
+    "report": "Report",
+    "reportTitle": "Report this",
+    "reportIntro": "Tell our moderators what is wrong. Reports are private.",
+    "reportReason": "What is the problem?",
+    "reportSend": "Send report",
+    "reportSent": "Thanks. A moderator will take a look.",
+    "devlogs": "Devlog",
+    "blogTitle": "Devlog",
+    "blogIntro": "News, patch notes and behind-the-scenes posts from the studios that publish here.",
+    "blogEmpty": "No posts yet",
+    "blogEmptyBody": "When a studio publishes a devlog, it shows up here.",
+    "jamsTitle": "Game jams",
+    "jamsIntro": "A jam is a short challenge: studios build a game around one theme, and everyone gets to play the entries.",
+    "jamsEmpty": "No jams yet",
+    "jamsEmptyBody": "The next jam will be announced here.",
+    "phase": {
+      "upcoming": "Coming up",
+      "open": "Open now",
+      "ended": "Ended"
+    },
+    "theme": "Theme: {theme}",
+    "entries": "{count, plural, =0 {No entries yet} one {# entry} other {# entries}}",
+    "enterTitle": "Enter this jam",
+    "enterNeedsGame": "You need a studio with at least one game to enter. Create one in the developer portal.",
+    "openPortal": "Open the developer portal",
+    "enterGame": "Game to enter",
+    "enter": "Enter",
+    "entered": "Your game is in the jam.",
+    "yourEntry": "Your entry",
+    "withdraw": "Withdraw",
+    "withdrawn": "Your entry was withdrawn.",
+    "jamNotFound": "We could not find that jam",
+    "entriesTitle": "Entries",
+    "noEntries": "Nothing to play yet",
+    "noEntriesBody": "Entries appear here as soon as they are live.",
+    "entriesInReview": "{count, plural, one {# entry is still in review.} other {# entries are still in review.}}",
+    "rank": "Rank #{rank}",
+    "playtestTitle": "Playtest panel: 3 quick questions",
+    "playtestIntro": "You are on the playtest panel. Play {title} for a few minutes, then tell the developer how it went. You earn 15 Brain Points.",
+    "playtestFun": "How fun was it?",
+    "playtestFunLow": "Not fun",
+    "playtestFunHigh": "Loved it",
+    "playtestClarity": "Was it clear what to do?",
+    "playtestClarityLow": "Confusing",
+    "playtestClarityHigh": "Very clear",
+    "playtestAgain": "Would you play it again?",
+    "yes": "Yes",
+    "no": "No",
+    "playtestSend": "Send answers",
+    "playtestThanks": "Thanks! +15 Brain Points.",
+    "clip": "Record a clip (up to 30 seconds)",
+    "clipStop": "Stop recording",
+    "clipSaved": "Clip saved to your downloads.",
+    "clipFailed": "This browser could not record a clip.",
+    "clipShareText": "Watch my clip of {title}"
   }
 }

@@ -22,6 +22,7 @@ import {
   fail,
   mutateTable,
   newId,
+  notify,
   nowIso,
   readTable,
   takeToken,
@@ -628,6 +629,11 @@ export const mockDev: DevRepo = {
         existing.gameId = input.gameId;
       } else {
         rows.push({ id: newId(), studioId: s.id, gameId: input.gameId, title: input.title.trim().slice(0, 120), bodyMd: input.bodyMd.slice(0, 20_000), publishedAt: nowIso(), hiddenAt: null });
+        // Followers hear about a new devlog (mirror of the devlogs_notify trigger).
+        for (const f of readTable('followers')) {
+          if (f.studioId === s.id) notify(f.userId, 'devlog', input.title.trim().slice(0, 120), s.name, `/studio/${s.slug}/`);
+        }
+        emitTopic('notifications');
       }
     });
     emitTopic('devlogs');

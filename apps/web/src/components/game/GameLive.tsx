@@ -1,10 +1,9 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, ChevronRight } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { GameLeaderboard } from '@/components/player/Account';
-import { PartyBar } from '@/components/player/Social';
 import { chipClass, cn } from '@brainstorming/ui';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { GameCover } from '@/components/catalogue/GameCover';
@@ -22,6 +21,13 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { usePrefs } from '@/lib/prefs';
 import { GameFrame, type GameFrameHandle } from './GameFrame';
 import { GameToolbar } from './GameToolbar';
+
+// Everything below the game frame that only shows live, per-player data is fetched after the
+// page itself, so the frame and the Play button are not held up by it.
+const GameLeaderboard = dynamic(() => import('@/components/player/Account').then((m) => m.GameLeaderboard), { ssr: false });
+const PartyBar = dynamic(() => import('@/components/player/Social').then((m) => m.PartyBar), { ssr: false });
+const DevlogFeed = dynamic(() => import('@/components/growth/Public').then((m) => m.DevlogFeed), { ssr: false });
+const PlaytestCard = dynamic(() => import('@/components/growth/Public').then((m) => m.PlaytestCard), { ssr: false });
 
 function MiniList({ title, games }: { title: string; games: GameSummary[] }) {
   if (games.length === 0) return null;
@@ -157,6 +163,7 @@ export function GameView({ game, related }: GameViewProps) {
               getContext={() => frame.current?.context() ?? null}
               onStats={setStats}
             />
+            <PlaytestCard game={game} />
 
             <h1 className="mt-5 text-3xl font-bold sm:text-4xl">{game.title}</h1>
             {game.shortDescription ? <p className="mt-1.5 text-fg-muted">{game.shortDescription}</p> : null}
@@ -245,17 +252,9 @@ export function GameView({ game, related }: GameViewProps) {
                 </ContentSection>
               ) : null}
               <GameLeaderboard gameId={game.id} category={game.category} />
-              {game.devlogs.length > 0 ? (
-                <ContentSection id="devlog" title={t('sections.devlog')}>
-                  {game.devlogs.map((log) => (
-                    <article key={log.id} className="mb-4">
-                      <h3>{log.title}</h3>
-                      <p className="text-sm text-fg-muted">{formatDate(log.publishedAt, locale)}</p>
-                      <Markdown source={log.bodyMd} baseHeading={4} />
-                    </article>
-                  ))}
-                </ContentSection>
-              ) : null}
+            </div>
+            <div className="max-w-3xl">
+              <DevlogFeed gameId={game.id} heading={t('sections.devlog')} limit={5} />
             </div>
           </div>
 

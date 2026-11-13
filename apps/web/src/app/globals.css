@@ -29,8 +29,6 @@
   body {
     overflow-x: hidden;
   }
-  /* Hindi body text uses the device's own Devanagari font: zero bytes, and it is the one people
-     already read every day. */
   :lang(hi) {
     --font-deva-body: 'Noto Sans Devanagari', 'Nirmala UI', 'Kohinoor Devanagari', 'Mangal';
     line-height: 1.6;

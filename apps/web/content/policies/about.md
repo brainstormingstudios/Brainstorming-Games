@@ -9,7 +9,6 @@ It is made by Brainstorming Studios.
 - **Fair to developers.** Our revenue share is published, not negotiated in private. Small studios get paid from a low threshold.
 - **Every game gets a real chance.** A new game starts with a Spark Launch: guaranteed players, no ads, and clear numbers on how it did.
 - **Built for every connection.** Low-data mode shrinks images, skips video previews and tells you how big a game is before it loads.
-- **Hindi first.** The whole site works in Hindi, and search understands Hindi and Hinglish.
 - **Safe by design.** Games are reviewed for ages 12 and over, minors never see personalised ads, and school-safe mode gives classrooms a filtered catalogue.
 
 ## For players

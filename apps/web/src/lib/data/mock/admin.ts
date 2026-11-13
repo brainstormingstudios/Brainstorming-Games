@@ -5,6 +5,7 @@ import type { QaQueueItem, SparkRow } from '../devTypes';
 import type { AdminRepo } from '../repo';
 import { requireStaff } from './auth';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable, writeSiteConfig } from './db';
+import { pickAbWinners } from './growth';
 import { kpisFor, mediaFor, ownerOf, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -162,7 +163,8 @@ export const mockAdmin: AdminRepo = {
   },
   async runDailyJobs() {
     requireStaff();
-    // Mock KPIs are computed live from events, so the roll-up has nothing to store.
+    // Mock KPIs are computed live from events; the job only has thumbnail tests to close.
+    pickAbWinners();
     emitTopic('catalogue');
   },
 };

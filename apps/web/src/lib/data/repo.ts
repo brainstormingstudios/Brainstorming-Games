@@ -31,6 +31,23 @@ import type {
   SparkRow,
 } from './devTypes';
 import type {
+  AdminCosmetic,
+  AdminDevlogRow,
+  AdminQuest,
+  AdminStudioRow,
+  AdminUserRow,
+  DevlogPost,
+  Jam,
+  JamDetail,
+  JamInput,
+  PlaytestAnswers,
+  PlaytestSummary,
+  ReportInput,
+  ReportRecord,
+  VariantHit,
+  VariantStat,
+} from './growthTypes';
+import type {
   DeviceClass,
   GameStatus,
   DislikeReason,
@@ -470,8 +487,51 @@ export interface RevenueRepo {
   savePayoutProfile(input: PayoutProfileInput): Promise<void>;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Growth: follows, devlog feed, thumbnail tests, playtests, jams, moderation, editors
+// ---------------------------------------------------------------------------------------------
+
+export interface GrowthRepo {
+  following(studioId: string): Promise<boolean>;
+  setFollowing(studioId: string, on: boolean): Promise<void>;
+  /** Published devlogs, newest first: everyone's, one studio's or one game's. */
+  devlogFeed(options?: { studioSlug?: string; gameId?: string; limit?: number }): Promise<DevlogPost[]>;
+  recordVariantHits(hits: VariantHit[]): Promise<void>;
+  /** Developer: the running or finished thumbnail test of an own game. */
+  variantStats(gameId: string): Promise<VariantStat[]>;
+  /** Whether the signed-in panel member already answered for this game. */
+  playtestAnswered(gameId: string): Promise<boolean>;
+  submitPlaytest(gameId: string, answers: PlaytestAnswers): Promise<void>;
+  playtestSummary(gameId: string): Promise<PlaytestSummary>;
+  /** Published and closed jams, newest first. */
+  jams(): Promise<Jam[]>;
+  jam(slug: string): Promise<JamDetail | null>;
+  enterJam(jamId: string, gameId: string): Promise<void>;
+  leaveJam(jamId: string, gameId: string): Promise<void>;
+  report(input: ReportInput): Promise<void>;
+
+  // Staff only from here on.
+  adminJams(): Promise<Jam[]>;
+  saveJam(input: JamInput): Promise<void>;
+  deleteJam(id: string): Promise<void>;
+  rankJamEntry(jamId: string, gameId: string, rank: number | null): Promise<void>;
+  reports(): Promise<ReportRecord[]>;
+  resolveReport(id: string, status: 'actioned' | 'dismissed'): Promise<void>;
+  findUsers(query: string): Promise<AdminUserRow[]>;
+  setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean }): Promise<void>;
+  findStudios(query: string): Promise<AdminStudioRow[]>;
+  setStudio(studioId: string, patch: { suspended?: boolean; verified?: boolean }): Promise<void>;
+  adminDevlogs(): Promise<AdminDevlogRow[]>;
+  hideDevlog(id: string, hidden: boolean): Promise<void>;
+  adminQuests(): Promise<AdminQuest[]>;
+  saveQuest(code: string, patch: { target: number; reward: number; active: boolean }): Promise<void>;
+  adminCosmetics(): Promise<AdminCosmetic[]>;
+  saveCosmetic(id: string, patch: { cost: number; minLevel: number; active: boolean }): Promise<void>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
+  growth: GrowthRepo;
   revenue: RevenueRepo;
   catalogue: CatalogueRepo;
   player: PlayerRepo;

@@ -258,22 +258,22 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 
 ### Phase 5: Growth polish
 
-- [ ] Clip & share (feature-detected)
-- [ ] Thumbnail A/B tests with auto-pick after 1,000 impressions
-- [ ] Playtest panel and the 3-question survey
-- [ ] Devlogs and studio-follow notifications, blog feed
-- [ ] Jams (public pages, admin manager, developer entry)
-- [ ] Admin featured editor, quests and cosmetics editors, moderation
-- [ ] Hindi content pass
-- [ ] Migration 0008; performance re-audit against the section 10 budgets
+- [x] Clip & share (feature-detected)
+- [x] Thumbnail A/B tests with auto-pick after 1,000 impressions
+- [x] Playtest panel and the 3-question survey
+- [x] Devlogs and studio-follow notifications, blog feed
+- [x] Jams (public pages, admin manager, developer entry)
+- [x] Admin featured editor, quests and cosmetics editors, moderation
+- [x] ~~Hindi content pass~~ (dropped: the owner asked for an English-only v1 on 2026-11-13)
+- [x] Migration 0008; performance re-audit against the section 10 budgets
 
 ### Final deliverables
 
-- [ ] `npm run build && npm run lint && npm run typecheck && npm test && npm run e2e` all pass
-- [ ] E2E covers: play, rate, favourite, search, upload → pre-QA → submit → approve → Spark, friend + party, minor consent gate
-- [ ] README with screenshots, architecture, free-tier limits and upgrade triggers
-- [ ] `docs/DEPLOY.md`
-- [ ] No paid service; every external service behind an env flag with a mock fallback
+- [x] `npm run build && npm run lint && npm run typecheck && npm test && npm run e2e` all pass
+- [x] E2E covers: play, rate, favourite, search, upload → pre-QA → submit → approve → Spark, friend + party, minor consent gate
+- [x] README with screenshots, architecture, free-tier limits and upgrade triggers
+- [x] `docs/DEPLOY.md`
+- [x] No paid service; every external service behind an env flag with a mock fallback
 
 ---
 
@@ -294,3 +294,6 @@ written, type-checked and unit-tested here but not exercised against the live se
 - **Phase 2 (2026-11-12):** done. SDK 5.4 KB gzipped (local, brainstorming and disabled environments, mock ads, debug overlay, CrazyGames shim); host bridge with zod validation; developer portal (studio signup, wizard with autosave, browser-side cover crop and WebP variants, zip validation and upload, private preview with live SDK log, versions and rollback, KPIs with percentiles and CSV, feedback, devlogs, studio page, referral link, docs with a TSDoc-generated SDK reference); pre-QA bot (desktop + Pixel 7) and workflow; admin QA queue, review, Spark decisions, audit log; Edge Functions. E2E: studio signup to Spark to KPIs passes. The developer portal is English for now; its Hindi strings come in the Phase 5 Hindi pass.
 - **Phase 3 (2026-11-12):** done. Accounts (magic link, Google, Discord), birth-year age gate with conservative minor rule, parental consent by e-mailed link, guest merge (favourites, history, saves), public profiles with privacy, locker with 30 layered SVG cosmetics, Brain Quests (3 daily, 5 weekly), append-only Brain Points ledger, levels and streaks, friends with live presence and Join, party rooms with votes, host start and preset-phrase chat, global and per-game leaderboards with friends filter, cloud saves, school-safe mode with PIN, notifications. Profiles and party rooms are served by the client fallback page with a 200 (dynamic shells break the App Router after a rewrite). Fixed: the phone immersive frame collapsed to zero height (relative + fixed). E2E: 15 pass on desktop and Pixel 7.
 - **Phase 4 (2026-11-13):** done. AdSense display slots behind a flag (lazy, never on game frames, /dev, /admin or policy pages), Consent Mode v2 with a banner for EU and UK visitors, non-personalised ads for minors, unknown ages and school-safe mode; adsense-h5 in-game provider behind a flag sharing the SDK ad rules; Spark to Rise decisions with written reasons and an exclusivity flag; revenue engine in minor units with a largest-remainder split, monthly statements with browser-made PDFs, payout tracking, encrypted payout details, referral attribution; published share table on /developers. Fixed: the CSP blocked the PDF layout engine (WebAssembly), now allowed with 'wasm-unsafe-eval'. 17 e2e and 67 unit and database tests pass.
+- **Phase 5 (2026-11-13):** done. Clip and share (feature-detected tab recording, up to 30 s, never uploaded); thumbnail A/B tests (stable cover per visitor, impressions and clicks batched, winner after 1,000 impressions per cover); playtest panel with a 3-question survey and results for the developer; studio follows with devlog notifications and a /blog feed; jams (public pages, developer entry, admin manager with ranks); admin homepage editor (hero, featured row, rail order, applied live), quest and locker editors, moderation (reports, bans, name resets, studio suspension, hiding devlogs). Fixed: settings switches read the checkbox after an await and never saved. Performance: the SDK host and below-the-frame widgets load lazily, game page first-load JS 206 KB to 156 KB; home 142 KB. 70 unit and database tests and 18 e2e pass.
+- **v1 scope change (2026-11-13):** the site is English-only. Hindi messages, the /hi route tree, the Devanagari font and the language switch were removed at the owner's request; the locale plumbing stays so a language can return in v2. Quest and locker names keep a Hindi field in the seed data, unused.
+- **Open for v2:** Lighthouse mobile performance is 65 to 80 locally against a target of 90 (LCP about 5 s on simulated slow 4G); the Supabase, R2, AdSense and e-mail paths have not run against live accounts; legal texts are drafts; a licensed external game source (for example GameDistribution) was discussed and deferred.

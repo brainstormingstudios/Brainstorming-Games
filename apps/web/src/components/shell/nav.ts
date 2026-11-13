@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   CarFront,
   Castle,
   Compass,
@@ -47,6 +48,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'multiplayer', href: '/multiplayer', icon: Users },
   { key: 'quests', href: '/quests', icon: Target },
   { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
+  { key: 'jams', href: '/jams', icon: CalendarDays },
 ];
 
 export const TAGS_NAV: NavItem = { key: 'allTags', href: '/tags', icon: Hash };

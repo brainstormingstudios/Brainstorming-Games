@@ -44,6 +44,22 @@ export interface TestGame {
   tags?: string[];
   status?: 'spark' | 'rise' | 'featured';
   usesSdk?: boolean;
+  /** Covers and previews, e.g. two labelled landscape covers for a thumbnail test. */
+  media?: Record<string, unknown>[];
+}
+
+/** A tiny solid-colour landscape cover as a data URL, labelled for a thumbnail A/B test. */
+export function testCover(label: string | null, colour: string): Record<string, unknown> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="${colour}"/></svg>`;
+  return {
+    kind: 'cover_landscape',
+    url: `data:image/svg+xml,${encodeURIComponent(svg)}`,
+    widths: [],
+    width: 640,
+    height: 360,
+    placeholder: null,
+    variantLabel: label,
+  };
 }
 
 /** Adds a published game to the mock database of the page's browser context. */
@@ -64,6 +80,7 @@ export async function addGame(page: Page, game: TestGame): Promise<string> {
         status: g.status ?? 'spark',
         storagePrefix: g.storagePrefix,
         usesSdk: g.usesSdk ?? false,
+        media: g.media,
         studio: { slug: 'probe-studio', name: 'Probe Studio', country: 'IN' },
       }),
     game,

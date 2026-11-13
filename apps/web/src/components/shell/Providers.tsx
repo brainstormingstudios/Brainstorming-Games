@@ -21,6 +21,12 @@ function AppEffects() {
     const after = referral.current();
     // A new referral visit is credited to the studio (85% share on its players' ad revenue).
     if (after && after !== before) void getRepo().then((repo) => repo.player.recordReferral(after)).catch(() => {});
+    // Thumbnail-test clicks that the previous page could not deliver before it unloaded.
+    try {
+      if (window.sessionStorage.getItem('bg.ab.pending')) void import('@/lib/growth/abTracker');
+    } catch {
+      // storage unavailable
+    }
     if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
       const register = () => void navigator.serviceWorker.register('/sw.js').catch(() => {});
       if (document.readyState === 'complete') register();

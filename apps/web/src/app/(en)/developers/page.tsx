@@ -46,6 +46,7 @@ export default async function DevelopersPage({ params }: { params: RouteParams }
         <Mascot size={210} priority className="absolute -right-4 -bottom-8 hidden md:block lg:right-10 lg:bottom-3" />
       </header>
       <div className="prose-bg mx-auto mt-4 max-w-3xl" lang={translated ? undefined : 'en'}>
+        {/* The content's top level (`#`) lands on h2, right under the page's h1. */}
         <Markdown source={source} baseHeading={2} />
       </div>
       <section className="mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface p-5">

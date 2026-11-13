@@ -1,11 +1,11 @@
-## Why publish here
+# Why publish here
 
 - **A published revenue share.** The table below is the deal for everyone. No private negotiations.
 - **A fair first launch.** Every game gets guaranteed players in a Spark Launch, and you see exactly how it performed.
 - **Payouts that suit small studios.** A low threshold, monthly payments and Indian bank transfers alongside PayPal, Wise and Payoneer.
 - **Players come back.** Cross-game quests, streaks and party rooms bring people back to the site and into your game.
 
-## Revenue share
+# Revenue share
 
 | Source | Developer share |
 |---|---|
@@ -16,7 +16,7 @@
 
 Net = ad revenue we receive, minus refunds and invalid traffic. Payouts are monthly, about 45 days after month end, with a threshold of ₹2,000 / $25 (smaller amounts roll over). Methods: Indian bank (NEFT/IMPS), PayPal, Wise, Payoneer.
 
-## Launch tiers
+# Launch tiers
 
 1. **Sandbox.** Upload a build and test it on a private preview link with the SDK debug overlay. Our pre-QA bot checks load time, console errors and SDK events within minutes.
 2. **Spark Launch.** After a human review, your game goes to a limited audience with ads off. It gets a place in the "Fresh games" rail and 1 in 10 homepage slots. The launch ends at 7 days and 1,000 plays, or at 14 days.
@@ -25,7 +25,7 @@ Net = ad revenue we receive, minus refunds and invalid traffic. Payouts are mont
 
 When a Spark Launch ends you always get an answer: a Rise invitation, or a written reason naming the number that fell short and how to improve it.
 
-## What we measure
+# What we measure
 
 | KPI | Great looks like |
 |---|---|
@@ -35,7 +35,7 @@ When a Spark Launch ends you always get an answer: a Rise invitation, or a writt
 
 You see these for your own games, with a percentile against games in the same category.
 
-## The SDK
+# The SDK
 
 One small script (under 15 KB) gives your game:
 
@@ -46,7 +46,7 @@ One small script (under 15 KB) gives your game:
 
 Already on CrazyGames? Our shim maps `window.CrazyGames.SDK` calls onto ours, so most games port in minutes.
 
-## Requirements
+# Requirements
 
 - HTML5 or WebGL build, `index.html` at the root, relative paths only.
 - At most 250 MB and 1,500 files.
@@ -54,28 +54,28 @@ Already on CrazyGames? Our shim maps `window.CrazyGames.SDK` calls onto ours, so
 - Suitable for ages 12 and over, original work, no external ads or logins.
 - Covers at 1920×1080, 800×1200 and 800×800 with title text only.
 
-## FAQ
+# FAQ
 
-### Does it cost anything?
+## Does it cost anything?
 
 No. Publishing is free.
 
-### Do I keep the rights to my game?
+## Do I keep the rights to my game?
 
 Yes. You give us a non-exclusive licence to host and promote it, and you can remove it at any time.
 
-### Can I publish elsewhere too?
+## Can I publish elsewhere too?
 
 Yes. Exclusivity is optional: choose the 60-day web-exclusive window and your share rises to 80% for that period.
 
-### Do I need the SDK for a Spark Launch?
+## Do I need the SDK for a Spark Launch?
 
 No, but we recommend it. Without it we can only measure time on the page. Rise Launch requires it.
 
-### Which engines work?
+## Which engines work?
 
 Anything that exports to the web: Unity WebGL, Godot, Construct, Phaser, PlayCanvas, GameMaker, Defold, Cocos or plain JavaScript.
 
-### How long does review take?
+## How long does review take?
 
 The pre-QA bot answers in minutes. Human review of a first version usually takes a few working days.

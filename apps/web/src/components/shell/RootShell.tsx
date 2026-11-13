@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
-import { balooDeva, fredoka, nunito } from '@/app/fonts';
+import { fredoka, nunito } from '@/app/fonts';
 import { localeTags, type Locale } from '@/i18n/config';
 import { PREFS_BOOT_SCRIPT } from '@/lib/prefsBoot';
 import { Footer } from './Footer';
@@ -32,6 +32,8 @@ const CLIENT_NAMESPACES = [
   // Used on game pages (leaderboard, party invite). Account pages load the rest themselves.
   'party',
   'leaderboards',
+  // Follow, report, devlog feed, playtest survey and clip button on studio and game pages.
+  'growth',
 ] as const;
 
 function pick(messages: Record<string, unknown>, keys: readonly string[]) {
@@ -49,7 +51,7 @@ function pick(messages: Record<string, unknown>, keys: readonly string[]) {
 export async function RootShell({ locale, children }: { locale: Locale; children: ReactNode }) {
   const messages = (await getMessages({ locale })) as Record<string, unknown>;
   const t = await getTranslations({ locale, namespace: 'common' });
-  const fonts = [fredoka.variable, nunito.variable, locale === 'hi' ? balooDeva.variable : ''].join(' ');
+  const fonts = [fredoka.variable, nunito.variable].join(' ');
   return (
     <html lang={localeTags[locale]} data-theme="dark" className={fonts} suppressHydrationWarning>
       <head>

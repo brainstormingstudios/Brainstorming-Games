@@ -49,6 +49,8 @@ export function LocaleSwitch({ className }: { className?: string }) {
   const current = useLocale();
   const pathname = usePathname() ?? '/';
   const { path } = splitLocale(pathname);
+  // Nothing to switch between while the site has one language.
+  if (locales.length < 2) return null;
   return (
     <div
       role="group"

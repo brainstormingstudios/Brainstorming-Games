@@ -14,6 +14,7 @@ import { getPreviewToken } from '@/lib/dev/previewTokens';
 import { formatBytes, formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
+import { GrowthPanel } from './GrowthPanel';
 import { PreQaReportView } from './PreQaReportView';
 import { GameStatusBadge, QaBadge } from './StatusBadge';
 
@@ -209,6 +210,8 @@ export function GameManage() {
           );
         })}
       </section>
+
+      {game.releasedAt ? <GrowthPanel gameId={game.id} /> : null}
 
       <div className="flex flex-wrap gap-2">
         {['spark', 'rise', 'featured'].includes(game.status) ? (

@@ -39,6 +39,10 @@ const NAV = [
   ['overview', '/admin'],
   ['qa', '/admin/qa'],
   ['spark', '/admin/spark'],
+  ['featured', '/admin/home'],
+  ['jams', '/admin/jams'],
+  ['moderation', '/admin/moderation'],
+  ['progression', '/admin/progression'],
   ['revenue', '/admin/revenue'],
   ['audit', '/admin/audit'],
 ] as const;
@@ -86,7 +90,7 @@ export function AdminShell({ children, extraNav = [] }: { children: ReactNode; e
   );
 }
 
-function useAct() {
+export function useAct() {
   const tc = useTranslations('common');
   const toast = useToast();
   return async (fn: () => Promise<unknown>, done?: string) => {

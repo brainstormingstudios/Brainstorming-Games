@@ -8,7 +8,9 @@ import { cn } from '@brainstorming/ui';
 import { localizePath } from '@/i18n/config';
 import { Link, useLocale } from '@/i18n/navigation';
 import { BUILD_TIME } from '@/lib/config';
+import { getAnonId } from '@/lib/data/local';
 import type { GameSummary } from '@/lib/data/types';
+import { variantFor } from '@/lib/domain/abTest';
 import { gameHref } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
 import { GameCover } from './GameCover';
@@ -44,6 +46,31 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
   const prebuilt = isPrebuilt(game);
   const canPreview = Boolean(game.preview) && !lowData;
 
+  // Thumbnail A/B test: each visitor always sees the same cover; impressions and clicks are
+  // counted per cover. The tracker is only downloaded for games that run a test.
+  const link = useRef<HTMLAnchorElement>(null);
+  const testing = game.coverVariants.length >= 2;
+  const [variant, setVariant] = useState<string | null>(null);
+  useEffect(() => {
+    if (!testing) return;
+    setVariant(variantFor(getAnonId(), game.id, game.coverVariants.map((m) => m.variantLabel ?? '')));
+  }, [testing, game.id, game.coverVariants]);
+  useEffect(() => {
+    const el = link.current;
+    if (!variant || !el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        void import('@/lib/growth/abTracker').then((m) => m.recordImpression(game.id, variant));
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [variant, game.id]);
+  const variantAsset = variant ? game.coverVariants.find((m) => m.variantLabel === variant) : undefined;
+
   const clear = useCallback(() => {
     if (timer.current != null) window.clearTimeout(timer.current);
     timer.current = null;
@@ -65,10 +92,12 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
 
   return (
     <Link
+      ref={link}
       href={href}
       hard={!prebuilt}
       data-testid="game-tile"
       data-slug={game.slug}
+      data-variant={variant ?? undefined}
       className={cn('group block rounded-card', className)}
       onPointerEnter={(e) => {
         if (e.pointerType !== 'mouse') return;
@@ -88,11 +117,13 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
         if (suppressClick.current) {
           suppressClick.current = false;
           e.preventDefault();
+          return;
         }
+        if (variant) void import('@/lib/growth/abTracker').then((m) => m.recordClick(game.id, variant));
       }}
     >
       <span className="relative block aspect-video overflow-hidden rounded-card border border-border bg-surface shadow-card transition-[transform,box-shadow] duration-200 ease-(--ease-spring) group-hover:-translate-y-1 group-hover:shadow-glow group-focus-visible:shadow-glow">
-        <GameCover game={game} priority={priority} sizes={sizes} />
+        <GameCover game={game} asset={variantAsset} priority={priority} sizes={sizes} />
         {preview && game.preview ? (
           <video
             src={game.preview.url}

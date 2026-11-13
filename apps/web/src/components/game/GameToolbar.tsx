@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
   Bug,
@@ -43,6 +44,8 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { setPrefs, usePrefs } from '@/lib/prefs';
 import { useLocale } from '@/i18n/navigation';
 import { localizePath } from '@/i18n/config';
+
+const ClipButton = dynamic(() => import('@/components/growth/ClipButton').then((m) => m.ClipButton), { ssr: false });
 
 export interface GameToolbarProps {
   game: GameSummary;
@@ -162,6 +165,7 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
         <IconButton label={t('share')} data-testid="share-button" onClick={() => void share()}>
           <Share2 aria-hidden="true" className="size-5" />
         </IconButton>
+        {!schoolSafe ? <ClipButton title={game.title} /> : null}
         {!schoolSafe ? (
           <IconButton
             label={t('invite')}

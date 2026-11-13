@@ -15,6 +15,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { key: 'nav.new', href: '/new' },
       { key: 'nav.trending', href: '/trending' },
       { key: 'nav.multiplayer', href: '/multiplayer' },
+      { key: 'nav.jams', href: '/jams' },
       { key: 'nav.allTags', href: '/tags' },
     ],
   },
@@ -22,6 +23,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     title: 'company',
     links: [
       { key: 'footer.about', href: '/about' },
+      { key: 'footer.blog', href: '/blog' },
       { key: 'footer.parents', href: '/parents' },
       { key: 'footer.schoolSafe', href: '/school-safe' },
       { key: 'footer.contact', href: '/contact' },

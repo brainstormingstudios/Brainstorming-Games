@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, Crown } from 'lucide-react';
 import { Badge, EmptyState, MascotAvatar } from '@brainstorming/ui';
+import { DevlogFeed, FollowButton, ReportLink } from '@/components/growth/Public';
 import { PageSkeleton } from '@/components/shell/ClientFallback';
 import { NotFoundView } from '@/components/shell/NotFoundView';
 import type { GameSummary, StudioDetail } from '@/lib/data/types';
@@ -76,7 +77,12 @@ export function StudioLive({ slug, initial, initialGames }: StudioLiveProps) {
               ))}
             </ul>
           ) : null}
+          <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
+            <span data-testid="follower-count">{t('followers', { count: s.followers })}</span>
+            <ReportLink target={{ kind: 'studio', targetType: 'studio', targetId: s.id }} />
+          </p>
         </div>
+        <FollowButton studioId={s.id} />
       </header>
       <section aria-labelledby="studio-games" className="mt-7">
         <h2 id="studio-games" className="mb-3 text-xl font-semibold sm:text-2xl">
@@ -95,6 +101,9 @@ export function StudioLive({ slug, initial, initialGames }: StudioLiveProps) {
           </ul>
         )}
       </section>
+      <div className="max-w-3xl">
+        <DevlogFeed studioSlug={s.slug} heading={t('devlogs')} limit={10} />
+      </div>
     </div>
   );
 }

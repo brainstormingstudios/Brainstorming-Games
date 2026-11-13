@@ -18,7 +18,7 @@ const PLAY_ORIGIN = (process.env.NEXT_PUBLIC_PLAY_ORIGIN || 'http://localhost:41
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '');
 const ADSENSE = Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT);
 const CF_ANALYTICS = Boolean(process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN);
-const LOCALES = ['en', 'hi'];
+const LOCALES = ['en'];
 const DEFAULT_LOCALE = 'en';
 const PREFIXED = LOCALES.filter((l) => l !== DEFAULT_LOCALE);
 

@@ -73,11 +73,8 @@ test.describe('catalogue', () => {
       await page.goto('/');
       await page.getByTestId('search-input').fill('probe');
       await expect(page.getByTestId('search-results').getByText('Probe Quest')).toBeVisible();
-      // Hindi-first discovery: the Hinglish word for "puzzle" finds a puzzle game.
-      await page.getByTestId('search-input').fill('paheli');
-      await expect(page.getByTestId('search-results').getByText('Probe Quest')).toBeVisible();
       await page.getByTestId('search-input').press('Enter');
-      await expect(page).toHaveURL(/\/search\/\?q=paheli/);
+      await expect(page).toHaveURL(/\/search\/\?q=probe/);
       await expect(page.getByTestId('search-page-results').getByText('Probe Quest')).toBeVisible();
 
       // The game page is resolved in the browser because the game is newer than the build.
@@ -139,15 +136,10 @@ test.describe('catalogue', () => {
     }
   });
 
-  test('language, theme and low-data mode are remembered', async ({ page }) => {
+  test('theme and low-data mode are remembered', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-
-    await page.goto('/hi/');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
-    await expect(page.getByTestId('hero-publish')).toContainText('पब्लिश');
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', /\/$/);
 
     await page.evaluate(() => {
       const prefs = JSON.parse(localStorage.getItem('bg.prefs') ?? '{}');

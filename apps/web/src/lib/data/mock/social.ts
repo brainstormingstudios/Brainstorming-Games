@@ -1,8 +1,6 @@
 import { isRestricted } from '@/lib/domain/ageGate';
 import {
-  COSMETICS,
   PARTY_PHRASES,
-  QUESTS,
   activeQuests,
   badgesFor,
   levelFor,
@@ -29,6 +27,7 @@ import type {
 import { publicSummaries } from './catalogue';
 import { currentMockUser, currentUserId, requireProfile, updateUser } from './auth';
 import { fail, mutateTable, newId, notify, nowIso, readTable, takeToken, type MockUser, type MockTables } from './db';
+import { effectiveCosmetics, effectiveQuests } from './growth';
 import { friendIdsOf, weekStart } from './play';
 
 // ---------------------------------------------------------------------------------------------
@@ -79,7 +78,7 @@ function progressInputs(userId: string, since: string): ProgressInputs {
 /** Recomputes quest progress and awards completed quests once (mirror of app.refresh_quests). */
 export function refreshQuests(userId: string) {
   const out: { code: string; progress: number; completed: boolean }[] = [];
-  for (const q of activeQuests(QUESTS)) {
+  for (const q of activeQuests(effectiveQuests())) {
     const start = periodStart(q.period);
     const progress = questProgress(q, progressInputs(userId, `${start}T00:00:00.000Z`));
     const completed = progress >= q.target;
@@ -108,11 +107,12 @@ export const mockQuestsRepo: Omit<QuestsRepo, 'track'> = {
   async mine(locale) {
     const user = currentMockUser();
     const done = user?.username ? refreshQuests(user.id) : [];
-    const lang = locale === 'hi' ? 'hi' : 'en';
+    void locale;
+    const lang = 'en';
     const lifetime = user ? readTable('ledger').filter((l) => l.userId === user.id && l.delta > 0).reduce((n, l) => n + l.delta, 0) : 0;
     const today = new Date().toISOString().slice(0, 10);
     return {
-      quests: activeQuests(QUESTS).map((q) => {
+      quests: activeQuests(effectiveQuests()).map((q) => {
         const d = done.find((x) => x.code === q.code);
         return {
           code: q.code,
@@ -148,16 +148,17 @@ export const mockQuestsRepo: Omit<QuestsRepo, 'track'> = {
 // Locker
 // ---------------------------------------------------------------------------------------------
 
-const FREE = COSMETICS.filter((x) => x.cost === 0 && x.minLevel <= 1);
+const freeItems = () => effectiveCosmetics().filter((x) => x.cost === 0 && x.minLevel <= 1);
 
 export const mockLocker: LockerRepo = {
   async items(locale) {
     const user = currentMockUser();
     const owned = new Set(
-      user ? [...FREE.map((x) => `${x.slot}:${x.code}`), ...readTable('userCosmetics').filter((u) => u.userId === user.id).map((u) => `${u.slot}:${u.code}`)] : [],
+      user ? [...freeItems().map((x) => `${x.slot}:${x.code}`), ...readTable('userCosmetics').filter((u) => u.userId === user.id).map((u) => `${u.slot}:${u.code}`)] : [],
     );
-    const lang = locale === 'hi' ? 'hi' : 'en';
-    return COSMETICS.map((x) => ({
+    void locale;
+    const lang = 'en';
+    return effectiveCosmetics().map((x) => ({
       id: `${x.slot}:${x.code}`,
       slot: x.slot,
       code: x.code,
@@ -171,7 +172,7 @@ export const mockLocker: LockerRepo = {
   async unlock(itemId) {
     const user = requireProfile();
     const [slot, code] = itemId.split(':');
-    const item = COSMETICS.find((x) => x.slot === slot && x.code === code);
+    const item = effectiveCosmetics().find((x) => x.slot === slot && x.code === code);
     if (!item) fail('not_found');
     if (readTable('userCosmetics').some((u) => u.userId === user.id && u.slot === slot && u.code === code)) return;
     if (user.level < item.minLevel || user.brainPoints < item.cost) fail('not_allowed');
@@ -183,7 +184,7 @@ export const mockLocker: LockerRepo = {
   },
   async equip(cosmetics) {
     const user = requireProfile();
-    const owned = new Set([...FREE.map((x) => `${x.slot}:${x.code}`), ...readTable('userCosmetics').filter((u) => u.userId === user.id).map((u) => `${u.slot}:${u.code}`)]);
+    const owned = new Set([...freeItems().map((x) => `${x.slot}:${x.code}`), ...readTable('userCosmetics').filter((u) => u.userId === user.id).map((u) => `${u.slot}:${u.code}`)]);
     const next: Record<string, string> = {};
     for (const [slot, code] of Object.entries(cosmetics)) {
       if (!code) continue;

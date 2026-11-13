@@ -1,9 +1,9 @@
 /**
- * Locales. English is served at the root (`/game/x/`); every other locale is prefixed
- * (`/hi/game/x/`). To add a language: add it here, add `messages/<code>.json`, run
- * `npm run gen:routes`.
+ * Locales. The site is English-only for now. English is served at the root (`/game/x/`); any
+ * language added later is prefixed (`/xx/game/x/`): add it here, add `messages/<code>.json`
+ * and run `npm run gen:routes`.
  */
-export const locales = ['en', 'hi'] as const;
+export const locales = ['en'] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'en';
@@ -14,26 +14,23 @@ export const prefixedLocales = locales.filter((l) => l !== defaultLocale) as Exc
 /** Names shown in the language switch, each in its own language. */
 export const localeNames: Record<Locale, string> = {
   en: 'English',
-  hi: 'हिन्दी',
 };
 
 /** BCP 47 tags for `lang` and hreflang. */
 export const localeTags: Record<Locale, string> = {
   en: 'en',
-  hi: 'hi',
 };
 
 /** Open Graph locale codes. */
 export const ogLocales: Record<Locale, string> = {
   en: 'en_US',
-  hi: 'hi_IN',
 };
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (locales as readonly string[]).includes(value);
 }
 
-/** Splits `/hi/game/x/` into `{ locale: 'hi', path: '/game/x/' }`. */
+/** Splits a prefixed path (`/xx/game/x/`) into its locale and the rest. Unknown prefixes are part of the path. */
 export function splitLocale(pathname: string): { locale: Locale; path: string } {
   const match = /^\/([a-z]{2})(?=\/|$)/.exec(pathname);
   const first = match?.[1];
@@ -46,7 +43,7 @@ export function splitLocale(pathname: string): { locale: Locale; path: string } 
 
 /**
  * Turns an app path into a locale-aware href with a trailing slash:
- * `localizePath('/game/x', 'hi')` gives `/hi/game/x/`. Query and hash are kept.
+ * `localizePath('/game/x', 'en')` gives `/game/x/`. Query and hash are kept.
  */
 export function localizePath(path: string, locale: Locale): string {
   if (/^([a-z][a-z0-9+.-]*:|\/\/|#)/i.test(path)) return path;

@@ -26,6 +26,7 @@ import { functionsUrl, getSupabase } from './client';
 import { toRepoError } from './errors';
 import { supabaseAuth, supabaseQuests, supabaseSaves, supabaseScores } from './account';
 import { supabaseAdmin, supabaseDev } from './dev';
+import { supabaseGrowth } from './growth';
 import { supabaseRevenue } from './revenue';
 import {
   supabaseLeaderboards,
@@ -438,6 +439,7 @@ export function createSupabaseRepo(): Repo {
   });
   return {
     mode: 'supabase',
+    growth: supabaseGrowth((ids) => catalogue.byIds(ids)),
     revenue: supabaseRevenue,
     catalogue,
     player,

@@ -72,6 +72,7 @@ export function AccountMenu() {
         onClick={() => void requestLogin()}
         icon={<LogIn aria-hidden="true" className="size-4" />}
         data-testid="login-button"
+        aria-label={t('logIn')}
         className="shrink-0 px-3"
       >
         <span className="hidden md:inline">{t('logIn')}</span>

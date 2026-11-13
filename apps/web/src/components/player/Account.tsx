@@ -392,8 +392,27 @@ function AccountSettings({ user }: { user: NonNullable<ReturnType<typeof useSess
         <Button onClick={() => void act(async () => (await getRepo()).auth.updateProfile({ displayName: name }), t('saved'))}>{t('save')}</Button>
       </div>
       <h2 className="text-lg font-semibold">{t('privacy')}</h2>
-      <Switch label={t('publicProfile')} description={t('publicProfileBody')} checked={user.profilePublic} onChange={(e) => void act(async () => (await getRepo()).auth.updateProfile({ profilePublic: e.target.checked }))} />
-      <Switch label={t('playtest')} description={t('playtestBody')} checked={user.playtestOptIn} onChange={(e) => void act(async () => (await getRepo()).auth.updateProfile({ playtestOptIn: e.target.checked }))} data-testid="playtest-optin" />
+      {/* Read `checked` before any await: React resets a controlled checkbox once the handler returns. */}
+      <Switch
+        label={t('publicProfile')}
+        description={t('publicProfileBody')}
+        checked={user.profilePublic}
+        onChange={(e) => {
+          const profilePublic = e.target.checked;
+          void act(async () => (await getRepo()).auth.updateProfile({ profilePublic }));
+        }}
+        data-testid="public-profile"
+      />
+      <Switch
+        label={t('playtest')}
+        description={t('playtestBody')}
+        checked={user.playtestOptIn}
+        onChange={(e) => {
+          const playtestOptIn = e.target.checked;
+          void act(async () => (await getRepo()).auth.updateProfile({ playtestOptIn }));
+        }}
+        data-testid="playtest-optin"
+      />
       {user.isMinor ? (
         <p className="text-sm">
           <span className="font-bold">{t('consentTitle')}:</span> {t(`consentStatus.${user.consent}`)}

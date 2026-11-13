@@ -6,8 +6,6 @@ import { searchGames } from '@/lib/catalogue/search';
 import { DEFAULT_SITE_CONFIG, type GameSummary } from '@/lib/data/types';
 import { bayesianRating10, isVoteInWindow } from '@/lib/domain/rating';
 import { injectSparkSlots, isSparkWindowOver, orderSparkForExposure } from '@/lib/domain/spark';
-import en from '../../apps/web/messages/en.json';
-import hi from '../../apps/web/messages/hi.json';
 
 const DAY = 86_400_000;
 const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * DAY).toISOString();
@@ -143,31 +141,16 @@ describe('search', () => {
     expect(searchGames('brik', games)[0]!.id).toBe('a');
     expect(searchGames('   ', games)).toEqual([]);
   });
-  it('understands Hindi and Hinglish category words', () => {
-    expect(searchGames('paheli', games)[0]!.id).toBe('b');
-    expect(searchGames('पहेली', games)[0]!.id).toBe('b');
-  });
 });
 
 describe('i18n', () => {
   it('builds locale-aware paths with trailing slashes', () => {
     expect(localizePath('/game/x', 'en')).toBe('/game/x/');
-    expect(localizePath('/game/x', 'hi')).toBe('/hi/game/x/');
-    expect(localizePath('/', 'hi')).toBe('/hi/');
-    expect(localizePath('/search?q=a', 'hi')).toBe('/hi/search/?q=a');
-    expect(localizePath('https://example.com/x', 'hi')).toBe('https://example.com/x');
-    expect(splitLocale('/hi/game/x/')).toEqual({ locale: 'hi', path: '/game/x/' });
+    expect(localizePath('/search?q=a', 'en')).toBe('/search/?q=a');
+    expect(localizePath('https://example.com/x', 'en')).toBe('https://example.com/x');
+    // Without a second language a two-letter first segment is just a path.
+    expect(splitLocale('/hi/game/x/')).toEqual({ locale: 'en', path: '/hi/game/x/' });
     expect(splitLocale('/history/')).toEqual({ locale: 'en', path: '/history/' });
   });
 
-  // The staff console is English-only by design; the developer portal is translated in the
-  // phase 5 Hindi content pass. Everything a player sees must match exactly.
-  it('has exactly the same player-facing message keys in English and Hindi', () => {
-    const keys = (obj: unknown, prefix = ''): string[] =>
-      obj && typeof obj === 'object'
-        ? Object.entries(obj as Record<string, unknown>).flatMap(([k, v]) => keys(v, `${prefix}${k}.`))
-        : [prefix.slice(0, -1)];
-    const playerFacing = (list: string[]) => list.filter((k) => !k.startsWith('admin.') && !k.startsWith('dev.')).sort();
-    expect(playerFacing(keys(hi))).toEqual(playerFacing(keys(en)));
-  });
 });

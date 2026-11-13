@@ -277,6 +277,15 @@ export interface MockTables {
   userFavourites: { userId: string; gameId: string; createdAt: string }[];
   userHistory: { userId: string; gameId: string; slug: string; lastPlayedAt: string; playCount: number; secondsPlayed: number }[];
   referralVisits: { studioSlug: string; anonId: string; at: string }[];
+  followers: { studioId: string; userId: string; createdAt: string }[];
+  jams: { id: string; slug: string; title: string; theme: string; descriptionMd: string; startsAt: string; endsAt: string; status: 'draft' | 'published' | 'closed'; createdAt: string }[];
+  jamEntries: { jamId: string; gameId: string; studioId: string; submittedAt: string; rank: number | null }[];
+  variantStats: { gameId: string; label: string; impressions: number; clicks: number; winner: boolean; decidedAt: string | null }[];
+  playtests: { gameId: string; userId: string; fun: number; clarity: number; playAgain: boolean; createdAt: string }[];
+  reports: { id: string; kind: string; targetType: string; targetId: string; reporterKey: string; reason: string; status: 'open' | 'actioned' | 'dismissed'; createdAt: string }[];
+  /** Admin edits to the built-in quest and cosmetic lists. */
+  questOverrides: { code: string; target: number; reward: number; active: boolean }[];
+  cosmeticOverrides: { id: string; cost: number; minLevel: number; active: boolean }[];
 }
 
 export type TableName = keyof MockTables;
@@ -290,6 +299,8 @@ const CAPS: Partial<Record<TableName, number>> = {
   scores: 2000,
   questEvents: 2000,
   referralVisits: 2000,
+  reports: 500,
+  playtests: 2000,
 };
 
 /** Mock "server" errors carry the same codes as the Postgres functions. */

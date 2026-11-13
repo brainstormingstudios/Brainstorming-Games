@@ -31,6 +31,7 @@ const NAV = [
   { key: 'newGame', href: '/dev/games/new' },
   { key: 'feedback', href: '/dev/feedback' },
   { key: 'devlogs', href: '/dev/devlogs' },
+  { key: 'jams', href: '/jams' },
   { key: 'studio', href: '/dev/studio' },
   { key: 'payouts', href: '/dev/payouts' },
   { key: 'docs', href: '/dev/docs/quick-start' },

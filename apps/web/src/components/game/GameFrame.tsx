@@ -12,7 +12,8 @@ import type { GameSummary } from '@/lib/data/types';
 import { track } from '@/lib/events/client';
 import { estimateLoadSeconds, formatBytes, playUrl } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
-import { attachHost, type HostBridge, type HostLogEntry } from '@/lib/sdk-host/bridge';
+import type * as HostModule from '@/lib/sdk-host/bridge';
+import type { HostBridge, HostLogEntry } from '@/lib/sdk-host/bridge';
 import { useLocale } from '@/i18n/navigation';
 
 export interface GameFrameHandle {
@@ -109,8 +110,27 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
 
   const clickedAt = useRef(0);
 
+  // The SDK host (message validation, ads, saves) is a large module that is only needed once
+  // someone plays. It is fetched shortly after the page settles, and `start` waits for it, so
+  // the iframe never exists before the host can answer the game's first message.
+  const hostModule = useRef<typeof HostModule | null>(null);
+  const loadHost = useCallback(
+    () =>
+      import('@/lib/sdk-host/bridge').then(
+        (m) => (hostModule.current = m),
+        () => null,
+      ),
+    [],
+  );
+  useEffect(() => {
+    const id = window.setTimeout(() => void loadHost(), 1500);
+    return () => window.clearTimeout(id);
+  }, [loadHost]);
+  const starting = useRef(false);
+
   const start = () => {
-    if (!url || phase !== 'idle') return;
+    if (!url || phase !== 'idle' || starting.current) return;
+    starting.current = true;
     const id = uuid();
     session.current = { id, seconds: 0, visibleSince: null, reported: 0 };
     clickedAt.current = Date.now();
@@ -120,8 +140,8 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       track('loading_start', ids);
       void getRepo().then((repo) => repo.player.recordPlay(game, 0, true));
     }
-    setPhase('loading');
     if (!preview && window.matchMedia('(max-width: 639px)').matches) setImmersive(true);
+    void loadHost().then(() => setPhase('loading'));
   };
 
   useEffect(() => {
@@ -131,8 +151,8 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
 
   // The SDK host attaches as soon as the iframe exists, before the game sends its first message.
   useEffect(() => {
-    if (phase !== 'loading' || !frame.current || bridge.current || !stage.current || !session.current) return;
-    bridge.current = attachHost(frame.current, {
+    if (phase !== 'loading' || !frame.current || bridge.current || !stage.current || !session.current || !hostModule.current) return;
+    bridge.current = hostModule.current.attachHost(frame.current, {
       game,
       sessionId: session.current.id,
       locale,

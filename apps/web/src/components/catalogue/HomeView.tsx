@@ -184,10 +184,13 @@ export interface HomeViewProps {
   seed: string;
 }
 
-export function HomeView({ initialGames, config, seed }: HomeViewProps) {
+export function HomeView({ initialGames, config: builtConfig, seed }: HomeViewProps) {
   const t = useTranslations('home');
   const { schoolSafe } = usePrefs();
   const { games: all } = useLiveGames(initialGames);
+  // The admin's homepage edits apply straight away, not only after the next build.
+  const liveConfig = useRepoQuery((repo) => repo.catalogue.siteConfig(), [], { initial: builtConfig, topics: ['catalogue'] });
+  const config = liveConfig.data ?? builtConfig;
   const games = useMemo(
     () => all.filter((g) => isPublic(g) && (!schoolSafe || g.schoolSafe)),
     [all, schoolSafe],
@@ -200,12 +203,17 @@ export function HomeView({ initialGames, config, seed }: HomeViewProps) {
     const rest = sortGames(games.filter((g) => !picked.includes(g)), 'trending');
     return [...picked, ...rest].slice(0, 3);
   }, [games, config.heroGameIds]);
+  const featured = useMemo(() => {
+    const byId = new Map(games.map((g) => [g.id, g]));
+    return config.featuredGameIds.map((id) => byId.get(id)).filter((g): g is GameSummary => g != null);
+  }, [games, config.featuredGameIds]);
 
   return (
     <div className="page" data-testid="home">
       <h1 className="sr-only">{t('h1')}</h1>
       {hero.length >= HERO_MIN_GAMES ? <HeroCarousel games={hero} /> : <PublishBanner />}
       <ContinuePlaying />
+      {featured.length > 0 ? <Rail title={t('featured')} games={featured} testId="rail-featured" /> : null}
       {rails.map((rail, i) => (
         <Fragment key={rail.id}>
           <Rail

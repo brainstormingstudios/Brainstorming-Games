@@ -163,7 +163,7 @@ export function toStudioDetail(s: MockStudio): StudioDetail {
     avatarUrl: s.avatarUrl,
     links: s.links,
     level: s.level,
-    followers: 0,
+    followers: readTable('followers').filter((f) => f.studioId === s.id).length,
     createdAt: s.createdAt,
   };
 }
