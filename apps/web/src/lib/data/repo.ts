@@ -31,6 +31,8 @@ import type {
   QaReviewItem,
   ReferralStats,
   SparkRow,
+  Declaration,
+  AutoReviewReport,
 } from './devTypes';
 import type {
   AdminCosmetic,
@@ -157,10 +159,10 @@ export interface SessionUser {
 export type OAuthProvider = 'google' | 'apple' | 'discord';
 
 export interface SignInResult {
-  /** A magic link was e-mailed (Supabase), or the session already started (mock). */
-  status: 'email_sent' | 'signed_in';
-  /** Mock mode only: the link that would have been e-mailed. */
-  devLink?: string;
+  /** A 6-digit code was e-mailed (type it with `verifyEmailCode`), or the session already started. */
+  status: 'code_sent' | 'signed_in';
+  /** Local build without e-mail set up: the code, shown on screen instead of e-mailed. */
+  devCode?: string;
 }
 
 export interface ProfilePatch {
@@ -175,6 +177,8 @@ export interface ProfilePatch {
 export interface AuthRepo {
   session(): Promise<SessionUser | null>;
   signInWithEmail(email: string, next?: string): Promise<SignInResult>;
+  /** Finishes an e-mail sign-in with the 6-digit code. Throws `invalid` for a wrong or expired code. */
+  verifyEmailCode(email: string, code: string): Promise<void>;
   signInWithProvider(provider: OAuthProvider, next?: string): Promise<void>;
   /** Google Identity Services: signs in with the ID token Google's own button returned. */
   signInWithGoogleIdToken(idToken: string): Promise<void>;
@@ -410,7 +414,8 @@ export interface DevRepo {
   ): Promise<{ versionId: string; previewToken: string }>;
   /** Starts the pre-QA bot. Mock mode runs it locally and resolves with the report. */
   runPreQa(versionId: string): Promise<PreQaReport | null>;
-  submitForReview(gameId: string): Promise<void>;
+  /** Needs the rights declaration. Runs the auto-review, then queues the game for a moderator. */
+  submitForReview(gameId: string, declaration: Declaration): Promise<void>;
   rollback(gameId: string, versionId: string): Promise<void>;
   setStatus(gameId: string, status: 'paused' | 'removed'): Promise<void>;
   kpis(gameId: string, from: string, to: string): Promise<KpiResult>;
@@ -547,6 +552,12 @@ export interface GrowthRepo {
   findUsers(query: string): Promise<AdminUserRow[]>;
   /** `role` can only be changed by an admin (not by a moderator). */
   setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean; role?: UserRole }): Promise<void>;
+  /** Admins: delete an account for good (not your own). */
+  deleteUser(userId: string, reason: string): Promise<void>;
+  /** Every game on the site with its studio and status, for game moderation. */
+  allGames(query: string): Promise<{ id: string; slug: string; title: string; studioName: string; status: GameStatus; autoReviewStatus: AutoReviewReport['status'] | null; updatedAt: string }[]>;
+  /** Admins: delete a game for good. */
+  deleteGame(gameId: string, reason: string): Promise<void>;
   findStudios(query: string): Promise<AdminStudioRow[]>;
   setStudio(studioId: string, patch: { suspended?: boolean; verified?: boolean }): Promise<void>;
   adminDevlogs(): Promise<AdminDevlogRow[]>;

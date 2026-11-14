@@ -13,6 +13,7 @@ import type {
   QaQueueItem,
   QaStatus,
   SparkRow,
+  AutoReviewReport,
 } from '../devTypes';
 import { RepoError, type AdminRepo, type DevRepo } from '../repo';
 import type { MediaAsset } from '../types';
@@ -97,6 +98,7 @@ function toVersion(r: Row, currentId: string | null): DevVersion {
     usesSdk: Boolean(r.uses_sdk),
     minorUpdate: Boolean(r.minor_update),
     preQaReport: (r.pre_qa_report as PreQaReport | null) ?? null,
+    autoReview: (r.auto_review as AutoReviewReport | null) ?? null,
     qaStatus: r.qa_status as QaStatus,
     qaNotes: (r.qa_notes as string | null) ?? null,
     createdAt: String(r.created_at),
@@ -329,6 +331,7 @@ export const supabaseDev: DevRepo = {
           height: media.height,
           placeholder: media.placeholder,
           variant_label: media.variantLabel,
+          phash: media.phash ?? null,
         })
         .select('*')
         .single<Row>(),
@@ -353,6 +356,9 @@ export const supabaseDev: DevRepo = {
         p_minor_update: input.minorUpdate,
       }),
     ) as { version_id: string; preview_token: string };
+    if (input.fingerprint) {
+      check(await getSupabase().rpc('set_build_fingerprint', { p_version: created.version_id, p_fingerprint: input.fingerprint }));
+    }
     // Presigned R2 URLs, requested in batches so each Edge Function call stays small.
     const total = input.files.reduce((n, f) => n + f.data.size, 0) || 1;
     let sent = 0;
@@ -384,9 +390,12 @@ export const supabaseDev: DevRepo = {
     // The report arrives asynchronously from the GitHub Actions runner.
     return null;
   },
-  async submitForReview(gameId) {
-    check(await getSupabase().rpc('submit_for_review', { p_game_id: gameId }));
+  async submitForReview(gameId, declaration) {
+    // The Edge Function submits (the database checks the rules) and then runs the auto-review
+    // with the service role, so a developer cannot write their own review.
+    await callFunction('submit-game', { gameId, declaration });
     emitTopic('dev-games');
+    emitTopic('qa');
   },
   async rollback(gameId, versionId) {
     check(await getSupabase().rpc('rollback_version', { p_game_id: gameId, p_version_id: versionId }));
@@ -478,7 +487,7 @@ export const supabaseAdmin: AdminRepo = {
     const data = check(
       await getSupabase()
         .from('game_versions')
-        .select('id, version, created_at, pre_qa_report, game_id, games(title, released_at, studios(name))')
+        .select('id, version, created_at, pre_qa_report, auto_review, game_id, games(title, released_at, studios(name))')
         .eq('qa_status', 'in_review')
         .order('created_at', { ascending: true }),
     );
@@ -493,6 +502,7 @@ export const supabaseAdmin: AdminRepo = {
         version: String(r.version),
         submittedAt: String(r.created_at),
         preQaStatus: ((r.pre_qa_report as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
+        autoReviewStatus: ((r.auto_review as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
         isUpdate: Boolean(g.released_at),
       };
     });

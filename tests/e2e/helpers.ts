@@ -128,6 +128,11 @@ export async function signIn(page: Page, email: string, username: string, birthY
   const dialog = page.locator('dialog[open]');
   await dialog.getByTestId('login-email').fill(email);
   await dialog.getByTestId('login-submit').click();
+  // No e-mail is set up for tests, so the 6-digit code is shown on screen instead of e-mailed.
+  const shown = dialog.getByTestId('dev-code').locator('strong');
+  await expect(shown).toBeVisible();
+  await dialog.getByTestId('login-code').fill((await shown.innerText()).trim());
+  await dialog.getByTestId('login-code-submit').click();
   const profile = dialog.getByTestId('signup-username');
   const needsProfile = await profile
     .waitFor({ state: 'visible', timeout: 4000 })

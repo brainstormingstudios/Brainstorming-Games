@@ -339,6 +339,57 @@ export const mockGrowth: GrowthRepo = {
     emitTopic('admin');
     emitTopic('session');
   },
+  async deleteUser(userId, reason) {
+    const staff = requireStaff();
+    if (staff.role !== 'admin') fail('not_allowed', 'Only an admin can delete accounts.');
+    if (userId === staff.id) fail('not_allowed', 'You cannot delete your own account here.');
+    if (reason.trim().length < 5) fail('invalid', 'Write why (at least a few words).');
+    const user = readTable('users').find((u) => u.id === userId);
+    if (!user) fail('not_found');
+    for (const t of ['userFavourites', 'userHistory', 'cloudSaves', 'questEvents', 'userCosmetics', 'ledger', 'notifications', 'followers', 'playtests'] as const) {
+      mutateTable(t, (rows) => (rows as { userId?: string }[]).filter((r) => r.userId !== userId) as never);
+    }
+    mutateTable('friendships', (rows) => rows.filter((f) => f.requester !== userId && f.addressee !== userId));
+    mutateTable('users', (rows) => rows.filter((u) => u.id !== userId));
+    audit(staff.id, 'delete_user', 'user', userId, { username: user.username, reason });
+    emitTopic('admin');
+  },
+  async allGames(query) {
+    requireStaff();
+    const q = query.trim().toLowerCase();
+    const studios = new Map(readTable('studios').map((s) => [s.id, s.name]));
+    const versions = readTable('versions');
+    return readTable('games')
+      .filter((g) => !q || g.title.toLowerCase().includes(q) || g.slug.includes(q) || (studios.get(g.studioId) ?? '').toLowerCase().includes(q))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 200)
+      .map((g) => {
+        const latest = versions.filter((v) => v.gameId === g.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+        return {
+          id: g.id,
+          slug: g.slug,
+          title: g.title,
+          studioName: studios.get(g.studioId) ?? '',
+          status: g.status,
+          autoReviewStatus: (latest?.autoReview as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null,
+          updatedAt: g.updatedAt,
+        };
+      });
+  },
+  async deleteGame(gameId, reason) {
+    const staff = requireStaff();
+    if (staff.role !== 'admin') fail('not_allowed', 'Only an admin can delete games.');
+    if (reason.trim().length < 5) fail('invalid', 'Write why (at least a few words).');
+    const g = readTable('games').find((x) => x.id === gameId);
+    if (!g) fail('not_found');
+    for (const t of ['versions', 'media', 'ratings', 'gameStats', 'impressions', 'variantStats', 'boosts', 'jamEntries', 'playtests', 'userFavourites', 'userHistory'] as const) {
+      mutateTable(t, (rows) => (rows as { gameId?: string }[]).filter((r) => r.gameId !== gameId) as never);
+    }
+    mutateTable('games', (rows) => rows.filter((x) => x.id !== gameId));
+    audit(staff.id, 'delete_game', 'game', gameId, { title: g.title, reason });
+    emitTopic('catalogue');
+    emitTopic('admin');
+  },
   async findStudios(query) {
     requireStaff();
     const q = query.trim().toLowerCase();

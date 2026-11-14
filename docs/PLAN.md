@@ -197,7 +197,7 @@ RLS is enabled on every table with default deny. `anon` and `authenticated` get 
 - **Rating out of 10** = `10 × (20 × 0.7 + likes) / (20 + votes)`, votes from the last 180 days only.
 - **Spark window** ends at (7 days and 1,000 plays) or 14 days, whichever comes first. Spark games fill the "Fresh games" rail and 1 in 10 slots of the other homepage rails, least-exposed first.
 - **Ad rules**: midgame at most once every 3 minutes per player and never in the first 60 s of gameplay; rewarded pays only on finish and never twice in a row; at most 2 banners and only while gameplay is stopped; every ad call during Spark resolves `{ shown: false, reason: 'spark' }`.
-- **Revenue split**: net = gross − refunds − invalid traffic. Each country's net is shared across games by attributed ad impressions; a global row uses impressions × country weight. Share: 85 % referral traffic, 80 % inside the 60-day web-exclusive window, 70 % otherwise. Payout threshold ₹2,000 / $25, smaller amounts roll over.
+- **Revenue split**: net = gross − refunds − invalid traffic. Each country's net is shared across games by attributed ad impressions; a global row uses impressions × country weight. Share: 85 % referral traffic, 80 % inside the 90-day web-exclusive window, 70 % otherwise. Payout threshold ₹2,000 / $25, smaller amounts roll over.
 
 ---
 

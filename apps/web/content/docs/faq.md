@@ -6,7 +6,7 @@ Nothing. Publishing, the SDK, hosting and the pre-QA bot are free.
 
 ### How much do I earn?
 
-70% of net ad revenue from our traffic, 85% from players you bring with your referral link, and 80% during an optional 60-day web-exclusive window after Rise Launch. Payouts are monthly from ₹2,000 or $25.
+70% of net ad revenue from our traffic, 85% from players you bring with your referral link, and 80% during an optional 90-day web-exclusive window after Rise Launch. Payouts are monthly from ₹2,000 or $25.
 
 ### Do I keep my rights?
 

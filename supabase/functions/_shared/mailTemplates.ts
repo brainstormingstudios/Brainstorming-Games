@@ -8,6 +8,7 @@
  */
 
 export type MailTemplate =
+  | 'sign_in_code'
   | 'welcome_player'
   | 'welcome_studio'
   | 'submission_received'
@@ -112,6 +113,18 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
   const game = s(data.game);
   const dev = (path: string) => `${ctx.developersUrl}${path}`;
   switch (template) {
+    case 'sign_in_code':
+      return layout(
+        {
+          subject: `${s(data.code)} is your Brainstorming Games code`,
+          preview: 'Type this code to sign in. It works for 10 minutes.',
+          heading: 'Your sign-in code',
+          paragraphs: ['Type this code on Brainstorming Games to sign in. It works for 10 minutes and only once.'],
+          facts: [['Code', s(data.code)]],
+          quote: 'If you did not try to sign in, you can ignore this e-mail: nobody can sign in without the code.',
+        },
+        ctx,
+      );
     case 'welcome_player':
       return layout(
         {

@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@brainstorming/ui';
-import { GOOGLE_CLIENT_ID, IS_MOCK } from '@/lib/config';
+import { GOOGLE_CLIENT_ID } from '@/lib/config';
 import { getRepo } from '@/lib/data';
 
 interface GoogleId {
@@ -111,8 +111,6 @@ export function SocialSignIn({ next, disabled, onSignedIn, onError }: { next?: s
     }
   };
 
-  // The local build has no Apple keys and no Supabase: say how these buttons switch on.
-  const appleAvailable = !IS_MOCK;
   return (
     <div className="flex flex-col gap-2" data-testid="social-sign-in">
       {GOOGLE_CLIENT_ID ? (
@@ -125,19 +123,13 @@ export function SocialSignIn({ next, disabled, onSignedIn, onError }: { next?: s
           {t('google')}
         </Button>
       )}
-      <Button
-        variant="outline"
-        size="lg"
-        disabled={disabled || busy != null || !appleAvailable}
-        loading={busy === 'apple'}
-        icon={<AppleMark />}
-        onClick={() => void viaProvider('apple')}
-        data-testid="apple-button"
-        title={appleAvailable ? undefined : t('appleLiveOnly')}
-      >
+      {/* Apple sign-in needs a paid Apple Developer account: switched on later. */}
+      <Button variant="outline" size="lg" disabled icon={<AppleMark />} data-testid="apple-button" aria-describedby="apple-soon">
         {t('apple')}
+        <span id="apple-soon" className="ml-1 rounded-full bg-surface-2 px-2 py-0.5 text-[0.7rem] font-extrabold tracking-wide text-fg-muted uppercase">
+          {t('comingSoon')}
+        </span>
       </Button>
-      {!appleAvailable ? <p className="text-center text-xs text-fg-muted">{t('appleLiveOnly')}</p> : null}
     </div>
   );
 }

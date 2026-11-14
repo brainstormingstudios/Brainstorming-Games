@@ -16,7 +16,7 @@ import {
 } from '@/lib/domain/zipValidation';
 import { savePreviewToken } from '@/lib/dev/previewTokens';
 import { formatBytes } from '@/lib/format';
-import { MIME_BY_EXT } from './media';
+import { MIME_BY_EXT, buildFingerprint } from './media';
 
 import type JSZipType from 'jszip';
 
@@ -93,7 +93,7 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       );
       const repo = await getRepo();
       const { versionId, previewToken } = await repo.dev.createVersion(
-        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: sdk, minorUpdate: isLive && minor },
+        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: sdk, minorUpdate: isLive && minor, fingerprint: await buildFingerprint(files) },
         setProgress,
       );
       savePreviewToken(versionId, previewToken);
@@ -127,12 +127,13 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed p-8 text-center transition-colors',
+          'flex min-h-48 cursor-pointer flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed p-8 text-center transition-colors',
           dragging ? 'border-primary bg-surface-2' : 'border-border bg-surface-3 hover:bg-surface-2',
         )}
       >
-        <FileArchive aria-hidden="true" className="size-9 text-glow" />
-        <span className="font-bold">{reading ? t('reading') : t('drop')}</span>
+        <FileArchive aria-hidden="true" className={cn('size-10 transition-transform', dragging ? 'scale-110 text-primary' : 'text-glow')} />
+        <span className="font-bold">{reading ? t('reading') : dragging ? t('dropNow') : t('drop')}</span>
+        <span className="text-xs text-fg-muted">{t('dropHint')}</span>
         <input
           type="file"
           accept=".zip,application/zip"

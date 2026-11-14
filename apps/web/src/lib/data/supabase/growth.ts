@@ -3,7 +3,7 @@ import { rankScore, type RankInputs } from '@/lib/domain/ranking';
 import type { DevlogPost, DiscoveryReport, DiscoveryRow, Jam, ReportKind, ReportRecord, SiteStats } from '../growthTypes';
 import { getAnonId } from '../local';
 import { RepoError, type GrowthRepo } from '../repo';
-import type { GameSummary } from '../types';
+import type { GameStatus, GameSummary } from '../types';
 import { getSupabase } from './client';
 import { toRepoError } from './errors';
 
@@ -334,6 +334,33 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
     },
     async setUser(userId_, patch) {
       check(await getSupabase().rpc('admin_set_user', { p_user: userId_, p_banned: patch.banned ?? null, p_role: patch.role ?? null, p_reset_username: patch.resetUsername ?? false }));
+      emitTopic('admin');
+    },
+    async deleteUser(userId_, reason) {
+      check(await getSupabase().rpc('admin_delete_user', { p_user: userId_, p_reason: reason }));
+      emitTopic('admin');
+    },
+    async allGames(query) {
+      let req = getSupabase().from('games').select('id, slug, title, status, updated_at, studios(name), game_versions(auto_review, created_at)');
+      const q = query.trim().replace(/[%,()]/g, '');
+      if (q) req = req.or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
+      const rows = (check(await req.order('updated_at', { ascending: false }).limit(200)) ?? []) as Row[];
+      return rows.map((r) => {
+        const versions = ((r.game_versions as Row[]) ?? []).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        return {
+          id: String(r.id),
+          slug: String(r.slug),
+          title: String(r.title),
+          studioName: String((r.studios as { name?: string } | null)?.name ?? ''),
+          status: r.status as GameStatus,
+          autoReviewStatus: ((versions[0]?.auto_review as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
+          updatedAt: String(r.updated_at),
+        };
+      });
+    },
+    async deleteGame(gameId, reason) {
+      check(await getSupabase().rpc('admin_delete_game', { p_game_id: gameId, p_reason: reason }));
+      emitTopic('catalogue');
       emitTopic('admin');
     },
     async findStudios(query) {

@@ -76,6 +76,34 @@ export function centreCrop(width: number, height: number, target: { width: numbe
   return { sx: 0, sy: (height - sh) / 2, sw: width, sh };
 }
 
+/**
+ * A 64-bit "difference hash" of an image (hex): the picture shrunk to 9 x 8 grey pixels, one bit
+ * per neighbour comparison. Near-identical covers (re-encoded, resized, lightly edited) differ in
+ * only a few bits, which is how the auto-review spots a cover copied from another game.
+ */
+export function differenceHash(img: CanvasImageSource, crop: CropRect): string {
+  const canvas = draw(img, crop, 9, 8);
+  const data = canvas.getContext('2d')!.getImageData(0, 0, 9, 8).data;
+  const grey = (x: number, y: number) => {
+    const i = (y * 9 + x) * 4;
+    return data[i]! * 0.299 + data[i + 1]! * 0.587 + data[i + 2]! * 0.114;
+  };
+  let hex = '';
+  for (let y = 0; y < 8; y++) {
+    let byte = 0;
+    for (let x = 0; x < 8; x++) byte = (byte << 1) | (grey(x, y) > grey(x + 1, y) ? 1 : 0);
+    hex += byte.toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+
+/** SHA-256 of a build's sorted file paths and sizes: the same build uploaded twice gives the same value. */
+export async function buildFingerprint(files: { path: string; data: Blob }[]): Promise<string> {
+  const lines = files.map((f) => `${f.path}:${f.data.size}`).sort().join('\n');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lines));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export interface VideoInfo {
   duration: number;
   width: number;

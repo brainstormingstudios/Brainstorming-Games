@@ -38,6 +38,8 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [devLink, setDevLink] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [consentSent, setConsentSent] = useState(false);
 
   const afterSignIn = async () => {
@@ -59,10 +61,28 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
     try {
       const repo = await getRepo();
       const result = await repo.auth.signInWithEmail(email.trim(), next);
-      if (result.status === 'email_sent') setStep('inbox');
-      else await afterSignIn();
+      if (result.status === 'code_sent') {
+        setDevCode(result.devCode ?? null);
+        setCode('');
+        setStep('inbox');
+      } else await afterSignIn();
     } catch (err) {
       setError(errorText(err, tc('errorBody')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const repo = await getRepo();
+      await repo.auth.verifyEmailCode(email.trim(), code);
+      await afterSignIn();
+    } catch (err) {
+      setError(errorText(err, t('codeWrong')));
     } finally {
       setBusy(false);
     }
@@ -138,11 +158,36 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
       ) : null}
 
       {step === 'inbox' ? (
-        <div className="flex flex-col items-center gap-3 py-4 text-center" role="status">
-          <Mascot size={96} />
-          <h3 className="text-lg font-semibold">{t('checkInbox')}</h3>
-          <p className="text-sm text-fg-muted">{t('checkInboxBody', { email })}</p>
-        </div>
+        <form onSubmit={submitCode} className="flex flex-col gap-3" noValidate data-testid="code-step">
+          <div className="flex items-center gap-3">
+            <Mascot size={64} />
+            <div>
+              <h3 className="text-lg font-semibold">{t('checkInbox')}</h3>
+              <p className="text-sm text-fg-muted">{t('checkInboxBody', { email })}</p>
+            </div>
+          </div>
+          {devCode ? (
+            <p className="rounded-control border border-warning/70 bg-surface-3 px-3 py-2 text-sm" data-testid="dev-code">
+              {t('devCode')} <strong className="font-mono text-base tracking-widest">{devCode}</strong>
+            </p>
+          ) : null}
+          <TextField
+            label={t('codeLabel')}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={7}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ''))}
+            error={error}
+            data-testid="login-code"
+          />
+          <Button type="submit" size="lg" loading={busy} disabled={code.replace(/\D/g, '').length !== 6} data-testid="login-code-submit">
+            {t('codeSubmit')}
+          </Button>
+          <button type="button" className="text-sm font-bold text-link" onClick={() => setStep('start')}>
+            {t('codeOther')}
+          </button>
+        </form>
       ) : null}
 
       {step === 'profile' ? (

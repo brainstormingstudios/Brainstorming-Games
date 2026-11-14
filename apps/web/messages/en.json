@@ -396,9 +396,8 @@
     "or": "or",
     "google": "Continue with Google",
     "discord": "Continue with Discord",
-    "checkInbox": "Check your inbox",
-    "checkInboxBody": "We sent a sign-in link to {email}. Open it on this device to continue.",
-    "mockHint": "Mock mode: any e-mail signs you in straight away. An address starting with admin@ opens the admin console.",
+    "checkInbox": "Check your e-mail",
+    "checkInboxBody": "We sent a 6-digit code to {email}. Type it below.",
     "signupTitle": "Pick your player name",
     "signupIntro": "One last step. We only ask for your birth year, never your full date of birth.",
     "usernameLabel": "Username",
@@ -426,8 +425,13 @@
     "invalidYear": "Enter a year between 1900 and this year.",
     "apple": "Continue with Apple",
     "googleLoading": "Loading Google sign-in…",
-    "appleLiveOnly": "Apple sign-in switches on with the live site (it needs the registered domain).",
-    "socialFailed": "That sign-in did not work. Try again, or use your e-mail."
+    "socialFailed": "That sign-in did not work. Try again, or use your e-mail.",
+    "codeLabel": "6-digit code",
+    "codeSubmit": "Sign in",
+    "codeOther": "Use a different e-mail",
+    "codeWrong": "That code is not right, or it has expired.",
+    "devCode": "E-mail is not set up on this computer yet, so here is your code:",
+    "comingSoon": "Coming soon"
   },
   "dev": {
     "metaTitle": "Developer portal",
@@ -485,7 +489,9 @@
       "noNotifications": "Nothing new.",
       "edit": "Edit",
       "view": "Manage",
-      "kpis": "KPIs"
+      "kpis": "KPIs",
+      "sdkDocs": "SDK quick start",
+      "sdkRules": "SDK rules"
     },
     "status": {
       "draft": "Draft",
@@ -513,10 +519,9 @@
       "titleEdit": "Edit {title}",
       "steps": {
         "details": "Details",
-        "content": "Page content",
-        "media": "Covers and videos",
-        "build": "Build",
-        "submit": "Review and submit"
+        "media": "Covers and video",
+        "build": "Build and submit",
+        "page": "Game page"
       },
       "saved": "Draft saved",
       "saving": "Saving…",
@@ -532,17 +537,15 @@
       "category": "Category",
       "categoryPlaceholder": "Pick a category",
       "tags": "Tags",
-      "tagsHint": "Up to 10, separated by commas.",
+      "tagsHint": "Type a tag and press comma or Enter. At least 3, up to {count}.",
       "orientation": "Orientation",
       "platforms": "Platforms",
       "engine": "Made with",
-      "enginePlaceholder": "Unity, Godot, Phaser…",
+      "enginePlaceholder": "Pick an engine",
       "multiplayer": "Multiplayer game",
       "hasProgress": "Saves player progress",
-      "exclusive": "Offer a 60-day web-exclusive window after Rise Launch (80% share)",
-      "maxScore": "Maximum score per second (for leaderboard checks)",
+      "exclusive": "Offer a 90-day web-exclusive window after Rise Launch (80% share)",
       "description": "Description",
-      "howToPlay": "How to play",
       "features": "Features",
       "tips": "Tips",
       "controls": "Controls",
@@ -551,15 +554,42 @@
       "controlTouch": "Touch",
       "addControl": "Add control",
       "faq": "FAQ",
-      "faqHint": "At least 3 questions players actually ask.",
       "faqQ": "Question",
       "faqA": "Answer",
       "addFaq": "Add question",
       "remove": "Remove",
       "words": "{count, plural, one {# word} other {# words}}",
-      "aim": "aim for {count}+",
       "preview": "Preview",
-      "markdownHint": "Markdown: **bold**, *italic*, - lists, [links](https://…)"
+      "markdownHint": "Markdown: **bold**, *italic*, - lists, [links](https://…)",
+      "required": "Required",
+      "optional": "Optional",
+      "tagsPlaceholder": "puzzle, physics, relaxing…",
+      "removeTag": "Remove {tag}",
+      "other": "Other…",
+      "otherPlaceholder": "Type it here",
+      "madeInIndia": "Made in India",
+      "madeInIndiaHint": "Show this game in the Made in India collection on the player site.",
+      "controlsHint": "Add each thing a player does, then pick the key or touch that does it. At least one.",
+      "controlActionPlaceholder": "Jump, shoot, move…",
+      "more": "More for the game page (features, tips, FAQ)",
+      "rightsTitle": "Rights and originality",
+      "ownsRights": "I made this game or have the rights to publish all of it: code, art, music and sounds.",
+      "noCopies": "It is not a copy or clone of another game and does not use other games' names, characters or logos.",
+      "credits": "Credits and licences",
+      "creditsHint": "List any assets you did not make (asset packs, fonts, music) and their licence, e.g. \"Kenney sprites, CC0\".",
+      "readyTitle": "Ready to submit?",
+      "checkDetails": "Title, short description, category and at least 3 tags",
+      "checkPage": "Description and at least one control",
+      "checkCovers": "All 3 covers (landscape, portrait, square)",
+      "checkVideo": "Landscape preview video (15 to 30 seconds)",
+      "checkPreQa": "A build that passed the automatic checks",
+      "checkRights": "Both rights boxes ticked",
+      "afterSubmit": "After you submit, an automatic check looks for copied builds, copied covers, protected names and outside ad code. Then a person on our team plays the game and approves it, usually within 3 working days.",
+      "alreadyInReview": "In review",
+      "needTitle": "Give the game a title.",
+      "needShort": "Add a short description.",
+      "needCategory": "Pick a category.",
+      "needTags": "Add at least 3 tags."
     },
     "media": {
       "intro": "Covers show the game title only: no \"Play now\" or \"New\" badges, no borders, no store logos.",
@@ -571,7 +601,7 @@
       "required": "Required",
       "optional": "Optional",
       "size": "{width}×{height}",
-      "videoSpec": "15 to 20 seconds, up to 50 MB, MP4 or WebM",
+      "videoSpec": "15 to 30 seconds, up to 50 MB, MP4 or WebM",
       "choose": "Choose file",
       "replace": "Replace",
       "remove": "Remove",
@@ -581,13 +611,13 @@
       "cropHint": "Drag to move, use the slider to zoom.",
       "zoom": "Zoom",
       "useCrop": "Use this crop",
-      "videoTooLong": "The video is {seconds}s. Previews must be 15 to 20 seconds.",
+      "videoTooLong": "The video is {seconds}s. Previews must be 15 to 30 seconds.",
       "videoTooBig": "The video is larger than 50 MB.",
-      "abTitle": "Thumbnail A/B test",
-      "abBody": "Add up to 3 extra landscape covers. Each is shown to players in turn and the one with the best click rate wins after 1,000 impressions each.",
-      "abLocked": "Thumbnail tests are available from the Pro level.",
+      "abTitle": "Cover test (optional)",
+      "abBody": "Not sure which cover gets more clicks? Upload one or two other versions of your landscape cover. Players see one of them at random, and after each has been shown 1,000 times the cover that more people clicked becomes your main cover automatically. Players just see a normal cover; they never know a test is running.",
       "variant": "Variant {label}",
-      "addVariant": "Add variant"
+      "addVariant": "Add variant",
+      "dropHere": "Drop a file here"
     },
     "build": {
       "intro": "Drag a .zip of your web build here. It is unpacked and checked in your browser before anything is uploaded.",
@@ -604,7 +634,9 @@
       "uploading": "Uploading {percent}%",
       "uploaded": "Build uploaded",
       "tree": "Files in this build",
-      "more": "and {count} more"
+      "more": "and {count} more",
+      "dropNow": "Let go to read the zip",
+      "dropHint": "Your zip must have index.html at the top level. Up to 250 MB."
     },
     "game": {
       "back": "All games",
@@ -818,6 +850,59 @@
         "freshness": "Freshness"
       },
       "chartTitle": "Impressions and clicks, last 30 days"
+    },
+    "sdkCheck": {
+      "title": "SDK checklist",
+      "progress": "{done}/{total} required",
+      "intro": "Play the game here. Each row ticks when your game makes that call. The required rows are what Rise Launch needs.",
+      "noSdk": "This build does not load bg-sdk.js. Spark Launch works without it; Rise Launch needs the required rows below.",
+      "optional": "Optional",
+      "seen": "seen",
+      "notSeen": "not seen yet",
+      "docs": "SDK quick start",
+      "rules": "SDK rules",
+      "items": {
+        "init": {
+          "call": "BG.init()",
+          "label": "SDK connected"
+        },
+        "loadingStart": {
+          "call": "BG.game.loadingStart()",
+          "label": "loading started"
+        },
+        "loadingStop": {
+          "call": "BG.game.loadingStop()",
+          "label": "loading finished"
+        },
+        "gameplayStart": {
+          "call": "BG.game.gameplayStart()",
+          "label": "play started"
+        },
+        "gameplayStop": {
+          "call": "BG.game.gameplayStop()",
+          "label": "play paused or ended"
+        },
+        "saves": {
+          "call": "BG.data.*",
+          "label": "cloud saves"
+        },
+        "midgame": {
+          "call": "BG.ad.midgame()",
+          "label": "break ad"
+        },
+        "rewarded": {
+          "call": "BG.ad.rewarded()",
+          "label": "rewarded ad"
+        },
+        "happytime": {
+          "call": "BG.game.celebrate()",
+          "label": "celebration"
+        },
+        "user": {
+          "call": "BG.user.*",
+          "label": "player account"
+        }
+      }
     }
   },
   "admin": {
@@ -859,7 +944,13 @@
       "preQa": "Pre-QA",
       "update": "Update",
       "newGame": "New game",
-      "review": "Review"
+      "review": "Review",
+      "autoReview": "Auto-review",
+      "auto": {
+        "pass": "Clear",
+        "warn": "Check",
+        "fail": "Problem"
+      }
     },
     "review": {
       "title": "Review {title} v{version}",
@@ -1014,7 +1105,7 @@
     },
     "moderation": {
       "title": "Moderation",
-      "intro": "Reports from players, and the tools to act on them. Every action is written to the audit log.",
+      "intro": "Reports from players, every game on the site, and the tools to act on them. Every action is written to the audit log.",
       "tabReports": "Reports",
       "tabUsers": "Players",
       "tabStudios": "Studios",
@@ -1056,7 +1147,35 @@
       "shownDone": "Devlog visible again.",
       "makeAdmin": "Make admin",
       "removeAdmin": "Remove admin",
-      "roleSaved": "Role updated."
+      "roleSaved": "Role updated.",
+      "tabGames": "Games",
+      "gamesIntro": "Every game, in any state. Change a game's status here (pause or remove it) or delete it for good. New submissions go through the QA queue first.",
+      "searchGames": "Find a game by title or studio",
+      "noGames": "No games found",
+      "status": "Status",
+      "statusSaved": "Status changed.",
+      "statusByModerator": "Changed by a moderator.",
+      "gameStatus": {
+        "draft": "Draft",
+        "in_review": "In review",
+        "changes_requested": "Changes requested",
+        "spark": "Spark Launch",
+        "rise": "Rise Launch",
+        "featured": "Featured",
+        "paused": "Paused",
+        "removed": "Removed"
+      },
+      "auto": {
+        "pass": "Auto: clear",
+        "warn": "Auto: check",
+        "fail": "Auto: problem"
+      },
+      "delete": "Delete",
+      "deleteTitle": "Delete {what}?",
+      "deleteBody": "This cannot be undone. Write why; the reason is kept in the audit log.",
+      "deleteReason": "Reason",
+      "deleteConfirm": "Delete for good",
+      "deleted": "Deleted."
     },
     "progression": {
       "title": "Quests & locker",
@@ -1212,6 +1331,27 @@
         "sent": "Sent",
         "saved": "Saved (not sent)",
         "failed": "Failed"
+      }
+    },
+    "autoReview": {
+      "title": "Automatic moderation",
+      "intro": "Runs the moment a game is submitted, before a person looks at it. It compares the build and covers with every other studio's games, looks for protected names and outside ad code, and checks the rights declaration. A person still has to play the game and look at the art before approving.",
+      "notRun": "Not run yet",
+      "status": {
+        "pass": "Clear",
+        "warn": "Check",
+        "fail": "Problem",
+        "manual": "For you"
+      },
+      "checks": {
+        "rights": "Rights declaration",
+        "protected-names": "Protected names (copyright and trademarks)",
+        "copied-build": "Copied build",
+        "copied-cover": "Copied cover art",
+        "similar-title": "Similar title",
+        "outside-code": "Outside SDKs and ads",
+        "content-words": "Content rules (text)",
+        "art": "Art and licences"
       }
     }
   },

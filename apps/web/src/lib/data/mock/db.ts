@@ -88,6 +88,9 @@ export interface MockVersion {
   entryFile: string;
   usesSdk: boolean;
   preQaReport: unknown | null;
+  autoReview?: unknown | null;
+  declaration?: unknown | null;
+  fingerprint?: string | null;
   qaStatus: string;
   qaNotes: string | null;
   previewToken: string;
@@ -97,6 +100,7 @@ export interface MockVersion {
 
 export interface MockMedia extends MediaAsset {
   id: string;
+  phash?: string | null;
   gameId: string;
   isActive: boolean;
   createdAt: string;

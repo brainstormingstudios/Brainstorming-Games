@@ -115,7 +115,7 @@ export const LIMITS = {
   zipMaxFiles: 1500,
   previewMaxBytes: 50 * 1024 * 1024,
   previewMinSeconds: 15,
-  previewMaxSeconds: 20,
+  previewMaxSeconds: 30,
   cloudSaveMaxBytes: 1024 * 1024,
   under10Mb: 10 * 1024 * 1024,
   adGridInterval: 24,

@@ -9,9 +9,11 @@
  *
  *   npm run dev -- --site play            only some of the sites (comma separated)
  */
+import { freePorts } from './lib/ports.mjs';
 import { NEXT, SITES, WEB, loadEnv, runNode, sitesFromArgs, startNode } from './lib/run.mjs';
 
 loadEnv();
+await freePorts([4100, ...sitesFromArgs().map((s) => SITES[s].port)]);
 runNode('prepare generated files', ['scripts/build.mjs', '--prep']);
 
 const children = [startNode(['scripts/dev-services.mjs'])];

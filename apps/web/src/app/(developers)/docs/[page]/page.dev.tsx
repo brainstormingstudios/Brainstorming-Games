@@ -10,12 +10,12 @@ import { pageMetadata } from '@/lib/seo';
 /** Developer docs. Public (developers read them before signing up) and indexed. */
 const DOCS = [
   { slug: 'quick-start', title: 'Quick start', file: '../../docs/SDK.md' },
+  { slug: 'sdk-rules', title: 'SDK rules', file: '../../docs/SDK_RULES.md' },
   { slug: 'sdk-reference', title: 'SDK reference', file: 'src/generated/sdk-reference.md' },
   { slug: 'ad-rules', title: 'Ad rules', file: 'content/docs/ad-rules.md' },
   { slug: 'requirements', title: 'Requirements', file: 'content/docs/requirements.md' },
   { slug: 'covers', title: 'Cover specs', file: 'content/docs/covers.md' },
   { slug: 'launch-tiers', title: 'Launch tiers', file: 'content/docs/launch-tiers.md' },
-  { slug: 'sdk-rules', title: 'SDK rules', file: '../../docs/SDK_RULES.md' },
   { slug: 'faq', title: 'FAQ', file: 'content/docs/faq.md' },
 ] as const;
 

@@ -15,9 +15,12 @@ async function probeZip(): Promise<Buffer> {
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
-async function cover(): Promise<Buffer> {
-  return sharp({ create: { width: 1920, height: 1080, channels: 3, background: { r: 12, g: 42, b: 110 } } }).png().toBuffer();
+async function cover(width = 1920, height = 1080): Promise<Buffer> {
+  return sharp({ create: { width, height, channels: 3, background: { r: 12, g: 42, b: 110 } } }).png().toBuffer();
 }
+
+/** A 16-second 320x180 VP8 clip (Playwright's Chromium has no H.264). */
+const PREVIEW_VIDEO = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'preview.webm');
 
 async function signIn(page: Page, email: string, username: string, birthYear = '1990') {
   await signInDialog(page, email, username, birthYear);
@@ -41,28 +44,40 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.getByTestId('studio-create').click();
   await expect(page.getByTestId('dev-dashboard')).toBeVisible();
 
-  // 2. New game: details, content, cover.
+  // 2. New game, step 1: details. Tags become chips at each comma; fewer than 3 is refused.
   await page.getByTestId('new-game').click();
   await page.getByTestId('wiz-title').fill('Probe Quest');
   await page.getByTestId('wiz-short').fill('A bare page that checks the SDK, used only by tests.');
   await page.getByTestId('wiz-category').selectOption('puzzle');
-  await page.getByTestId('wiz-tags').fill('logic, fixture');
+  await page.getByTestId('wiz-engine').selectOption('HTML5 / JavaScript');
+  await page.getByTestId('wiz-tags').fill('logic, fixture,');
+  await expect(page.getByTestId('wiz-tag')).toHaveCount(2);
   await page.getByTestId('wiz-create').click();
-  await expect(page).toHaveURL(/step=content/);
-  await page.getByTestId('wiz-description').fill('This fixture checks that the platform can **load and frame** a build and talk to the SDK.');
-  await page.getByTestId('wiz-how').fill('Press the buttons and read the log.');
-  for (let i = 0; i < 3; i++) await page.getByTestId('wiz-add-faq').click();
-  const faq = page.getByTestId('wiz-faq');
-  for (let i = 0; i < 3; i++) {
-    await faq.getByPlaceholder('Question').nth(i).fill(`Question ${i + 1}?`);
-    await faq.getByPlaceholder('Answer').nth(i).fill(`Answer ${i + 1}.`);
-  }
-  await expect(page.getByTestId('save-state')).toHaveText('Draft saved', { timeout: 10_000 });
-  await page.getByTestId('wiz-next').click();
-  await page.getByTestId('media-input-cover_landscape').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: await cover() });
-  await expect(page.getByTestId('media-cover_landscape').locator('img')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('wiz-error')).toHaveText('Add at least 3 tags.');
+  await page.getByTestId('wiz-tags').fill('probe,');
+  await expect(page.getByTestId('wiz-tag')).toHaveCount(3);
+  await page.getByTestId('wiz-made-in-india').check({ force: true });
+  await page.getByTestId('wiz-create').click();
 
-  // 3. Build: unzip in the browser, validate, upload, pre-QA.
+  // Step 2: the game page. Controls come from dropdowns.
+  await expect(page).toHaveURL(/step=page/);
+  await page.getByTestId('wiz-description').fill('This fixture checks that the platform can **load and frame** a build and talk to the SDK.');
+  await page.getByTestId('wiz-add-control').click();
+  await page.getByTestId('wiz-control-action').fill('Press a button');
+  await page.getByTestId('wiz-control-keyboard').selectOption('Mouse click');
+  await page.getByTestId('wiz-control-touch').selectOption('Tap');
+  await expect(page.getByTestId('save-state')).toHaveText('Draft saved', { timeout: 10_000 });
+
+  // Step 3: all three covers and the landscape video are required.
+  await page.getByTestId('wiz-next').click();
+  for (const [kind, w, h] of [['cover_landscape', 1920, 1080], ['cover_portrait', 800, 1200], ['cover_square', 800, 800]] as const) {
+    await page.getByTestId(`media-input-${kind}`).setInputFiles({ name: `${kind}.png`, mimeType: 'image/png', buffer: await cover(w, h) });
+    await expect(page.getByTestId(`media-${kind}`).locator('img')).toBeVisible({ timeout: 20_000 });
+  }
+  await page.getByTestId('media-input-preview_landscape').setInputFiles(PREVIEW_VIDEO);
+  await expect(page.getByTestId('media-preview_landscape').locator('video')).toBeVisible({ timeout: 20_000 });
+
+  // Step 4: build, unzipped and checked in the browser, uploaded, pre-QA.
   await page.getByTestId('wiz-next').click();
   await page.getByTestId('zip-input').setInputFiles({ name: 'probe.zip', mimeType: 'application/zip', buffer: await probeZip() });
   await expect(page.getByTestId('zip-report')).toContainText('Brainstorming SDK found');
@@ -73,10 +88,12 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await expect(report.locator('[data-check="gameplay-event"]')).toHaveAttribute('data-check-status', 'pass');
   await expect(report.locator('[data-check="absolute-paths"]')).toHaveAttribute('data-check-status', 'pass');
 
-  // 4. Submit for review.
-  await page.getByTestId('wiz-next').click();
-  await page.getByTestId('wiz-to-manage').click();
-  await page.getByTestId('submit-review').click();
+  // 4. Submit for review: only once the rights boxes are ticked.
+  await expect(page.getByTestId('wiz-submit')).toBeDisabled();
+  await page.getByTestId('wiz-owns-rights').check();
+  await page.getByTestId('wiz-no-copies').check();
+  await expect(page.getByTestId('wiz-check').and(page.locator('[data-ok="false"]'))).toHaveCount(0);
+  await page.getByTestId('wiz-submit').click();
   await expect(page.getByTestId('game-status').first()).toHaveText('In review');
 
   // 5. Admin approves to Spark.
@@ -86,6 +103,9 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await unlockOwner(page, 'admin@example.test');
   await expect(page.getByTestId('qa-row')).toHaveCount(1);
   await page.getByTestId('qa-review-link').click();
+  // The automatic moderation ran first: an original game from a new studio is clear.
+  await expect(page.getByTestId('auto-review')).toContainText('Rights declaration');
+  await expect(page.getByTestId('auto-check').and(page.locator('[data-status="fail"]'))).toHaveCount(0);
   await page.getByTestId('qa-approve').click();
   await expect(page.getByTestId('qa-queue')).toBeVisible();
   await expect(page.getByTestId('qa-row')).toHaveCount(0);

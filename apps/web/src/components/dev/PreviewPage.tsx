@@ -9,6 +9,7 @@ import { PLAY_ORIGIN } from '@/lib/config';
 import type { GameSummary } from '@/lib/data/types';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import type { HostLogEntry } from '@/lib/sdk-host/bridge';
+import { SdkChecklist } from './SdkChecklist';
 
 /**
  * Private preview: anyone with the link can run this one build, before review. Every SDK call
@@ -71,7 +72,9 @@ export function PreviewPage() {
           autoStart
           onSdkLog={(entry) => setLog((l) => [...l.slice(-199), entry])}
         />
-        <Card className="flex max-h-[70vh] flex-col p-3">
+        <div className="flex min-w-0 flex-col gap-4">
+        <SdkChecklist log={log} usesSdk={p.usesSdk} />
+        <Card className="flex max-h-[50vh] flex-col p-3">
           <h2 className="mb-2 font-semibold">{t('events')}</h2>
           {log.length === 0 ? (
             <p className="text-sm text-fg-muted">{t('noEvents')}</p>
@@ -87,6 +90,7 @@ export function PreviewPage() {
             </ol>
           )}
         </Card>
+        </div>
       </div>
     </div>
   );

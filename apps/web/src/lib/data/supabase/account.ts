@@ -80,7 +80,13 @@ export const supabaseAuth: AuthRepo = {
   async signInWithEmail(email, next) {
     const { error } = await getSupabase().auth.signInWithOtp({ email, options: { emailRedirectTo: redirect(next) } });
     if (error) throw new RepoError(error.status === 429 ? 'rate_limited' : 'invalid', error.message);
-    return { status: 'email_sent' };
+    // The e-mail carries a 6-digit code ({{ .Token }} in the Supabase e-mail template).
+    return { status: 'code_sent' };
+  },
+  async verifyEmailCode(email, code) {
+    const { error } = await getSupabase().auth.verifyOtp({ email, token: code.replace(/\D/g, ''), type: 'email' });
+    if (error) throw new RepoError('invalid', 'That code is not right, or it has expired.');
+    emitTopic('session', { local: true });
   },
   async signInWithProvider(provider, next) {
     const { error } = await getSupabase().auth.signInWithOAuth({ provider, options: { redirectTo: redirect(next) } });

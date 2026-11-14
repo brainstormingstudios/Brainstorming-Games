@@ -3,12 +3,12 @@
 import { useTranslations } from 'next-intl';
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { Badge, Button, Dialog, ProgressBar, useToast } from '@brainstorming/ui';
+import { Badge, Button, Dialog, ProgressBar, cn, useToast } from '@brainstorming/ui';
 import { COVER_SPECS, COVER_WIDTHS, LIMITS } from '@/lib/config';
 import { getRepo, RepoError } from '@/lib/data';
 import type { DevMedia } from '@/lib/data/devTypes';
 import type { MediaKind } from '@/lib/data/types';
-import { centreCrop, loadImage, makePlaceholder, makeVariants, videoInfo, type CropRect } from './media';
+import { centreCrop, differenceHash, loadImage, makePlaceholder, makeVariants, videoInfo, type CropRect } from './media';
 
 type CoverKind = keyof typeof COVER_SPECS;
 
@@ -144,16 +144,17 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [cropping, setCropping] = useState<HTMLImageElement | null>(null);
+  const [dragging, setDragging] = useState(false);
   const isVideo = kind.startsWith('preview');
   const spec = isVideo ? null : COVER_SPECS[kind as CoverKind];
 
   useEffect(() => () => (cropping ? URL.revokeObjectURL(cropping.src) : undefined), [cropping]);
 
-  const upload = async (variants: { width: number; blob: Blob }[], width: number, height: number, placeholder: string | null) => {
+  const upload = async (variants: { width: number; blob: Blob }[], width: number, height: number, placeholder: string | null, phash: string | null = null) => {
     setProgress(0);
     try {
       const repo = await getRepo();
-      await repo.dev.uploadMedia(gameId, { kind, variants, width, height, placeholder, variantLabel }, setProgress);
+      await repo.dev.uploadMedia(gameId, { kind, variants, width, height, placeholder, variantLabel, phash }, setProgress);
     } catch (err) {
       const message = err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody');
       setError(message);
@@ -168,7 +169,7 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
     const widths = COVER_WIDTHS[kind as CoverKind];
     const variants = await makeVariants(img, crop, spec, widths);
     const placeholder = await makePlaceholder(img, crop, spec.width / spec.height);
-    await upload(variants, spec.width, spec.height, placeholder);
+    await upload(variants, spec.width, spec.height, placeholder, differenceHash(img, crop));
   };
 
   const onFile = async (file: File | undefined) => {
@@ -214,7 +215,22 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
         <Badge tone={required ? 'warning' : 'neutral'}>{required ? t('required') : t('optional')}</Badge>
       </div>
       <p className="text-xs text-fg-muted">{isVideo ? t('videoSpec') : t('size', spec!)}</p>
-      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-control border border-dashed border-border bg-surface">
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          void onFile(e.dataTransfer.files?.[0]);
+        }}
+        className={cn(
+          'relative flex aspect-video items-center justify-center overflow-hidden rounded-control border border-dashed bg-surface transition-colors',
+          dragging ? 'border-primary bg-surface-2' : 'border-border',
+        )}
+      >
         {current ? (
           isVideo ? (
             <video src={current.url} muted loop playsInline controls className="size-full object-contain" />
@@ -222,7 +238,10 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
             <img src={current.url} alt="" className="size-full object-contain" />
           )
         ) : (
-          <ImagePlus aria-hidden="true" className="size-8 text-fg-muted" />
+          <span className="flex flex-col items-center gap-1 text-xs text-fg-muted">
+            <ImagePlus aria-hidden="true" className="size-8" />
+            {t('dropHere')}
+          </span>
         )}
       </div>
       {progress != null ? <ProgressBar value={progress * 100} label={t('uploading')} /> : null}

@@ -192,8 +192,27 @@ export const mockAuth: AuthRepo = {
   async signInWithEmail(email) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) fail('invalid', 'Enter a valid e-mail address.');
     if (!takeToken(`signin:${getAnonId()}`, 10, 600_000)) fail('rate_limited');
+    const res = await fetch(`${PLAY_ORIGIN}/__mock/auth/send-code`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ email: email.trim() }),
+    }).catch(() => null);
+    if (!res) fail('unavailable', 'The local services are not running (npm run dev starts them).');
+    if (res.status === 429) fail('rate_limited');
+    if (!res.ok) fail('unavailable', 'The code could not be e-mailed. Check the Gmail settings in .env.local.');
+    const out = (await res.json()) as { sent: boolean; devCode?: string };
+    return { status: 'code_sent', devCode: out.sent ? undefined : out.devCode };
+  },
+  async verifyEmailCode(email, code) {
+    const res = await fetch(`${PLAY_ORIGIN}/__mock/auth/verify-code`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ email: email.trim(), code }),
+    }).catch(() => null);
+    if (!res?.ok) fail('unavailable');
+    const out = (await res.json()) as { ok: boolean; reason?: string };
+    if (!out.ok) fail('invalid', out.reason === 'expired' ? 'That code has expired. Ask for a new one.' : 'That code is not right.');
     startSession(findOrCreate(email));
-    return { status: 'signed_in' };
   },
   async signInWithProvider(provider) {
     // Without the provider's keys there is no real Google or Apple identity to read, so the local

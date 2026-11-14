@@ -9,9 +9,11 @@
  *   npm start -- --site play     only some of the sites (comma separated)
  */
 import { existsSync } from 'node:fs';
+import { freePorts } from './lib/ports.mjs';
 import { SITES, loadEnv, sitesFromArgs, startNode } from './lib/run.mjs';
 
 loadEnv();
+await freePorts([4100, ...sitesFromArgs().map((s) => SITES[s].port)]);
 const children = [startNode(['scripts/dev-services.mjs'])];
 for (const site of sitesFromArgs()) {
   if (!existsSync(SITES[site].out)) {

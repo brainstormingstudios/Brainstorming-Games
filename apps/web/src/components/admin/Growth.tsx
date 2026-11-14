@@ -3,11 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, EmptyState, IconButton, SelectField, Skeleton, Switch, Tabs, TextAreaField, TextField } from '@brainstorming/ui';
+import { Badge, Button, Card, Dialog, EmptyState, IconButton, SelectField, Skeleton, Switch, Tabs, TextAreaField, TextField } from '@brainstorming/ui';
 import { useLocale } from '@/i18n/navigation';
 import { getRepo } from '@/lib/data';
 import type { AdminCosmetic, AdminQuest, Jam, JamInput, JamStatus } from '@/lib/data/growthTypes';
-import { DEFAULT_RAIL_ORDER, type GameSummary, type RailId, type SiteConfig } from '@/lib/data/types';
+import { DEFAULT_RAIL_ORDER, type GameStatus, type GameSummary, type RailId, type SiteConfig } from '@/lib/data/types';
 import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useAct } from './Admin';
@@ -239,6 +239,103 @@ export function JamsAdmin() {
   );
 }
 
+/** Delete with a confirm step and a required reason, which is kept in the audit log. */
+function DeleteWithReason({ what, onDelete, testId }: { what: string; onDelete: (reason: string) => Promise<unknown>; testId: string }) {
+  const t = useTranslations('admin.moderation');
+  const tc = useTranslations('common');
+  const act = useAct();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  return (
+    <>
+      <Button size="sm" variant="danger" icon={<Trash2 aria-hidden="true" className="size-4" />} onClick={() => setOpen(true)} data-testid={testId}>
+        {t('delete')}
+      </Button>
+      {open ? (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title={t('deleteTitle', { what })}
+          description={t('deleteBody')}
+          closeLabel={tc('close')}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                {tc('cancel')}
+              </Button>
+              <Button
+                variant="danger"
+                disabled={reason.trim().length < 3}
+                onClick={() =>
+                  void act(() => onDelete(reason.trim()), t('deleted')).then((ok) => {
+                    if (ok) setOpen(false);
+                  })
+                }
+                data-testid={`${testId}-confirm`}
+              >
+                {t('deleteConfirm')}
+              </Button>
+            </>
+          }
+        >
+          <TextAreaField label={t('deleteReason')} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} data-testid={`${testId}-reason`} />
+        </Dialog>
+      ) : null}
+    </>
+  );
+}
+
+const GAME_STATUSES: GameStatus[] = ['draft', 'in_review', 'changes_requested', 'spark', 'rise', 'featured', 'paused', 'removed'];
+
+/** Every game on the site: search, change its status, or delete it. */
+function GamesModeration() {
+  const t = useTranslations('admin.moderation');
+  const locale = useLocale();
+  const act = useAct();
+  const [query, setQuery] = useState('');
+  const games = useRepoQuery((repo) => repo.growth.allGames(query), [query], { topics: ['admin', 'catalogue', 'dev-games'] });
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-fg-muted">{t('gamesIntro')}</p>
+      <TextField label={t('searchGames')} value={query} onChange={(e) => setQuery(e.target.value)} data-testid="game-search" />
+      {games.loading && !games.data ? <Skeleton className="h-40 w-full" /> : null}
+      {(games.data ?? []).length === 0 && !games.loading ? <EmptyState title={t('noGames')} size="sm" /> : null}
+      <ul className="flex flex-col gap-2">
+        {(games.data ?? []).map((g) => (
+          <li key={g.id}>
+            <Card className="flex flex-wrap items-center gap-2 p-3 text-sm" data-testid="mod-game-row">
+              <span className="min-w-0">
+                <span className="block font-bold">{g.title}</span>
+                <span className="text-fg-muted">
+                  {g.studioName} · /{g.slug} · {formatDate(g.updatedAt, locale)}
+                </span>
+              </span>
+              {g.autoReviewStatus ? (
+                <Badge tone={g.autoReviewStatus === 'pass' ? 'success' : g.autoReviewStatus === 'warn' ? 'warning' : 'danger'}>{t(`auto.${g.autoReviewStatus}`)}</Badge>
+              ) : null}
+              <span className="ml-auto flex flex-wrap items-center gap-2">
+                <SelectField
+                  label={t('status')}
+                  hideLabel
+                  className="w-44"
+                  value={g.status}
+                  onChange={(e) => {
+                    const status = e.target.value as GameStatus;
+                    void act(async () => (await getRepo()).admin.setGameStatus(g.id, status, t('statusByModerator')), t('statusSaved'));
+                  }}
+                  options={GAME_STATUSES.map((st) => ({ value: st, label: t(`gameStatus.${st}`) }))}
+                  data-testid="mod-game-status"
+                />
+                <DeleteWithReason what={g.title} testId="mod-game-delete" onDelete={async (reason) => (await getRepo()).growth.deleteGame(g.id, reason)} />
+              </span>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Reports() {
   const t = useTranslations('admin.moderation');
   const locale = useLocale();
@@ -314,6 +411,7 @@ function Users() {
                 >
                   {u.banned ? t('unban') : t('ban')}
                 </Button>
+                <DeleteWithReason what={u.username} testId="user-delete" onDelete={async (reason) => (await getRepo()).growth.deleteUser(u.id, reason)} />
               </span>
             </Card>
           </li>
@@ -393,7 +491,7 @@ function Devlogs() {
   );
 }
 
-/** Reports from players, plus the tools to act on them: ban, reset a name, suspend a studio, hide a devlog. */
+/** Reports from players, plus the tools to act on them: games, accounts, studios and devlogs. */
 export function Moderation() {
   const t = useTranslations('admin.moderation');
   const [tab, setTab] = useState('reports');
@@ -409,6 +507,7 @@ export function Moderation() {
         onChange={setTab}
         items={[
           { id: 'reports', label: t('tabReports'), content: <Reports /> },
+          { id: 'games', label: t('tabGames'), content: <GamesModeration /> },
           { id: 'users', label: t('tabUsers'), content: <Users /> },
           { id: 'studios', label: t('tabStudios'), content: <Studios /> },
           { id: 'devlogs', label: t('tabDevlogs'), content: <Devlogs /> },

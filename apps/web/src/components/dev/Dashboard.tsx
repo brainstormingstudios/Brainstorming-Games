@@ -56,10 +56,18 @@ export function Dashboard() {
             {t('level', { level: t(`levels.${studio.level}`) })}
           </Badge>
         </div>
-        <Link href="/dev/games/new" className={buttonClass({ size: 'lg' })} data-testid="new-game">
-          <Plus aria-hidden="true" className="size-5" />
-          {t('newGame')}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dev/docs/quick-start" className={buttonClass({ variant: 'outline', size: 'lg' })}>
+            {t('sdkDocs')}
+          </Link>
+          <Link href="/dev/docs/sdk-rules" className={buttonClass({ variant: 'outline', size: 'lg' })} data-testid="dash-sdk-rules">
+            {t('sdkRules')}
+          </Link>
+          <Link href="/dev/games/new" className={buttonClass({ size: 'lg' })} data-testid="new-game">
+            <Plus aria-hidden="true" className="size-5" />
+            {t('newGame')}
+          </Link>
+        </div>
       </div>
 
       <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

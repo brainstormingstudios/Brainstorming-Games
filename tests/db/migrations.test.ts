@@ -86,8 +86,8 @@ describe('developer flow', () => {
     });
     gameId = await as(db, 'authenticated', dev, async (q) => {
       const [row] = await q<{ id: string }>(
-        `insert into public.games (studio_id, slug, title, short_description, description_md, faq)
-         values ($1, 'probe-quest', 'Probe Quest', 'A test', 'About', '[{"q":"a","a":"b"},{"q":"c","a":"d"},{"q":"e","a":"f"}]')
+        `insert into public.games (studio_id, slug, title, short_description, description_md, tags, controls)
+         values ($1, 'probe-quest', 'Probe Quest', 'A test', 'About', '{logic,fixture,puzzle}', '[{"action":"Move","keyboard":"Arrow keys","touch":"Swipe"}]')
          returning id`,
         [studio],
       );
@@ -105,16 +105,26 @@ describe('developer flow', () => {
         [gameId],
       );
       await q(
-        `insert into public.game_media (game_id, kind, url, widths, width, height) values ($1, 'cover_landscape', 'https://example.test/c-1920.webp', '{320,1920}', 1920, 1080)`,
+        `insert into public.game_media (game_id, kind, url, widths, width, height) values
+           ($1, 'cover_landscape', 'https://example.test/c-1920.webp', '{320,1920}', 1920, 1080),
+           ($1, 'cover_portrait', 'https://example.test/p-800.webp', '{200,800}', 800, 1200),
+           ($1, 'cover_square', 'https://example.test/s-800.webp', '{200,800}', 800, 800)`,
         [gameId],
       );
       return row!.v.version_id;
     });
 
     // Not submittable before pre-QA; the bot's report arrives with the service role.
-    await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1)`, [gameId]))).rejects.toThrow(/invalid/);
+    const declaration = JSON.stringify({ ownsRights: true, noCopies: true, credits: '' });
+    await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]))).rejects.toThrow(/invalid/);
     await as(db, 'service_role', null, (q) => q(`select public.set_pre_qa_report($1, '{"status":"pass","usesSdk":true}')`, [versionId]));
-    await as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1)`, [gameId]));
+    // Still not: the landscape preview video is required, and so is the rights declaration.
+    await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]))).rejects.toThrow(/invalid/);
+    await as(db, 'authenticated', dev, (q) =>
+      q(`insert into public.game_media (game_id, kind, url, widths, width, height) values ($1, 'preview_landscape', 'https://example.test/v.mp4', '{}', 1280, 720)`, [gameId]),
+    );
+    await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, '{"ownsRights":false}')`, [gameId]))).rejects.toThrow(/invalid/);
+    await as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]));
 
     // A player cannot approve; an admin can.
     await expect(as(db, 'authenticated', player, (q) => q(`select public.qa_decide($1, 'approve')`, [versionId]))).rejects.toThrow(

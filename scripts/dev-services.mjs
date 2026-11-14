@@ -431,6 +431,53 @@ async function sendMailNow(body) {
   return row;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Sign-in codes. A 6-digit code is e-mailed to the address; only someone who can read that inbox
+// can sign in as it. Codes last 10 minutes, are stored hashed, work once, and allow 5 tries.
+// Until a Gmail app password is configured the code cannot be e-mailed, so it is returned to the
+// page instead (and the page says so): fine on your own computer, never on a live site.
+// ---------------------------------------------------------------------------------------------
+/** email -> { hash, expires, tries } */
+const signInCodes = new Map();
+/** email -> recent send times, to stop a flood of e-mails */
+const codeSends = new Map();
+const hashCode = (email, code) => createHmac('sha256', 'bg-sign-in').update(`${email}:${code}`).digest('hex');
+
+async function authApi(req, res, action) {
+  const body = JSON.parse((await readBody(req)) || '{}');
+  const email = String(body.email ?? '').trim().toLowerCase();
+  res.setHeader('cache-control', 'no-store');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(res, 400, { error: 'invalid' });
+  if (action === 'send-code') {
+    const recent = (codeSends.get(email) ?? []).filter((t) => t > Date.now() - 600_000);
+    if (recent.length >= 5) return json(res, 429, { error: 'rate_limited' });
+    codeSends.set(email, [...recent, Date.now()]);
+    const code = String(randomBytes(4).readUInt32BE(0) % 1_000_000).padStart(6, '0');
+    signInCodes.set(email, { hash: hashCode(email, code), expires: Date.now() + 600_000, tries: 0 });
+    const testAddress = /@example\.(test|com)$/i.test(email) || /\.test$/i.test(email);
+    if (GMAIL_PASS && !testAddress) {
+      const row = await sendMailNow({ to: email, template: 'sign_in_code', data: { code } });
+      if (row.status === 'sent') return json(res, 200, { sent: true });
+      return json(res, 502, { error: 'mail_failed', detail: row.error });
+    }
+    return json(res, 200, { sent: false, devCode: code });
+  }
+  if (action === 'verify-code') {
+    const entry = signInCodes.get(email);
+    if (!entry || entry.expires < Date.now()) return json(res, 200, { ok: false, reason: 'expired' });
+    entry.tries++;
+    if (entry.tries > 5) {
+      signInCodes.delete(email);
+      return json(res, 200, { ok: false, reason: 'expired' });
+    }
+    const given = hashCode(email, String(body.code ?? '').replace(/\D/g, ''));
+    if (!timingSafeEqual(Buffer.from(given), Buffer.from(entry.hash))) return json(res, 200, { ok: false, reason: 'wrong' });
+    signInCodes.delete(email);
+    return json(res, 200, { ok: true });
+  }
+  return json(res, 404, { error: 'not_found' });
+}
+
 /** A file of a first-party game (or the SDK every one of them loads from its own folder). */
 function resolveOriginal(key) {
   const m = /^originals\/([a-z0-9-]+)\/(.*)$/.exec(key);
@@ -554,6 +601,7 @@ const server = createServer(async (req, res) => {
     if (path === '/__mock/health') return json(res, 200, { ok: true, store: STORE });
 
     if (path.startsWith('/__mock/owner/')) return await ownerApi(req, res, path.slice('/__mock/owner/'.length));
+    if (path.startsWith('/__mock/auth/') && req.method === 'POST') return await authApi(req, res, path.slice('/__mock/auth/'.length));
 
     if (path === '/__mock/mail' && req.method === 'POST') {
       const body = JSON.parse((await readBody(req, 256 * 1024)) || '{}');

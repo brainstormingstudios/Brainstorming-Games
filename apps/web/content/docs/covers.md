@@ -3,10 +3,10 @@
 | Asset | Size | Required |
 |---|---|---|
 | Landscape cover | 1920×1080 | Yes |
-| Portrait cover | 800×1200 | Recommended |
-| Square cover | 800×800 | Recommended |
-| Landscape preview video | 15 to 20 seconds, up to 50 MB, MP4 or WebM | Recommended |
-| Portrait preview video | 15 to 20 seconds, up to 50 MB, MP4 or WebM | Optional |
+| Portrait cover | 800×1200 | Yes |
+| Square cover | 800×800 | Yes |
+| Landscape preview video | 15 to 30 seconds, up to 50 MB, MP4 or WebM | Required |
+| Portrait preview video | 15 to 30 seconds, up to 50 MB, MP4 or WebM | Optional |
 
 Images of a different size can be cropped in the browser when you upload them, as long as they are at least as large as the target.
 
@@ -24,4 +24,4 @@ Previews play silently when a player hovers a tile (or long-presses on mobile). 
 
 ## Thumbnail A/B tests
 
-From the Pro level you can add up to three extra landscape covers. Each one is shown in turn; after every cover has had 1,000 impressions, the one with the best click-through rate becomes your only cover.
+Not sure which cover gets more clicks? Upload one or two other versions of your landscape cover (a "cover test"). Players see one of them at random. After each has been shown 1,000 times, the cover that more people clicked becomes your main cover automatically. Players only ever see a normal cover.

@@ -18,6 +18,7 @@ import {
   type BadgeTone,
 } from '@brainstorming/ui';
 import { PreQaReportView } from '@/components/dev/PreQaReportView';
+import { AutoReviewView } from './AutoReviewView';
 import { OwnerCodeGate } from './OwnerCode';
 import { GameStatusBadge } from '@/components/dev/StatusBadge';
 import { GameFrame } from '@/components/game/GameFrame';
@@ -128,7 +129,7 @@ export function QaQueue() {
           <table className="w-full text-sm">
             <thead className="bg-surface-3 text-left">
               <tr>
-                {['game', 'studio', 'version', 'submitted', 'preQa'].map((h) => (
+                {['game', 'studio', 'version', 'submitted', 'preQa', 'autoReview'].map((h) => (
                   <th key={h} scope="col" className="px-3 py-2 font-display">
                     {t(h as 'game')}
                   </th>
@@ -148,6 +149,7 @@ export function QaQueue() {
                   <td className="px-3 py-2">v{item.version}</td>
                   <td className="px-3 py-2">{formatDate(item.submittedAt, locale)}</td>
                   <td className="px-3 py-2">{item.preQaStatus ? <Badge tone={PRE_QA_TONE[item.preQaStatus]}>{item.preQaStatus}</Badge> : '–'}</td>
+                  <td className="px-3 py-2">{item.autoReviewStatus ? <Badge tone={item.autoReviewStatus === 'pass' ? 'success' : item.autoReviewStatus === 'warn' ? 'warning' : 'danger'}>{t(`auto.${item.autoReviewStatus}`)}</Badge> : '–'}</td>
                   <td className="px-3 py-2 text-right">
                     <Link href={`/admin/qa/review?v=${item.versionId}`} className={buttonClass({ size: 'sm' })} data-testid="qa-review-link">
                       {t('review')}
@@ -223,6 +225,7 @@ export function QaReview() {
               {t('play')}
             </Button>
           )}
+          <AutoReviewView report={version.autoReview ?? null} />
           {version.preQaReport ? (
             <Card className="p-4">
               <PreQaReportView report={version.preQaReport} />

@@ -31,6 +31,7 @@ export const mockAdmin: AdminRepo = {
           version: v.version,
           submittedAt: v.createdAt,
           preQaStatus: report?.status ?? null,
+          autoReviewStatus: (v.autoReview as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null,
           isUpdate: Boolean(g?.releasedAt),
         };
       });
@@ -132,7 +133,7 @@ export const mockAdmin: AdminRepo = {
       updateGameRow(gameId, {
         status: 'rise',
         riseStartedAt: now,
-        exclusiveUntil: g.wantsExclusive ? new Date(Date.now() + 60 * 86_400_000).toISOString() : null,
+        exclusiveUntil: g.wantsExclusive ? new Date(Date.now() + 90 * 86_400_000).toISOString() : null,
       });
     } else {
       updateGameRow(gameId, { status: 'paused' });

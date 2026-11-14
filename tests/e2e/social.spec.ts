@@ -90,6 +90,11 @@ test('a minor keeps guest-level features until a parent approves', async ({ page
   const dialog = page.locator('dialog[open]');
   await dialog.getByTestId('login-email').fill('kid@example.test');
   await dialog.getByTestId('login-submit').click();
+  // No mailbox in tests: the 6-digit code is shown on screen.
+  const code = dialog.getByTestId('dev-code').locator('strong');
+  await expect(code).toBeVisible();
+  await dialog.getByTestId('login-code').fill((await code.innerText()).trim());
+  await dialog.getByTestId('login-code-submit').click();
   await dialog.getByTestId('signup-username').fill('young_player');
   await dialog.getByTestId('signup-birth-year').fill(year);
   await dialog.getByTestId('signup-submit').click();

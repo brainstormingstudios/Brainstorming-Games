@@ -121,15 +121,15 @@ export function GameManage() {
             <h2 className="font-display text-lg font-semibold">{t('submit')}</h2>
             <p className="text-sm text-fg-muted">{t('submitHint')}</p>
           </div>
-          <Button
-            size="lg"
-            disabled={!canSubmit}
-            loading={busy === 'submit'}
-            onClick={() => void act('submit', async () => (await getRepo()).dev.submitForReview(game.id), t('submitted'))}
-            data-testid="submit-review"
-          >
-            {t('submit')}
-          </Button>
+          {canSubmit ? (
+            <Link href={`/dev/games/edit?id=${game.id}&step=build`} className={buttonClass({ size: 'lg' })} data-testid="submit-review">
+              {t('submit')}
+            </Link>
+          ) : (
+            <Button size="lg" disabled data-testid="submit-review">
+              {t('submit')}
+            </Button>
+          )}
         </div>
       </Card>
 

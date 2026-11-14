@@ -61,7 +61,7 @@ Trying to bypass these rules, or to inflate impressions, ends the agreement and 
 |---|---|
 | Ads, players from our traffic | 70% of net |
 | Ads, players you bring through your referral link | 85% of net |
-| Ads during a 60-day web-exclusive window after Rise Launch | 80% of net |
+| Ads during a 90-day web-exclusive window after Rise Launch | 80% of net |
 | In-game purchases (later) | 75% of net after payment fees |
 
 "Net" is the ad revenue we actually receive, minus refunds and invalid traffic.
@@ -75,7 +75,7 @@ Trying to bypass these rules, or to inflate impressions, ends the agreement and 
 
 ## 9. Web exclusivity (optional)
 
-If you choose the 60-day web-exclusive window, you agree not to publish the game on other web portals during that window. Your own website and app stores are not affected.
+If you choose the 90-day web-exclusive window, you agree not to publish the game on other web portals during that window. Your own website and app stores are not affected.
 
 ## 10. Data
 

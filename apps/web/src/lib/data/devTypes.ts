@@ -1,6 +1,9 @@
 /** Types for the developer portal and the admin console. */
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
+import type { AutoReviewReport, Declaration } from '../../../../../supabase/functions/_shared/autoReview';
+
+export type { AutoReviewReport, Declaration };
 import type { ControlRow, FaqItem, FeedbackCategory, GameStatus, MediaAsset, MediaKind, Orientation, Platform } from './types';
 
 export type QaStatus =
@@ -100,6 +103,8 @@ export interface DevVersion {
   usesSdk: boolean;
   minorUpdate: boolean;
   preQaReport: PreQaReport | null;
+  /** Checks run when the game was submitted, before a person reviews it. */
+  autoReview: AutoReviewReport | null;
   qaStatus: QaStatus;
   qaNotes: string | null;
   createdAt: string;
@@ -162,6 +167,8 @@ export interface NewVersionInput {
   entryFile: string;
   usesSdk: boolean;
   minorUpdate: boolean;
+  /** SHA-256 of the build's file paths and sizes, to spot the same build uploaded twice. */
+  fingerprint?: string | null;
 }
 
 export interface MediaUpload {
@@ -172,6 +179,8 @@ export interface MediaUpload {
   height: number;
   placeholder: string | null;
   variantLabel: string | null;
+  /** 64-bit picture fingerprint of a cover (hex), to spot covers copied from other games. */
+  phash?: string | null;
 }
 
 export interface FeedbackRecord {
@@ -221,6 +230,7 @@ export interface QaQueueItem {
   version: string;
   submittedAt: string;
   preQaStatus: PreQaReport['status'] | null;
+  autoReviewStatus: AutoReviewReport['status'] | null;
   isUpdate: boolean;
 }
 

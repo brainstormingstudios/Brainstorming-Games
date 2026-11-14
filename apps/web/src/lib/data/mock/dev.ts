@@ -2,6 +2,7 @@ import { PRIMARY_CATEGORY_SLUGS, tagSlug } from '@/lib/catalogue/categories';
 import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/config';
 import { computeDailyKpis, percentRank, summarise, type KpiEvent, type KpiRating, type KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
+import { runAutoReview } from '../../../../../../supabase/functions/_shared/autoReview';
 import { emitTopic } from '../bus';
 import { uuid } from '../local';
 import type {
@@ -13,6 +14,8 @@ import type {
   GameEditable,
   PreviewInfo,
   QaStatus,
+  AutoReviewReport,
+  Declaration,
 } from '../devTypes';
 import type { DevRepo } from '../repo';
 import { readCatalogueTables, statsFor } from './catalogue';
@@ -28,6 +31,7 @@ import {
   readTable,
   takeToken,
   type MockGame,
+  type MockMedia,
   type MockStudio,
   type MockVersion,
 } from './db';
@@ -104,6 +108,7 @@ export function toDevVersion(v: MockVersion, currentId: string | null): DevVersi
     usesSdk: v.usesSdk,
     minorUpdate: Boolean(v.minorUpdate),
     preQaReport: (v.preQaReport as PreQaReport | null) ?? null,
+    autoReview: (v.autoReview as AutoReviewReport | null) ?? null,
     qaStatus: v.qaStatus as QaStatus,
     qaNotes: v.qaNotes,
     createdAt: v.createdAt,
@@ -180,6 +185,48 @@ export function ownerOf(gameId: string): string | null {
 export function studioEmail(studioId: string | null | undefined): string | null {
   const studio = readTable('studios').find((s) => s.id === studioId);
   return readTable('users').find((u) => u.id === studio?.ownerId)?.email ?? studio?.contactEmail ?? null;
+}
+
+/** What a submission still lacks (mirror of public.submit_for_review). */
+export function submissionGaps(g: MockGame, media: MockMedia[]): string[] {
+  const has = (k: string) => media.some((m) => m.kind === k);
+  const gaps: string[] = [];
+  if (!g.title.trim()) gaps.push('a title');
+  if (!g.shortDescription.trim()) gaps.push('a short description');
+  if (!g.descriptionMd.trim()) gaps.push('a description');
+  if (g.tags.length < 3) gaps.push('at least 3 tags');
+  if (g.controls.filter((c) => c.action.trim()).length < 1) gaps.push('at least one control');
+  if (!has('cover_landscape')) gaps.push('the landscape cover');
+  if (!has('cover_portrait')) gaps.push('the portrait cover');
+  if (!has('cover_square')) gaps.push('the square cover');
+  if (!has('preview_landscape')) gaps.push('the landscape preview video');
+  return gaps;
+}
+
+/** Runs the auto-review against every other studio's released games. */
+function autoReviewFor(g: MockGame, v: MockVersion, declaration: Declaration): AutoReviewReport {
+  const media = readTable('media');
+  const versions = readTable('versions');
+  const others = readTable('games')
+    .filter((x) => x.releasedAt && x.id !== g.id)
+    .map((x) => ({
+      title: x.title,
+      studioId: x.studioId,
+      buildFingerprints: versions.filter((y) => y.gameId === x.id && y.fingerprint).map((y) => y.fingerprint!),
+      coverHashes: media.filter((m) => m.gameId === x.id && m.phash).map((m) => m.phash!),
+    }));
+  const report = v.preQaReport as PreQaReport | null;
+  return runAutoReview({
+    title: g.title,
+    description: `${g.shortDescription}\n${g.descriptionMd}`,
+    tags: g.tags,
+    studioId: g.studioId,
+    declaration,
+    buildFingerprint: v.fingerprint ?? null,
+    coverHashes: media.filter((m) => m.gameId === g.id && m.isActive && m.phash).map((m) => m.phash!),
+    preQaProblems: (report?.checks ?? []).filter((c) => c.status !== 'pass').map((c) => ({ id: c.id, status: c.status as 'warn' | 'fail' })),
+    others,
+  });
 }
 
 /** Makes a version the live one (mirror of app.publish_version). */
@@ -462,6 +509,7 @@ export const mockDev: DevRepo = {
       height: media.height,
       placeholder: media.placeholder,
       variantLabel: media.variantLabel,
+      phash: media.phash ?? null,
       isActive: true,
       createdAt: nowIso(),
     };
@@ -501,6 +549,7 @@ export const mockDev: DevRepo = {
       version: input.version,
       storagePrefix: prefix,
       fileCount: input.files.length,
+      fingerprint: input.fingerprint ?? null,
       totalBytes,
       entryFile: input.entryFile,
       usesSdk: input.usesSdk,
@@ -547,7 +596,7 @@ export const mockDev: DevRepo = {
     emitTopic('catalogue');
     return report;
   },
-  async submitForReview(gameId) {
+  async submitForReview(gameId, declaration) {
     const g = requireOwnGame(gameId);
     const versions = readTable('versions')
       .filter((v) => v.gameId === gameId)
@@ -557,13 +606,10 @@ export const mockDev: DevRepo = {
     if (latest.qaStatus !== 'pre_qa_passed' && latest.qaStatus !== 'pre_qa_warn') {
       fail('invalid', 'The latest build needs a pre-QA report without failures.');
     }
-    if (g.faq.length < LIMITS.minFaq || !g.shortDescription || !g.descriptionMd) {
-      fail('invalid', 'Fill in the short description, the description and at least 3 FAQ entries.');
-    }
-    if (!readTable('media').some((m) => m.gameId === gameId && m.kind === 'cover_landscape' && m.isActive)) {
-      fail('invalid', 'Add a landscape cover.');
-    }
-    updateVersionRow(latest.id, { qaStatus: 'in_review' });
+    const missing = submissionGaps(g, readTable('media').filter((m) => m.gameId === gameId && m.isActive));
+    if (missing.length) fail('invalid', `Still needed: ${missing.join(', ')}.`);
+    if (!declaration?.ownsRights || !declaration.noCopies) fail('invalid', 'Confirm that you own or have licensed everything in the game.');
+    updateVersionRow(latest.id, { qaStatus: 'in_review', declaration, autoReview: autoReviewFor(g, latest, declaration) });
     if (['draft', 'changes_requested', 'paused'].includes(g.status)) updateGameRow(gameId, { status: 'in_review' });
     sendMail(studioEmail(g.studioId), 'submission_received', { game: g.title, version: latest.version, studio: readTable('studios').find((x) => x.id === g.studioId)?.name, gameId });
     emitTopic('dev-games');
