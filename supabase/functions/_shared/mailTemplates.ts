@@ -147,7 +147,7 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
           heading: `Welcome to the developer portal, ${s(data.studio)}`,
           paragraphs: [
             'Your studio is set up. Upload a zip of your HTML5 or WebGL build: our pre-QA bot tests it on a desktop browser and a phone and tells you what to fix before a person reviews it.',
-            'Every new game starts with a Spark Launch: real players, ads off, and a clear report on how they responded.',
+            'Every new game starts with a Basic Launch: real players, ads off, and a clear report on how they responded.',
           ],
           button: { label: 'Add your first game', url: dev('/games/new/') },
         },
@@ -176,12 +176,12 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
       return layout(
         {
           subject: `${game} is live`,
-          preview: 'Approved: your Spark Launch has started.',
+          preview: 'Approved: your Basic Launch has started.',
           heading: `${game} is approved and live`,
           paragraphs: [
             data.update
               ? 'Your new version passed review and is now the one players get.'
-              : 'Your game passed review and its Spark Launch has started: real players, ads off, for 7 to 14 days. Then we decide together about Rise Launch, where ads and revenue start.',
+              : 'Your game passed review and its Basic Launch has started: real players, ads off, for 7 to 14 days. Then we decide together about Full Launch, where ads and revenue start.',
           ],
           quote: s(data.notes) || undefined,
           button: { label: 'Watch your numbers', url: dev(`/games/kpi/?id=${encodeURIComponent(s(data.gameId))}`) },
@@ -215,10 +215,10 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
     case 'rise_invite':
       return layout(
         {
-          subject: `${game} is invited to Rise Launch`,
+          subject: `${game} is invited to Full Launch`,
           preview: 'Ads and revenue start now.',
-          heading: `${game} is moving up to Rise Launch`,
-          paragraphs: ['Players responded well during the Spark Launch. Your game now moves to Rise Launch: ads are on, and you earn your share of the revenue from today.'],
+          heading: `${game} is moving up to Full Launch`,
+          paragraphs: ['Players responded well during the Basic Launch. Your game now moves to Full Launch: ads are on, and you earn your share of the revenue from today.'],
           quote: s(data.reason) || undefined,
           button: { label: 'See the decision', url: dev(`/games/view/?id=${encodeURIComponent(s(data.gameId))}`) },
         },
@@ -227,10 +227,10 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
     case 'spark_ended':
       return layout(
         {
-          subject: `Spark Launch results for ${game}`,
+          subject: `Basic Launch results for ${game}`,
           preview: 'The test period has ended. Here is what we saw.',
-          heading: `${game}: Spark Launch results`,
-          paragraphs: ['The Spark Launch has ended and the game is not moving to Rise Launch this time. What we saw, and what would make the biggest difference:'],
+          heading: `${game}: Basic Launch results`,
+          paragraphs: ['The Basic Launch has ended and the game is not moving to Full Launch this time. What we saw, and what would make the biggest difference:'],
           quote: s(data.reason),
           button: { label: 'Open the analysis', url: dev(`/games/kpi/?id=${encodeURIComponent(s(data.gameId))}`) },
         },

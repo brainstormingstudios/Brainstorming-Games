@@ -50,7 +50,7 @@ test('uploading a real build adds the SDK, and the preview shows the requirement
   await page.getByTestId('preview-qr-toggle').click();
   await expect(page.getByTestId('preview-qr')).toBeVisible();
   // The SDK connects live in the preview: the first Rise row ticks.
-  await page.getByRole('button', { name: /Rise Launch: SDK requirements/ }).click();
+  await page.getByRole('button', { name: /Full Launch: SDK requirements/ }).click();
   await expect(page.getByTestId('sdk-check').first()).toHaveAttribute('data-status', 'pass', { timeout: 30_000 });
   await page.getByRole('tab', { name: /Log/ }).click();
   await expect(page.getByTestId('sdk-log')).toContainText('hello');

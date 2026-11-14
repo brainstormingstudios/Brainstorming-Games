@@ -1,5 +1,5 @@
 /**
- * Spark Launch rules.
+ * Basic Launch rules.
  *
  * A Spark game gets guaranteed exposure (the "Fresh games" rail plus 1 in 10 slots of the other
  * homepage rails) while its KPIs are measured with ads off. The window ends when the game has

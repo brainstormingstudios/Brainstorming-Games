@@ -75,7 +75,7 @@ function Statement({ st }: { st: RevenueMonthRow }) {
 
         <Text style={s.note}>
           Shares: {SHARES.standard * 100}% of net for players from our traffic, {SHARES.referral * 100}% for players from your referral link,{' '}
-          {SHARES.exclusive * 100}% during a 60-day web-exclusive window after Rise Launch. Net is the ad revenue we received minus refunds and invalid
+          {SHARES.exclusive * 100}% during a 60-day web-exclusive window after Full Launch. Net is the ad revenue we received minus refunds and invalid
           traffic. Balances under {money(threshold, st.currency)} roll over to the next month. Payouts are made about 45 days after the end of the month.
           This statement is issued by {STUDIO_NAME} under a self-billing arrangement accepted in the developer terms. You are responsible for your own
           taxes.

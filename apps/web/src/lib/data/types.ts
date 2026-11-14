@@ -90,7 +90,7 @@ export interface GameSummary {
   schoolSafe: boolean;
   releasedAt: string | null;
   updatedAt: string;
-  /** When the current Spark Launch started, for the exposure rotation. */
+  /** When the current Basic Launch started, for the exposure rotation. */
   sparkStartedAt: string | null;
   studio: StudioRef;
   cover: MediaAsset | null;

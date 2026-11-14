@@ -38,7 +38,7 @@ BG.game.gameplayStart();
 BG.game.gameplayStop();
 ```
 
-`gameplayStart` and `gameplayStop` are what turn time on the page into real playtime. They are required for Rise Launch.
+`gameplayStart` and `gameplayStop` are what turn time on the page into real playtime. They are required for Full Launch.
 
 ## Environments
 
@@ -70,7 +70,7 @@ The platform enforces the rules, so a refused call resolves quickly with `{ show
 - **Midgame**: at most one every 3 minutes per player, never in the first 60 seconds of gameplay (`reason: 'cooldown'`).
 - **Rewarded**: the reward is granted only when the ad finishes, never on an error. Two in a row are refused (`reason: 'chained'`); gameplay has to start again in between.
 - **Banners**: at most 2 at once, only while gameplay is stopped (`BG.ad.showBanner({ containerId, size })`).
-- **Spark Launch**: every ad call returns `{ shown: false, reason: 'spark' }`.
+- **Basic Launch**: every ad call returns `{ shown: false, reason: 'spark' }`.
 
 `BG.game.onAdStateChange(({ playing }) => …)` tells you when an ad starts and ends, and `BG.game.settings.muteAudio` turns true while one plays. `BG.ad.hasAdblock()` reports an ad blocker. Never block play because of it.
 

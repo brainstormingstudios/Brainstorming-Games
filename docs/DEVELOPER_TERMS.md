@@ -32,17 +32,17 @@ You must be one of:
 
 - An HTML5 or WebGL build with `index.html` at the root, relative paths only, at most 250 MB and 1,500 files.
 - The game must reach gameplay within 20 seconds on a typical connection.
-- Rise Launch requires the Brainstorming Games SDK, including the `gameplayStart` and `gameplayStop` events, and account linking if the game stores progress.
+- Full Launch requires the Brainstorming Games SDK, including the `gameplayStart` and `gameplayStop` events, and account linking if the game stores progress.
 - Covers: title text only. No "Play now" or "New" badges, no borders, no store logos.
 
 ## 5. Review and launch tiers
 
 1. **Sandbox**: your private preview. Nobody else can see it.
-2. **Spark Launch**: after review, your game is shown to a limited audience with ads off while we measure how players respond. It ends after 7 days and 1,000 plays, or after 14 days.
-3. **Rise Launch**: games that perform well are invited to a full launch with ads on and revenue share.
+2. **Basic Launch**: after review, your game is shown to a limited audience with ads off while we measure how players respond. It ends after 7 days and 1,000 plays, or after 14 days.
+3. **Full Launch**: games that perform well are invited to a full launch with ads on and revenue share.
 4. **Featured**: an editorial pick.
 
-When a Spark Launch ends you receive either a Rise invitation or a written explanation naming the measurement that fell short and what would improve it.
+When a Basic Launch ends you receive either a Full Launch invitation or a written explanation naming the measurement that fell short and what would improve it.
 
 ## 6. Ads
 
@@ -51,7 +51,7 @@ In-game ads run only through our SDK, which enforces these rules for every game:
 - a midgame ad at most once every 3 minutes per player, never in the first 60 seconds of gameplay;
 - a rewarded ad pays its reward only when the player finishes it, and two cannot be shown in a row;
 - at most 2 banners on screen, and only while gameplay is stopped;
-- during a Spark Launch no ads are shown.
+- during a Basic Launch no ads are shown.
 
 Trying to bypass these rules, or to inflate impressions, ends the agreement and forfeits unpaid revenue from invalid traffic.
 
@@ -61,7 +61,7 @@ Trying to bypass these rules, or to inflate impressions, ends the agreement and 
 |---|---|
 | Ads, players from our traffic | 70% of net |
 | Ads, players you bring through your referral link | 85% of net |
-| Ads during a 90-day web-exclusive window after Rise Launch | 80% of net |
+| Ads during a 90-day web-exclusive window after Full Launch | 80% of net |
 | In-game purchases (later) | 75% of net after payment fees |
 
 "Net" is the ad revenue we actually receive, minus refunds and invalid traffic.

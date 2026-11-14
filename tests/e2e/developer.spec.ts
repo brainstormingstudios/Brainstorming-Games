@@ -129,7 +129,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
 
   // 7. Back as the developer: the KPI page counts the play.
   await page.goto(`${DEV}/`);
-  await expect(page.getByTestId('dev-game-row').getByTestId('game-status')).toHaveText('Spark Launch');
+  await expect(page.getByTestId('dev-game-row').getByTestId('game-status')).toHaveText('Basic Launch');
   await page.getByRole('link', { name: 'KPIs' }).click();
   await expect(page.getByTestId('kpi-page').locator('[data-kpi="plays"] dd').first()).not.toHaveText('0');
 });

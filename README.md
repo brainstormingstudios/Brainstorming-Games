@@ -77,7 +77,7 @@ Lint and typecheck are clean.
   and upload, a pre-QA bot (desktop and Pixel 7), private previews, versions and rollback, KPIs,
   bug reports, devlogs, referral link, thumbnail A/B tests, playtest panel results, jams,
   statements with PDFs and payout details.
-- **Admin:** QA queue and review, Spark Launch decisions with written reasons, homepage editor,
+- **Admin:** QA queue and review, Basic Launch decisions with written reasons, homepage editor,
   jam manager, moderation (reports, bans, studio suspension, hiding devlogs), quest and locker
   editors, monthly revenue run, audit log.
 - **SDK** (`@brainstorming/sdk`, 5.4 KB gzipped): ads with shared rules, saves, leaderboards,
@@ -110,7 +110,7 @@ a language can be added later with a messages file and `npm run gen:routes`.
 apps/web            Next.js 15 static export (no server). Pages are pre-rendered; live data is
                     fetched in the browser through one repository interface.
   src/lib/data      repo.ts (the interface), mock/ (localStorage), supabase/ (the real thing)
-  src/lib/domain    pure rules: rating, Spark Launch, KPIs, revenue split, quests, A/B tests
+  src/lib/domain    pure rules: rating, Basic Launch, KPIs, revenue split, quests, A/B tests
   src/lib/sdk-host  the page's side of the SDK bridge (every message validated)
 packages/sdk        the script games load; talks to the page with postMessage
 packages/ui         shared components and the mascot

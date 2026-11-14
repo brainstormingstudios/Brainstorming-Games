@@ -10,7 +10,7 @@ Ads in games run only through the Brainstorming SDK. The platform applies these 
 | Rewarded | No two in a row: gameplay must start again in between | `chained` |
 | Banner | At most 2 at once | `limit` |
 | Banner | Only while gameplay is stopped (they close when gameplay starts) | `gameplay-active` |
-| All | No ads during a Spark Launch | `spark` |
+| All | No ads during a Basic Launch | `spark` |
 
 ## Good placements
 

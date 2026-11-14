@@ -19,7 +19,7 @@ There is one SDK: ours (`bg-sdk.js`, or `@brainstorming/sdk` from npm). It is un
 
 ## 2. What you must call
 
-| Call | Spark Launch | Rise Launch |
+| Call | Basic Launch | Full Launch |
 | --- | --- | --- |
 | `BG.init()` before anything else | Recommended | Required |
 | `BG.game.loadingStart()` / `loadingStop()` | Recommended | Required |
@@ -27,8 +27,8 @@ There is one SDK: ours (`bg-sdk.js`, or `@brainstorming/sdk` from npm). It is un
 | `BG.data` for saves | Optional | Required if the game saves progress |
 | `BG.ad.midgame()` / `BG.ad.rewarded()` | Ignored (ads are off) | Required to earn |
 
-A game without the SDK can run a Spark Launch, where we measure it with no ads. It cannot be
-promoted to Rise Launch, because Rise is where ads and revenue start.
+A game without the SDK can run a Basic Launch, where we measure it with no ads. It cannot be
+promoted to Full Launch, because Full Launch is where ads and revenue start.
 
 ## 3. Loading and gameplay signals
 
@@ -58,7 +58,7 @@ game must keep working when an ad is refused, blocked or fails.
   that the player meant for the game.
 - Never tell players to click ads, never block play for players with an ad blocker, and never
   show your own ads, pop-ups or links to other sites.
-- During Spark Launch every ad call returns `reason: 'spark'`. That is expected.
+- During Basic Launch every ad call returns `reason: 'spark'`. That is expected.
 
 ## 5. Saves and players
 

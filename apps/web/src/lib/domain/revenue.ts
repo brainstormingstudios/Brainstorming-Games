@@ -6,7 +6,7 @@
  *   per country  a country row's net is shared across games by their ad impressions in that
  *                country; an "ALL" row is shared by impressions × country weight
  *   share        85% of net for impressions from the studio's referral link, 80% during the
- *                60-day web-exclusive window after Rise Launch, 70% otherwise
+ *                60-day web-exclusive window after Full Launch, 70% otherwise
  *   payout       monthly; amounts under ₹2,000 / $25 roll over to the next month
  *
  * Money is handled in integer minor units (paise / cents) and split with the largest-remainder

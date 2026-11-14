@@ -8,7 +8,7 @@ import type { AdSkipReason } from './protocol';
  *   rewarded  the reward fires only when the ad finishes; never two in a row (gameplay has to
  *             start again between them)
  *   banners   at most 2 at once, and only while gameplay is stopped
- *   Spark     every ad call is refused during a Spark Launch
+ *   Spark     every ad call is refused during a Basic Launch
  *   Premium   Plus: a midgame at most every 10 minutes and none in the first 3; no banners.
  *             Max: no ads at all, and rewarded calls grant the reward without an ad.
  */

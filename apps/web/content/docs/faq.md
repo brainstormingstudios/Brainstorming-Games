@@ -6,15 +6,15 @@ Nothing. Publishing, the SDK, hosting and the pre-QA bot are free.
 
 ### How much do I earn?
 
-70% of net ad revenue from our traffic, 85% from players you bring with your referral link, and 80% during an optional 90-day web-exclusive window after Rise Launch. Payouts are monthly from ₹2,000 or $25.
+70% of net ad revenue from our traffic, 85% from players you bring with your referral link, and 80% during an optional 90-day web-exclusive window after Full Launch. Payouts are monthly from ₹2,000 or $25.
 
 ### Do I keep my rights?
 
 Yes. You give us a non-exclusive licence to host and promote the game and can remove it at any time.
 
-### Why is my Spark Launch ad-free?
+### Why is my Basic Launch ad-free?
 
-So the KPIs measure the game, not the ads, and so players meet your game at its best. Ads start with Rise Launch.
+So the KPIs measure the game, not the ads, and so players meet your game at its best. Ads start with Full Launch.
 
 ### The pre-QA bot says gameplayStart never fired
 
@@ -26,7 +26,7 @@ Check the pre-QA report for absolute paths (`/assets/...`). Games are served fro
 
 ### Can I update a live game?
 
-Yes. Upload a new version: minor updates of Rise games that pass pre-QA go live automatically, everything else goes through a quick review. You can roll back to any approved version in one click.
+Yes. Upload a new version: minor updates of Full Launch games that pass pre-QA go live automatically, everything else goes through a quick review. You can roll back to any approved version in one click.
 
 ### How do I see bug reports?
 

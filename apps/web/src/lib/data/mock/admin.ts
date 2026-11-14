@@ -74,7 +74,7 @@ export const mockAdmin: AdminRepo = {
         mutateTable('launches', (rows) => {
           rows.push({ id: newId(), gameId: g.id, tier: 'spark', startedAt: now, endedAt: null, decision: null, reason: null, kpiSnapshot: null, decidedBy: null });
         });
-        notify(owner, 'qa', 'Approved: your Spark Launch has started', 'Your game is live with ads off while we measure how players respond.', link);
+        notify(owner, 'qa', 'Approved: your Basic Launch has started', 'Your game is live with ads off while we measure how players respond.', link);
       } else {
         notify(owner, 'qa', 'Update approved', 'Your new version is live.', link);
       }
@@ -120,9 +120,9 @@ export const mockAdmin: AdminRepo = {
     if (reason.trim().length < 20) fail('invalid', 'Write the reason the developer will read (at least a sentence).');
     const g = readTable('games').find((x) => x.id === gameId);
     if (!g) fail('not_found');
-    if (g.status !== 'spark') fail('invalid', 'This game is not in a Spark Launch.');
+    if (g.status !== 'spark') fail('invalid', 'This game is not in a Basic Launch.');
     const usesSdk = readTable('versions').find((v) => v.id === g.currentVersionId)?.usesSdk ?? false;
-    if (promote && !usesSdk) fail('invalid', 'Rise Launch needs the SDK.');
+    if (promote && !usesSdk) fail('invalid', 'Full Launch needs the SDK.');
     const now = nowIso();
     mutateTable('launches', (rows) => {
       const open = rows.find((l) => l.gameId === gameId && l.tier === 'spark' && !l.endedAt);
@@ -138,7 +138,7 @@ export const mockAdmin: AdminRepo = {
     } else {
       updateGameRow(gameId, { status: 'paused' });
     }
-    notify(ownerOf(gameId), 'launch', promote ? 'You are invited to Rise Launch' : 'Spark Launch ended', reason, `/dev/games/view/?id=${gameId}`);
+    notify(ownerOf(gameId), 'launch', promote ? 'You are invited to Full Launch' : 'Basic Launch ended', reason, `/dev/games/view/?id=${gameId}`);
     sendMail(studioEmail(g.studioId), promote ? 'rise_invite' : 'spark_ended', { game: g.title, gameId, reason });
     audit(staff.id, promote ? 'spark_promote' : 'spark_decline', 'game', gameId, { reason, kpis });
     emitTopic('qa');

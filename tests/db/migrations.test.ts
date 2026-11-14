@@ -77,7 +77,7 @@ describe('age gate', () => {
 });
 
 describe('developer flow', () => {
-  it('goes from studio to Spark Launch through review only', async () => {
+  it('goes from studio to Basic Launch through review only', async () => {
     const studio = await as(db, 'authenticated', dev, async (q) => {
       const [row] = await q<{ id: string }>(
         `select public.create_studio('Probe Studio', 'probe-studio', 'IN', 'dev@example.test', 'v1', 'adult') as id`,

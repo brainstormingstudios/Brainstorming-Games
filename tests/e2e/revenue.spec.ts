@@ -12,7 +12,7 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
   try {
     await resetSite(page);
 
-    // A studio with a game in Rise Launch (ads on).
+    // A studio with a game in Full Launch (ads on).
     await page.goto(`${DEV}/`);
     await page.getByTestId('dev-login').click();
     await signIn(page, 'studio@example.test', 'studio_owner');

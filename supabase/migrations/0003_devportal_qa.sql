@@ -280,13 +280,13 @@ begin
     update public.game_versions set qa_notes = nullif(trim(p_notes), '') where id = p_version_id;
     update public.games set school_safe = coalesce(p_school_safe, false) where id = v.game_id;
     if v_first then
-      -- A first approval, or a resubmission after a declined Spark, starts a new Spark Launch.
+      -- A first approval, or a resubmission after a declined Spark, starts a new Basic Launch.
       update public.games set status = 'spark', spark_started_at = now(),
         released_at = coalesce(released_at, now()), updated_at = now()
       where id = v.game_id;
       insert into public.game_launches (game_id, tier) values (v.game_id, 'spark');
       insert into public.game_stats (game_id) values (v.game_id) on conflict do nothing;
-      perform app.notify(app.game_owner(v.game_id), 'qa', 'Approved: your Spark Launch has started',
+      perform app.notify(app.game_owner(v.game_id), 'qa', 'Approved: your Basic Launch has started',
         'Your game is live with ads off while we measure how players respond.', '/dev/games/view/?id=' || v.game_id);
     else
       perform app.notify(app.game_owner(v.game_id), 'qa', 'Update approved', 'Your new version is live.',
@@ -311,7 +311,7 @@ begin
 end $$;
 
 /**
- * Ends a Spark Launch. Promotion needs the SDK; a decline needs a written reason that names the
+ * Ends a Basic Launch. Promotion needs the SDK; a decline needs a written reason that names the
  * KPI that fell short. The KPI snapshot is stored with the decision either way.
  */
 create or replace function public.spark_decide(p_game_id uuid, p_promote boolean, p_reason text, p_kpis jsonb default '{}'::jsonb)
@@ -335,11 +335,11 @@ begin
       exclusive_until = case when wants_exclusive then now() + interval '60 days' end
     where id = p_game_id;
     insert into public.game_launches (game_id, tier) values (p_game_id, 'rise');
-    perform app.notify(app.game_owner(p_game_id), 'launch', 'You are invited to Rise Launch', p_reason,
+    perform app.notify(app.game_owner(p_game_id), 'launch', 'You are invited to Full Launch', p_reason,
       '/dev/games/view/?id=' || p_game_id);
   else
     update public.games set status = 'paused', updated_at = now() where id = p_game_id;
-    perform app.notify(app.game_owner(p_game_id), 'launch', 'Spark Launch ended', p_reason,
+    perform app.notify(app.game_owner(p_game_id), 'launch', 'Basic Launch ended', p_reason,
       '/dev/games/view/?id=' || p_game_id);
   end if;
   perform app.audit(case when p_promote then 'spark_promote' else 'spark_decline' end, 'game', p_game_id::text,

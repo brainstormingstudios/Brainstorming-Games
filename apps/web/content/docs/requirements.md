@@ -21,7 +21,7 @@
 - No external ads, trackers, other portals' SDKs or external logins.
 - No real-money gambling, entry fees, cash prizes or paid random rewards.
 
-## For Rise Launch
+## For Full Launch
 
 - The Brainstorming SDK with `loadingStart`, `loadingStop`, `gameplayStart` and `gameplayStop`.
 - If the game saves progress: save through `BG.data` so progress follows the player's account.

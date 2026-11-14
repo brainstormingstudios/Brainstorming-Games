@@ -257,12 +257,12 @@ export function sparkVerdict(summary: KpiSummary, usesSdk: boolean): SparkVerdic
     return {
       recommend: 'decline',
       shortfall: null,
-      reason: 'Rise Launch needs the Brainstorming SDK with gameplayStart and gameplayStop so we can measure real playtime and run ads. Integrate the SDK and submit a new version.',
+      reason: 'Full Launch needs the Brainstorming SDK with gameplayStart and gameplayStop so we can measure real playtime and run ads. Integrate the SDK and submit a new version.',
     };
   }
   if (weak.length === 0) {
     const parts = metrics.map((m) => `${LABEL[m.metric]} ${fmt(m.metric, m.value)}`).join(', ');
-    return { recommend: 'promote', shortfall: null, reason: `Players responded well during Spark: ${parts}. Welcome to Rise Launch.` };
+    return { recommend: 'promote', shortfall: null, reason: `Players responded well during the Basic Launch: ${parts}. Welcome to Full Launch.` };
   }
   const worst = weak.sort((a, b) => {
     const ratio = (m: { metric: keyof typeof BENCHMARKS; value: number | null }) => (m.value ?? 0) / BENCHMARKS[m.metric].ok;

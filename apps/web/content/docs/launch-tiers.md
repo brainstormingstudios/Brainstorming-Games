@@ -4,7 +4,7 @@
 
 Upload a build and test it privately. The pre-QA bot checks it within minutes and the private preview link shows every SDK call live. Nobody else can find the game.
 
-## 2. Spark Launch
+## 2. Basic Launch
 
 After a human review your game goes live to a limited audience **with ads off**:
 
@@ -14,11 +14,11 @@ After a human review your game goes live to a limited audience **with ads off**:
 
 The launch ends at **7 days and 1,000 plays**, or at **14 days**, whichever comes first.
 
-## 3. Rise Launch
+## 3. Full Launch
 
-Games that players enjoy are invited to Rise Launch: ads on, revenue share on, normal ranking. Rise needs the SDK with `gameplayStart` and `gameplayStop`, and account-linked saves if the game stores progress.
+Games that players enjoy are invited to Full Launch: ads on, revenue share on, normal ranking. Full Launch needs the SDK with `gameplayStart` and `gameplayStop`, and account-linked saves if the game stores progress.
 
-Every Spark Launch ends with a written answer: a Rise invitation, or the measurement that fell short with advice on what to change. You can improve the game and submit a new version for another Spark Launch.
+Every Basic Launch ends with a written answer: a Full Launch invitation, or the measurement that fell short with advice on what to change. You can improve the game and submit a new version for another Basic Launch.
 
 ## 4. Featured
 

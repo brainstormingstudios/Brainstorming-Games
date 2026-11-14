@@ -9,7 +9,7 @@ nothing to send. The templates are in `supabase/functions/_shared/mailTemplates.
 | A studio is created | Welcome to the developer portal |
 | A game is submitted for review | "Thank you for submitting…", what happens next |
 | Review decision | Approved and live / changes requested (with the notes) / not accepted |
-| Spark Launch decided | Invited to Rise Launch, or the results |
+| Basic Launch decided | Invited to Full Launch, or the results |
 | Monthly statement published | Your statement is ready |
 | Payout sent | Payout on its way |
 | Premium bought or cancelled, guest pass used | Membership e-mails |

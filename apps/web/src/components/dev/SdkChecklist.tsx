@@ -7,7 +7,7 @@ export type SdkItem = { id: string; required: boolean; match: (e: HostLogEntry) 
 const event = (name: string) => (e: HostLogEntry) => e.direction === 'in' && e.method === 'game.event' && e.detail.includes(`"${name}"`);
 const call = (...methods: string[]) => (e: HostLogEntry) => e.direction === 'in' && methods.includes(e.method);
 
-/** What the Brainstorming SDK expects, in the order a game normally calls it. Required = Rise Launch. */
+/** What the Brainstorming SDK expects, in the order a game normally calls it. Required = Full Launch. */
 export const SDK_ITEMS: SdkItem[] = [
   { id: 'init', required: true, match: call('hello') },
   { id: 'loadingStart', required: true, match: event('loading_start') },

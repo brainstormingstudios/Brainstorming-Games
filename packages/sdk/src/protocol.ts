@@ -85,7 +85,7 @@ export interface HelloResult {
   inviteParams: Record<string, string>;
   /** Public URL of the game page, used to build invite links. */
   gameUrl: string;
-  /** The game is in its Spark Launch: every ad call is refused. */
+  /** The game is in its Basic Launch: every ad call is refused. */
   spark: boolean;
   /** A private preview: the host shows a debug panel. */
   preview: boolean;

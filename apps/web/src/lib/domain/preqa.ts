@@ -87,7 +87,7 @@ export function scorePreQa(url: string, runs: { desktop: PreQaRun | null; mobile
   add({
     id: 'sdk', status: sawSdk ? 'pass' : 'warn', label: 'Brainstorming SDK connected',
     detail: sawSdk ? 'The SDK talked to the platform.' : 'No SDK calls were seen.',
-    fix: sawSdk ? null : 'Add the SDK script and call `await BG.init()`. It is required for Rise Launch.',
+    fix: sawSdk ? null : 'Add the SDK script and call `await BG.init()`. It is required for Full Launch.',
   });
   add({
     id: 'loading-events', status: has('loading_start') && has('loading_stop') ? 'pass' : 'warn', label: 'loadingStart and loadingStop fire',

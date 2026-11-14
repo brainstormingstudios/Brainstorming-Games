@@ -72,11 +72,11 @@ begin
       exclusive_until = case when wants_exclusive then now() + interval '90 days' end
     where id = p_game_id;
     insert into public.game_launches (game_id, tier) values (p_game_id, 'rise');
-    perform app.notify(app.game_owner(p_game_id), 'launch', 'You are invited to Rise Launch', p_reason,
+    perform app.notify(app.game_owner(p_game_id), 'launch', 'You are invited to Full Launch', p_reason,
       '/dev/games/view/?id=' || p_game_id);
   else
     update public.games set status = 'paused', updated_at = now() where id = p_game_id;
-    perform app.notify(app.game_owner(p_game_id), 'launch', 'Spark Launch ended', p_reason,
+    perform app.notify(app.game_owner(p_game_id), 'launch', 'Basic Launch ended', p_reason,
       '/dev/games/view/?id=' || p_game_id);
   end if;
   perform app.audit(case when p_promote then 'spark_promote' else 'spark_decline' end, 'game', p_game_id::text,
