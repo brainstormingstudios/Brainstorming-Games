@@ -163,6 +163,7 @@ async function runOnce(browser: Browser, device: 'desktop' | 'mobile', gameUrl: 
     initialBytes: transfers.filter((t) => t.at <= cutoff).reduce((n, t) => n + t.bytes, 0),
     timeToGameplayMs: playAt ? playAt - started : null,
     events: [...new Set(events.filter((e) => !e.name.startsWith('call:')).map((e) => e.name))],
+    calls: [...new Set(events.filter((e) => e.name.startsWith('call:')).map((e) => e.name.slice(5)))],
     consoleErrors: [...new Set(consoleErrors)].slice(0, 20),
     absolute404s: [...absolute404s].slice(0, 20),
     externalAds: [...externalAds],

@@ -31,6 +31,8 @@ export interface GameFrameProps {
   /** Private preview: mock ads with the normal rules, and every SDK call is logged. */
   preview?: boolean;
   onSdkLog?: (entry: HostLogEntry) => void;
+  /** Preview test settings (see HostContext). */
+  previewOptions?: { limitMidgame: boolean; testAds: boolean };
   /** Start without the Play button (previews and the QA console). */
   autoStart?: boolean;
 }
@@ -46,7 +48,7 @@ const HEARTBEAT_MS = 15_000;
  * Display ads are never placed over or inside this element.
  */
 export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function GameFrame(
-  { game, onFullscreenChange, src, preview, onSdkLog, autoStart },
+  { game, onFullscreenChange, src, preview, onSdkLog, previewOptions, autoStart },
   ref,
 ) {
   const t = useTranslations('game');
@@ -158,6 +160,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       locale,
       container: stage.current,
       preview,
+      previewOptions,
       onLog: (entry) => logRef.current?.(entry),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one bridge per play session

@@ -52,6 +52,8 @@ export interface HostContext {
   container: HTMLElement;
   /** Private preview: ads use the mock provider with the normal rules, and calls are logged. */
   preview?: boolean;
+  /** Preview test settings: keep the normal break-ad limits, and show test ads at all. */
+  previewOptions?: { limitMidgame: boolean; testAds: boolean };
   onLog?: (entry: HostLogEntry) => void;
   onRoom?: (room: RoomInfo) => void;
 }
@@ -106,10 +108,13 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
   const { game, sessionId } = ctx;
   const ids = { gameId: game.id, versionId: game.versionId, sessionId };
   const lastMidgame = Number(local.get<number>(LAST_MIDGAME_KEY, 0)) || Number.NEGATIVE_INFINITY;
+  const testing = ctx.preview ? (ctx.previewOptions ?? { limitMidgame: true, testAds: true }) : null;
   const rules = new AdRules({
     spark: !ctx.preview && game.status === 'spark',
-    enabled: ctx.preview || INGAME_AD_PROVIDER !== 'none',
-    lastMidgameAt: lastMidgame,
+    enabled: testing ? testing.testAds : INGAME_AD_PROVIDER !== 'none',
+    // A preview starts fresh: the player's real ad history does not apply to a test run.
+    lastMidgameAt: testing ? Number.NEGATIVE_INFINITY : lastMidgame,
+    ignoreMidgameLimits: testing ? !testing.limitMidgame : false,
   });
   const applyPremium = (u: SessionUser | null) => rules.setPremium(activePlan(u?.premium));
   const started = Date.now();

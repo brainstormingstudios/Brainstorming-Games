@@ -589,7 +589,13 @@
       "needTitle": "Give the game a title.",
       "needShort": "Add a short description.",
       "needCategory": "Pick a category.",
-      "needTags": "Add at least 3 tags."
+      "needTags": "Add at least 3 tags.",
+      "whyNoBuild": "No build uploaded yet. Drop your .zip in the box above; it uploads and gets checked by itself.",
+      "whyRunning": "The automatic checks are running (about a minute). This ticks by itself when they finish.",
+      "whyFailed": "The automatic checks found a problem. Fix the red items in the report above, then drop the new zip.",
+      "whyRejected": "This build was rejected. Upload a new one.",
+      "whyRights": "Tick both boxes under Rights and originality.",
+      "fixIt": "Go to {step}"
     },
     "media": {
       "intro": "Covers show the game title only: no \"Play now\" or \"New\" badges, no borders, no store logos.",
@@ -620,7 +626,7 @@
       "dropHere": "Drop a file here"
     },
     "build": {
-      "intro": "Drag a .zip of your web build here. It is unpacked and checked in your browser before anything is uploaded.",
+      "intro": "Drag a .zip of your web build here. It is unpacked and checked in your browser, then uploaded and tested automatically.",
       "drop": "Drop your .zip here or click to choose",
       "reading": "Reading the zip…",
       "files": "{count, plural, one {# file} other {# files}}, {size}",
@@ -636,7 +642,8 @@
       "tree": "Files in this build",
       "more": "and {count} more",
       "dropNow": "Let go to read the zip",
-      "dropHint": "Your zip must have index.html at the top level. Up to 250 MB."
+      "dropHint": "Your zip must have index.html at the top level. Up to 250 MB.",
+      "sdkAdded": "Your index.html loads bg-sdk.js, but the zip doesn't include it. The official SDK file is added to your build for you."
     },
     "game": {
       "back": "All games",
@@ -716,11 +723,112 @@
       "minutes": "{count} min"
     },
     "preview": {
-      "title": "Private preview: {title}",
-      "intro": "Only people with this link can open this build. Ads are mock ads; nothing is counted in your KPIs.",
-      "events": "SDK events",
+      "title": "Preview: {title}",
       "noEvents": "No SDK calls yet. Calls appear here as your game makes them.",
-      "invalid": "This preview link is not valid."
+      "invalid": "This preview link is not valid.",
+      "warning": "You are playing a private test build. Don't share this link with players: nothing here counts towards plays, KPIs or revenue, and ads are test ads.",
+      "report": "Report a problem",
+      "testSettings": "Test settings",
+      "relaunch": "Relaunch",
+      "limitMidgame": "Limit break-ad frequency (3 min gap, after 60 s of play)",
+      "testAds": "Show test ads",
+      "panel": "Preview panel",
+      "hidePanel": "Hide panel",
+      "showPanel": "Show panel",
+      "tabRequirements": "Requirements",
+      "tabLog": "Log ({count})",
+      "tabWarnings": "Warnings ({count})",
+      "reqIntro": "To launch, your game must pass the Spark Launch checks. Rise Launch (more players, ads revenue) also needs the SDK calls below.",
+      "reqIntroLink": "How launching works",
+      "basicTitle": "Spark Launch requirements",
+      "basicHint": "Checked by the pre-QA bot on desktop and a phone. Ads are off during Spark Launch.",
+      "problems": "{count, plural, one {# problem} other {# problems}}",
+      "allGood": "All good",
+      "notChecked": "Not checked yet",
+      "reqSize": "Download under 50 MB",
+      "reqSizeDetail": "{size} {kind}",
+      "beforeGameplay": "before gameplay starts",
+      "wholeBuild": "for the whole build (no SDK, so everything counts)",
+      "reqGameplay": "Gameplay requirements",
+      "reqNoAds": "No outside ads or other portals' SDKs",
+      "reqNoLogin": "No outside login",
+      "reqNoLoginDetail": "Players sign in only through Brainstorming (BG.user). No Facebook, Google or own-account log-in screens.",
+      "reqPaths": "Relative file paths",
+      "reqPhones": "Plays smoothly on phones",
+      "reqPhonesDetail": "Loaded on a test phone. Try it on your own phone too.",
+      "waitingPreQa": "Waiting for the pre-QA bot.",
+      "showQr": "Show QR code",
+      "hideQr": "Hide QR code",
+      "qrAlt": "QR code that opens this preview on a phone",
+      "qrHint": "Scan with your phone's camera to play this build on it.",
+      "readMore": "Read more",
+      "fullTitle": "Rise Launch: SDK requirements",
+      "fullHint": "These tick live as your game calls them. Play until a level starts and ends.",
+      "progress": "{done}/{total}",
+      "extrasTitle": "SDK extras",
+      "extrasHint": "Optional features your game uses. Ads only show after Spark Launch.",
+      "used": "{count} used",
+      "noSdk": "SDK not detected. The whole build size is used for the download limit.",
+      "sdkOk": "Brainstorming SDK connected.",
+      "totalSize": "Total size:",
+      "notSent": "This build has not been sent for review yet.",
+      "sentState": "Review: {state}",
+      "continue": "Continue to submit",
+      "rules": "Read the SDK rules",
+      "noWarnings": "No warnings. 🎉",
+      "rowStatus": {
+        "pass": "passed",
+        "warn": "warning",
+        "fail": "failed",
+        "pending": "not seen yet",
+        "info": "rule to follow"
+      },
+      "sdk": {
+        "init": {
+          "call": "BG.init()",
+          "label": "SDK connected"
+        },
+        "loadingStart": {
+          "call": "BG.game.loadingStart()",
+          "label": "Loading started"
+        },
+        "loadingStop": {
+          "call": "BG.game.loadingStop()",
+          "label": "Loading finished"
+        },
+        "gameplayStart": {
+          "call": "BG.game.gameplayStart()",
+          "label": "Play started"
+        },
+        "gameplayStop": {
+          "call": "BG.game.gameplayStop()",
+          "label": "Play paused or ended"
+        },
+        "saves": {
+          "call": "BG.data.*",
+          "label": "Cloud saves"
+        },
+        "midgame": {
+          "call": "BG.ad.midgame()",
+          "label": "Break ad"
+        },
+        "rewarded": {
+          "call": "BG.ad.rewarded()",
+          "label": "Rewarded ad"
+        },
+        "banner": {
+          "call": "BG.ad.showBanner()",
+          "label": "Banner"
+        },
+        "happytime": {
+          "call": "BG.game.celebrate()",
+          "label": "Celebration"
+        },
+        "user": {
+          "call": "BG.user.*",
+          "label": "Player account"
+        }
+      }
     },
     "feedback": {
       "title": "Player bug reports",
@@ -850,59 +958,6 @@
         "freshness": "Freshness"
       },
       "chartTitle": "Impressions and clicks, last 30 days"
-    },
-    "sdkCheck": {
-      "title": "SDK checklist",
-      "progress": "{done}/{total} required",
-      "intro": "Play the game here. Each row ticks when your game makes that call. The required rows are what Rise Launch needs.",
-      "noSdk": "This build does not load bg-sdk.js. Spark Launch works without it; Rise Launch needs the required rows below.",
-      "optional": "Optional",
-      "seen": "seen",
-      "notSeen": "not seen yet",
-      "docs": "SDK quick start",
-      "rules": "SDK rules",
-      "items": {
-        "init": {
-          "call": "BG.init()",
-          "label": "SDK connected"
-        },
-        "loadingStart": {
-          "call": "BG.game.loadingStart()",
-          "label": "loading started"
-        },
-        "loadingStop": {
-          "call": "BG.game.loadingStop()",
-          "label": "loading finished"
-        },
-        "gameplayStart": {
-          "call": "BG.game.gameplayStart()",
-          "label": "play started"
-        },
-        "gameplayStop": {
-          "call": "BG.game.gameplayStop()",
-          "label": "play paused or ended"
-        },
-        "saves": {
-          "call": "BG.data.*",
-          "label": "cloud saves"
-        },
-        "midgame": {
-          "call": "BG.ad.midgame()",
-          "label": "break ad"
-        },
-        "rewarded": {
-          "call": "BG.ad.rewarded()",
-          "label": "rewarded ad"
-        },
-        "happytime": {
-          "call": "BG.game.celebrate()",
-          "label": "celebration"
-        },
-        "user": {
-          "call": "BG.user.*",
-          "label": "player account"
-        }
-      }
     }
   },
   "admin": {

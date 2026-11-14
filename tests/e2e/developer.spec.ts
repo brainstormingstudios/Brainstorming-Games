@@ -79,9 +79,10 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
 
   // Step 4: build, unzipped and checked in the browser, uploaded, pre-QA.
   await page.getByTestId('wiz-next').click();
+  // Before a build: the checklist says why the row is not ticked.
+  await expect(page.getByTestId('wiz-check-why').first()).toContainText('No build uploaded yet');
+  // Dropping a valid zip uploads it and starts pre-QA by itself (no extra button).
   await page.getByTestId('zip-input').setInputFiles({ name: 'probe.zip', mimeType: 'application/zip', buffer: await probeZip() });
-  await expect(page.getByTestId('zip-report')).toContainText('Brainstorming SDK found');
-  await page.getByTestId('build-submit').click();
   const report = page.getByTestId('pre-qa-report');
   await expect(report).toBeVisible({ timeout: 120_000 });
   await expect(report.locator('[data-check="sdk"]')).toHaveAttribute('data-check-status', 'pass');

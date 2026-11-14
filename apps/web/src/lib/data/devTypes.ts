@@ -220,6 +220,11 @@ export interface PreviewInfo {
   version: string;
   playPath: string;
   usesSdk: boolean;
+  /** Whole build, in bytes. */
+  totalBytes: number;
+  qaStatus: QaStatus;
+  gameStatus: GameStatus;
+  preQaReport: PreQaReport | null;
 }
 
 export interface QaQueueItem {

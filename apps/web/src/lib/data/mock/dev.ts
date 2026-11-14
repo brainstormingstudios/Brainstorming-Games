@@ -725,6 +725,10 @@ export const mockDev: DevRepo = {
       version: v.version,
       playPath: `${v.storagePrefix}/${v.entryFile}`,
       usesSdk: v.usesSdk,
+      totalBytes: v.totalBytes,
+      qaStatus: v.qaStatus as PreviewInfo['qaStatus'],
+      gameStatus: g.status,
+      preQaReport: (v.preQaReport ?? null) as PreviewInfo['preQaReport'],
     };
   },
 };

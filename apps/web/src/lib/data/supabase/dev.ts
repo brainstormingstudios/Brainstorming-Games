@@ -10,6 +10,7 @@ import type {
   DevStudio,
   DevVersion,
   GameEditable,
+  PreviewInfo,
   QaQueueItem,
   QaStatus,
   SparkRow,
@@ -478,6 +479,10 @@ export const supabaseDev: DevRepo = {
       version: String(data.version),
       playPath: `${String(data.storage_prefix)}/${String(data.entry_file)}`,
       usesSdk: Boolean(data.uses_sdk),
+      totalBytes: Number(data.total_bytes ?? 0),
+      qaStatus: (data.qa_status ?? 'uploaded') as PreviewInfo['qaStatus'],
+      gameStatus: (data.game_status ?? 'draft') as PreviewInfo['gameStatus'],
+      preQaReport: (data.pre_qa_report ?? null) as PreviewInfo['preQaReport'],
     };
   },
 };

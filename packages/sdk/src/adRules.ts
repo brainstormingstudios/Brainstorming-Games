@@ -27,6 +27,8 @@ export interface AdRulesOptions {
   lastMidgameAt?: number;
   /** The player's membership, if any. */
   premium?: 'plus' | 'max' | null;
+  /** Developer preview only: break ads may run without the 3-minute gap and 60 s of play. */
+  ignoreMidgameLimits?: boolean;
 }
 
 const PREMIUM_MIDGAME = { cooldownMs: 10 * 60_000, minGameplayMs: 3 * 60_000 } as const;
@@ -103,6 +105,7 @@ export class AdRules {
     if (base) return base;
     // Too early in the session and too soon after the last one both answer "cooldown".
     if (this.premium === 'max') return 'premium';
+    if (this.options.ignoreMidgameLimits) return null;
     const rule = this.premium === 'plus' ? PREMIUM_MIDGAME : { cooldownMs: AD_RULES.midgameCooldownMs, minGameplayMs: AD_RULES.midgameMinGameplayMs };
     if (this.gameplayTime() < rule.minGameplayMs) return 'cooldown';
     if (this.now() - this.lastMidgameAt < rule.cooldownMs) return 'cooldown';

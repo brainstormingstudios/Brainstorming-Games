@@ -10,6 +10,8 @@ export interface PreQaRun {
   timeToGameplayMs: number | null;
   /** SDK events seen, in order (loading_start, loading_stop, gameplay_start ...). */
   events: string[];
+  /** Other SDK calls seen (hello = BG.init, data.get, ad.midgame ...). Older reports lack it. */
+  calls?: string[];
   consoleErrors: string[];
   /** Requests for absolute paths (`/assets/x.png`) that returned 404. */
   absolute404s: string[];
@@ -77,7 +79,10 @@ export function scorePreQa(url: string, runs: { desktop: PreQaRun | null; mobile
       : { id: 'loads', status: 'pass', label: 'The game loads', detail: 'Loaded on desktop and on a Pixel 7.', fix: null },
   );
 
-  const sawSdk = all.some((r) => r.events.length > 0);
+  // Connected = any SDK traffic, including BG.init's handshake (a game on a title screen has
+  // not sent loading or gameplay events yet, but it is still connected).
+  const sawEvents = all.some((r) => r.events.length > 0);
+  const sawSdk = sawEvents || all.some((r) => (r.calls ?? []).includes('hello'));
   const has = (name: string) => all.every((r) => r.events.includes(name));
   add({
     id: 'sdk', status: sawSdk ? 'pass' : 'warn', label: 'Brainstorming SDK connected',
@@ -100,7 +105,7 @@ export function scorePreQa(url: string, runs: { desktop: PreQaRun | null; mobile
   const slowest = times.length ? Math.max(...times) : null;
   add(
     slowest == null
-      ? { id: 'time-to-gameplay', status: sawSdk ? 'fail' : 'warn', label: 'Reaches gameplay within 20 s', detail: 'Could not measure: gameplayStart never fired.', fix: 'Make sure the game reaches gameplay without a click on a splash screen, or call gameplayStart when it does.' }
+      ? { id: 'time-to-gameplay', status: sawEvents ? 'fail' : 'warn', label: 'Reaches gameplay within 20 s', detail: 'Could not measure: gameplayStart never fired.', fix: 'Make sure the game reaches gameplay without a click on a splash screen, or call gameplayStart when it does.' }
       : slowest > GAMEPLAY_LIMIT_MS
         ? { id: 'time-to-gameplay', status: 'fail', label: 'Reaches gameplay within 20 s', detail: `Slowest run: ${sec(slowest)}.`, fix: 'Load only what the first level needs, compress textures (WebP, KTX2), and enable Brotli or gzip builds.' }
         : { id: 'time-to-gameplay', status: slowest > GAMEPLAY_WARN_MS ? 'warn' : 'pass', label: 'Reaches gameplay within 20 s', detail: `Slowest run: ${sec(slowest)}.`, fix: slowest > GAMEPLAY_WARN_MS ? 'Under 10 s keeps far more players. Stream later levels in the background.' : null },

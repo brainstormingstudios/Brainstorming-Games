@@ -280,13 +280,23 @@ export function GameWizard() {
   const media = (kind: MediaKind, label: string | null = null) => d?.media.find((m) => m.kind === kind && m.variantLabel === label && m.isActive) ?? null;
   const latest = d?.versions[0] ?? null;
   const preQaOk = latest ? ['pre_qa_passed', 'pre_qa_warn', 'approved', 'in_review'].includes(latest.qaStatus) : false;
-  const checklist = [
-    { key: 'checkDetails', ok: Boolean(form.title.trim() && form.shortDescription.trim() && form.category && form.tags.length >= 3) },
-    { key: 'checkPage', ok: Boolean(form.descriptionMd.trim() && form.controls.some((c) => c.action.trim())) },
-    { key: 'checkCovers', ok: Boolean(media('cover_landscape') && media('cover_portrait') && media('cover_square')) },
-    { key: 'checkVideo', ok: Boolean(media('preview_landscape')) },
-    { key: 'checkPreQa', ok: preQaOk },
-    { key: 'checkRights', ok: ownsRights && noCopies },
+  // Why the build row is not ticked yet, in plain words.
+  const preQaWhy = !latest
+    ? 'whyNoBuild'
+    : latest.qaStatus === 'uploaded' || latest.qaStatus === 'pre_qa_running'
+      ? 'whyRunning'
+      : latest.qaStatus === 'pre_qa_failed'
+        ? 'whyFailed'
+        : latest.qaStatus === 'rejected'
+          ? 'whyRejected'
+          : null;
+  const checklist: { key: string; ok: boolean; why?: string | null; step?: Step }[] = [
+    { key: 'checkDetails', ok: Boolean(form.title.trim() && form.shortDescription.trim() && form.category && form.tags.length >= 3), step: 'details' },
+    { key: 'checkPage', ok: Boolean(form.descriptionMd.trim() && form.controls.some((c) => c.action.trim())), step: 'page' },
+    { key: 'checkCovers', ok: Boolean(media('cover_landscape') && media('cover_portrait') && media('cover_square')), step: 'media' },
+    { key: 'checkVideo', ok: Boolean(media('preview_landscape')), step: 'media' },
+    { key: 'checkPreQa', ok: preQaOk, why: preQaWhy },
+    { key: 'checkRights', ok: ownsRights && noCopies, why: 'whyRights' },
   ];
   const ready = checklist.every((c) => c.ok);
   const inReview = latest?.qaStatus === 'in_review' || d?.game.status === 'in_review';
@@ -472,9 +482,23 @@ export function GameWizard() {
           </h2>
           <ul className="flex flex-col gap-1.5">
             {checklist.map((c) => (
-              <li key={c.key} className="flex items-center gap-2 text-sm" data-ok={c.ok} data-testid="wiz-check">
-                <span className={cn('flex size-6 items-center justify-center rounded-full', c.ok ? 'bg-success text-navy-950' : 'bg-surface-3 text-fg-muted')}>{c.ok ? <Check aria-hidden="true" className="size-4" /> : '·'}</span>
-                {t(c.key as 'checkDetails')}
+              <li key={c.key} className="flex items-start gap-2 text-sm" data-ok={c.ok} data-testid="wiz-check">
+                <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full', c.ok ? 'bg-success text-navy-950' : 'border border-warning text-warning')}>
+                  {c.ok ? <Check aria-hidden="true" className="size-4" /> : <X aria-hidden="true" className="size-3.5" />}
+                </span>
+                <span className="flex flex-col pt-0.5">
+                  <span className={c.ok ? '' : 'font-bold'}>{t(c.key as 'checkDetails')}</span>
+                  {!c.ok && c.why ? (
+                    <span className="text-xs text-fg-muted" data-testid="wiz-check-why">
+                      {t(c.why as 'whyNoBuild')}
+                    </span>
+                  ) : null}
+                  {!c.ok && c.step ? (
+                    <button type="button" className="self-start text-xs font-bold text-primary hover:underline" onClick={() => go(c.step!)}>
+                      {t('fixIt', { step: t(`steps.${c.step}`) })}
+                    </button>
+                  ) : null}
+                </span>
               </li>
             ))}
           </ul>

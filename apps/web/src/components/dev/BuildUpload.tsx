@@ -27,7 +27,16 @@ export interface BuildUploadProps {
   onUploaded: (versionId: string, report: PreQaReport | null) => void;
 }
 
-/** Drag a .zip in: unpack and validate it in the browser, show the tree, upload, run pre-QA. */
+/** `<script src="bg-sdk.js">` (or "./bg-sdk.js"): the build expects the SDK next to index.html. */
+const LOCAL_SDK = /<script[^>]+src=["'](?:\.\/)?bg-sdk\.js["']/i;
+
+type Picked = { zip: JSZipType; check: BuildValidation; sdk: boolean; addSdk: boolean };
+
+/**
+ * Drag a .zip in: unpack and validate it in the browser, show the tree, then upload and run
+ * pre-QA straight away. A live game's update waits for the button, so the version and the
+ * minor-update choice can be set first.
+ */
 export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: BuildUploadProps) {
   const t = useTranslations('dev.build');
   const tc = useTranslations('common');
@@ -36,6 +45,7 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
   const [check, setCheck] = useState<BuildValidation | null>(null);
   const [extraWarnings, setExtraWarnings] = useState<string[]>([]);
   const [sdk, setSdk] = useState(false);
+  const [addSdk, setAddSdk] = useState(false);
   const [reading, setReading] = useState(false);
   const [version, setVersion] = useState(suggestedVersion);
   const [minor, setMinor] = useState(false);
@@ -57,10 +67,12 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       const result = validateBuild(entries);
       const warnings: string[] = [];
       let found = false;
+      let missingSdk = false;
       const index = result.files.find((f) => f.path === 'index.html');
       if (index) {
         const html = await z.file(index.source)!.async('string');
         found = mentionsSdk(html);
+        missingSdk = LOCAL_SDK.test(html) && !result.files.some((f) => f.path === 'bg-sdk.js');
         const abs = findAbsolutePaths(html);
         if (abs.length) warnings.push(`index.html loads files from absolute paths (${abs.slice(0, 3).join(', ')}). Use relative paths.`);
       }
@@ -72,7 +84,10 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       setZip(z);
       setCheck(result);
       setSdk(found);
+      setAddSdk(missingSdk);
       setExtraWarnings(warnings);
+      setReading(false);
+      if (result.ok && !isLive) await upload({ zip: z, check: result, sdk: found, addSdk: missingSdk });
     } catch {
       toast(tc('errorBody'), { tone: 'error' });
     } finally {
@@ -80,20 +95,25 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
     }
   };
 
-  const upload = async () => {
-    if (!zip || !check?.ok) return;
+  const upload = async (picked: Picked | null = zip && check ? { zip, check, sdk, addSdk } : null) => {
+    if (!picked?.check.ok) return;
     setProgress(0);
     try {
       const files = await Promise.all(
-        check.files.map(async (f) => {
+        picked.check.files.map(async (f) => {
           const ext = extensionOf(f.path);
-          const data = await zip.file(f.source)!.async('blob');
+          const data = await picked.zip.file(f.source)!.async('blob');
           return { path: f.path, data: new Blob([data], { type: MIME_BY_EXT[ext] ?? 'application/octet-stream' }) };
         }),
       );
+      if (picked.addSdk) {
+        // index.html loads bg-sdk.js from its own folder: ship the official copy with the build.
+        const res = await fetch('/sdk/v1/bg-sdk.js');
+        if (res.ok) files.push({ path: 'bg-sdk.js', data: new Blob([await res.blob()], { type: 'text/javascript' }) });
+      }
       const repo = await getRepo();
       const { versionId, previewToken } = await repo.dev.createVersion(
-        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: sdk, minorUpdate: isLive && minor, fingerprint: await buildFingerprint(files) },
+        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: picked.sdk, minorUpdate: isLive && minor, fingerprint: await buildFingerprint(files) },
         setProgress,
       );
       savePreviewToken(versionId, previewToken);
@@ -153,6 +173,11 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
             <Badge tone={sdk ? 'success' : 'warning'}>{sdk ? t('sdkFound') : 'SDK'}</Badge>
           </p>
           {!sdk ? <p className="text-sm text-fg-muted">{t('sdkMissing')}</p> : null}
+          {addSdk ? (
+            <p className="text-sm text-fg-muted" data-testid="sdk-added">
+              {t('sdkAdded')}
+            </p>
+          ) : null}
           {check.errors.length ? (
             <div role="alert">
               <p className="text-sm font-bold text-danger">{t('errors')}</p>
@@ -185,10 +210,10 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
               {check.files.length > 200 ? <li className="text-fg-muted">{t('more', { count: check.files.length - 200 })}</li> : null}
             </ul>
           </details>
-          {check.ok ? (
+          {check.ok && isLive ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <TextField label={t('version')} value={version} onChange={(e) => setVersion(e.target.value)} className="sm:w-40" data-testid="build-version" />
-              {isLive ? <Checkbox label={t('minor')} checked={minor} onChange={(e) => setMinor(e.target.checked)} /> : null}
+              <Checkbox label={t('minor')} checked={minor} onChange={(e) => setMinor(e.target.checked)} />
               <Button onClick={() => void upload()} loading={progress != null} icon={<Upload aria-hidden="true" className="size-4" />} data-testid="build-submit">
                 {t('upload')}
               </Button>
