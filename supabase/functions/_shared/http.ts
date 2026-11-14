@@ -1,11 +1,14 @@
 // Shared helpers for the Edge Functions (Deno).
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
-const SITE_URL = (Deno.env.get('SITE_URL') ?? '').replace(/\/+$/, '');
+const clean = (v: string | undefined) => (v ?? '').trim().replace(/\/+$/, '');
+const SITE_URL = clean(Deno.env.get('SITE_URL'));
+/** The three sites: player, developer portal and management portal. */
+const ORIGINS = [SITE_URL, clean(Deno.env.get('DEVELOPERS_URL')), clean(Deno.env.get('MANAGE_URL'))].filter(Boolean);
 
 export function cors(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') ?? '';
-  const allowed = SITE_URL && origin === SITE_URL ? origin : SITE_URL || '*';
+  const allowed = ORIGINS.includes(origin) ? origin : SITE_URL || '*';
   return {
     'access-control-allow-origin': allowed,
     'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',
@@ -52,6 +55,21 @@ export function adminClient(): SupabaseClient {
 export async function requireUser(req: Request): Promise<{ id: string; email: string | null } | null> {
   const { data } = await userClient(req).auth.getUser();
   return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
+}
+
+/**
+ * True when the caller's session has passed the owner code (Supabase multi-factor sign-in, `aal2`).
+ * The token was already verified by `requireUser`; this only reads its claim.
+ */
+export function hasOwnerCode(req: Request): boolean {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+  try {
+    const part = token.split('.')[1] ?? '';
+    const claims = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return claims?.aal === 'aal2';
+  } catch {
+    return false;
+  }
 }
 
 export async function sha256Hex(text: string): Promise<string> {

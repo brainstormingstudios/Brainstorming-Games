@@ -8,8 +8,8 @@
  *      Components use the semantic utilities (bg-surface, text-fg, border-border) so they never
  *      need a `dark:` variant.
  *
- * The look: neutral charcoal, never tinted blue. One loud accent (sun yellow) for the thing you
- * are meant to press, and the mascot's cyan kept for small sparks (points, links, live states).
+ * The look: neutral charcoal for every surface (never a blue-tinted background), with the logo's
+ * own bright blue as the one accent: buttons, the active item, focus, links.
  * Depth comes from flat steps of grey and crisp edges, not from glows.
  */
 
@@ -127,11 +127,11 @@
   --fg: #f3f3f4;
   --fg-muted: #a0a3ab;
   --border: #2a2c33;
-  --primary: #ffd43b;
-  --primary-fg: #141207;
-  --link: #7ddcff;
-  --ring: #ffd43b;
-  --ring-halo: rgb(255 212 59 / 0.22);
+  --primary: #00c0f0;
+  --primary-fg: #04131c;
+  --link: #5fd6ff;
+  --ring: #00e0ff;
+  --ring-halo: rgb(0 192 240 / 0.24);
   --glow: #6fe3ff;
   --overlay: rgb(0 0 0 / 0.72);
 }
@@ -146,12 +146,12 @@
   --fg: #121316;
   --fg-muted: #565a63;
   --border: #d9d9d3;
-  --primary: #ffcf24;
-  --primary-fg: #141207;
+  --primary: #00b8e6;
+  --primary-fg: #04131c;
   /* Never pale text on white: links are a deep blue on the light theme. */
   --link: #0a5c9e;
   --ring: #121316;
-  --ring-halo: rgb(255 207 36 / 0.85);
+  --ring-halo: rgb(0 184 230 / 0.6);
   --glow: #007fa8;
   --overlay: rgb(12 12 14 / 0.55);
 }
@@ -194,10 +194,10 @@
     cursor: not-allowed;
   }
   ::selection {
-    background: #ffd43b;
-    color: #141207;
+    background: #00c0f0;
+    color: #04131c;
   }
-  /* One visible focus style everywhere: yellow on dark, ink with a yellow halo on light. */
+  /* One visible focus style everywhere: bright blue on dark, ink with a blue halo on light. */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;

@@ -69,7 +69,8 @@
     "categories": "Categories",
     "allTags": "All tags",
     "more": "More",
-    "jams": "Game jams"
+    "jams": "Game jams",
+    "premium": "Premium"
   },
   "categories": {
     "action": {
@@ -368,7 +369,8 @@
     "multiplayerBadge": "Multiplayer",
     "verifiedStudio": "Verified studio",
     "notFoundTitle": "We could not find that game",
-    "notFoundBody": "It may have been renamed or removed."
+    "notFoundBody": "It may have been renamed or removed.",
+    "sponsored": "Sponsored"
   },
   "studio": {
     "metaTitle": "{name} – games by this studio",
@@ -421,7 +423,11 @@
     "loginRequiredTitle": "Log in to continue",
     "loginRequiredBody": "This part of the site needs an account.",
     "invalidEmail": "Enter a valid e-mail address.",
-    "invalidYear": "Enter a year between 1900 and this year."
+    "invalidYear": "Enter a year between 1900 and this year.",
+    "apple": "Continue with Apple",
+    "googleLoading": "Loading Google sign-in…",
+    "appleLiveOnly": "Apple sign-in switches on with the live site (it needs the registered domain).",
+    "socialFailed": "That sign-in did not work. Try again, or use your e-mail."
   },
   "dev": {
     "metaTitle": "Developer portal",
@@ -434,7 +440,8 @@
       "studio": "Studio page",
       "payouts": "Payouts",
       "docs": "Docs",
-      "jams": "Jams"
+      "jams": "Jams",
+      "boost": "Boost"
     },
     "signup": {
       "title": "Create your studio",
@@ -827,7 +834,10 @@
       "moderation": "Moderation",
       "progression": "Quests & locker",
       "games": "Games",
-      "database": "Database"
+      "database": "Database",
+      "promotions": "Promotions",
+      "payments": "Payments",
+      "emails": "E-mails"
     },
     "notAllowedTitle": "This portal is for the site owners",
     "notAllowedBody": "Only admins of Brainstorming Games can open the management portal.",
@@ -1129,7 +1139,81 @@
     },
     "notAllowedWho": "You are signed in as {email}.",
     "notAllowedHowMock": "On this machine, add your e-mail to NEXT_PUBLIC_OWNER_EMAILS in the .env.local file, restart, and sign in again.",
-    "notAllowedHowLive": "Ask an existing admin to give your account the admin role under Moderation, Players."
+    "notAllowedHowLive": "Ask an existing admin to give your account the admin role under Moderation, Players.",
+    "owner": {
+      "title": "Enter your owner code",
+      "intro": "Open your authenticator app and type the 6-digit code for Brainstorming Games.",
+      "setupTitle": "Set up your owner code",
+      "setupIntro": "The management portal needs a second lock that only you hold: a code from an app on your phone.",
+      "setupStart": "Start set-up",
+      "step1": "Install an authenticator app on your phone: Google Authenticator, Microsoft Authenticator or Authy.",
+      "step2": "In the app, add an account and scan this code.",
+      "manual": "Cannot scan? Type this key into the app instead:",
+      "step3": "Type the 6-digit code the app shows to finish.",
+      "code": "6-digit code",
+      "unlock": "Unlock",
+      "wrong": "That code is not right. Codes change every 30 seconds: try the current one.",
+      "locked": "Too many wrong codes. Wait a few minutes and try again.",
+      "unavailable": "The code could not be checked right now. Try again in a moment.",
+      "note": "The portal stays unlocked for this browser session. Never share the code or the set-up key."
+    },
+    "promotions": {
+      "title": "Promotions",
+      "intro": "Paid Boosts to fulfil. Make the videos, post them on the official channels, then paste the links here: the studio is e-mailed straight away.",
+      "empty": "No Boost orders yet",
+      "todo": "Make {shorts} Shorts and {reels} Reels",
+      "shortLinks": "YouTube Shorts links",
+      "reelLinks": "Instagram Reels links",
+      "oneLink": "One https:// link per line.",
+      "notes": "Notes",
+      "status": "Status",
+      "save": "Save links",
+      "saved": "Saved."
+    },
+    "payments": {
+      "title": "Payments",
+      "intro": "Memberships and Boosts. Razorpay is the record of truth; refunds are made from the Razorpay dashboard.",
+      "empty": "No payments yet",
+      "test": "test",
+      "stats": {
+        "month": "This month",
+        "premium": "Premium (all time)",
+        "boost": "Boost (all time)",
+        "count": "Paid orders"
+      },
+      "cols": {
+        "when": "When",
+        "what": "What",
+        "who": "Who",
+        "amount": "Amount",
+        "status": "Status",
+        "reference": "Reference"
+      },
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      }
+    },
+    "emails": {
+      "title": "Automated e-mails",
+      "intro": "Every e-mail the site sent, from the official address. A personal Gmail account sends up to about 100 a day.",
+      "refresh": "Refresh",
+      "empty": "No e-mails sent yet",
+      "cols": {
+        "when": "When",
+        "to": "To",
+        "subject": "Subject",
+        "status": "Status"
+      },
+      "status": {
+        "queued": "Queued",
+        "sent": "Sent",
+        "saved": "Saved (not sent)",
+        "failed": "Failed"
+      }
+    }
   },
   "player": {
     "points": "{count, plural, one {# Brain Point} other {# Brain Points}}",
@@ -1147,7 +1231,10 @@
     "restrictedTitle": "Waiting for a parent or guardian",
     "restrictedBody": "Friends, your public profile, party chat and named leaderboards switch on once a parent or guardian approves your account.",
     "sendApproval": "Send the approval link",
-    "schoolSafeOff": "School-safe mode is on, so social features are off on this device."
+    "schoolSafeOff": "School-safe mode is on, so social features are off on this device.",
+    "goPremium": "Go Premium: fewer ads or none",
+    "premiumShort": "Premium",
+    "premiumMember": "You are a {plan} member"
   },
   "quests": {
     "metaTitle": "Brain Quests",
@@ -1494,5 +1581,97 @@
       "home": "Management portal home"
     },
     "playerSite": "Player site"
+  },
+  "billing": {
+    "startFailed": "The payment could not start. Try again in a moment.",
+    "confirming": "Payment received. Confirming…",
+    "paid": "Payment confirmed. Thank you!",
+    "pending": "Payment received. It can take a minute to show here.",
+    "testTitle": "Test checkout",
+    "testIntro": "This build has no payment keys yet, so this is a test: no money moves.",
+    "testNote": "On the live site this opens Razorpay: UPI, cards, net banking and wallets.",
+    "payTest": "Pay {amount} (test)",
+    "cancel": "Cancel"
+  },
+  "premium": {
+    "metaTitle": "Brainstorming Premium",
+    "eyebrow": "Brainstorming Premium",
+    "title": "Play with fewer ads, or none",
+    "intro": "Two simple monthly plans. Cancel any time and keep your plan until the end of the month you paid for.",
+    "best": "Best value",
+    "perMonth": "a month",
+    "plus": {
+      "name": "Plus",
+      "tagline": "Most of the ads gone, for less than a chai a week."
+    },
+    "max": {
+      "name": "Max",
+      "tagline": "No ads at all, and the most perks."
+    },
+    "perks": {
+      "fewerAds": "Far fewer ads on the site: one banner on the home page, none on game pages",
+      "shortBreaks": "In games, an ad break at most every 10 minutes, never in your first 3",
+      "noAds": "No ads anywhere: not on the site, not in games",
+      "instantRewards": "Rewards that normally need an ad are yours straight away",
+      "doublePoints": "Double Brain Points from every quest",
+      "wallpapers": "Member wallpapers from the BS Originals, for desktop and phone",
+      "guestPasses": "2 guest passes a month: give a friend 7 days of Plus",
+      "plusBadge": "A Plus badge next to your name",
+      "maxBadge": "A Max badge next to your name"
+    },
+    "choose": "Get {plan}",
+    "switchTo": "Switch to {plan}",
+    "yourPlan": "Your plan",
+    "adultsOnly": "Memberships are for adults. If you are under 18, ask a parent or guardian.",
+    "fineprint": "Prices include GST. Payments are handled by Razorpay; we never see your card or UPI details. Brain Points are never sold and cannot be bought.",
+    "renews": "Renews on {date}",
+    "endsOn": "Ends on {date}. It will not renew.",
+    "passUntil": "Guest pass, until {date}",
+    "cancel": "Cancel renewal",
+    "cancelled": "Renewal cancelled. Your plan stays on until the end of the period.",
+    "passesTitle": "Guest passes",
+    "passesIntro": "{count, plural, =0 {No passes left this month.} one {# pass left this month.} other {# passes left this month.}} Each gives a friend 7 days of Plus.",
+    "sharePass": "Copy a pass link",
+    "passCopied": "Pass link copied. Send it to a friend.",
+    "passUsed": "used",
+    "passOpen": "not used yet",
+    "passLogin": "Log in to use your guest pass",
+    "passRedeemed": "Your guest pass is on: 7 days of Plus.",
+    "wallpapersTitle": "Member wallpapers",
+    "wallpapersIntro": "Key art from the BS Originals.",
+    "desktop": "Desktop",
+    "phone": "Phone"
+  },
+  "boost": {
+    "title": "Boost",
+    "intro": "Get your game in front of more players. We make short videos of your game and post them on the official Brainstorming Games YouTube and Instagram, and your game gets a sponsored slot on the site.",
+    "game": "Game to boost",
+    "needLiveTitle": "No live game yet",
+    "needLiveBody": "A game can be boosted once it has passed review and is live.",
+    "popular": "Most chosen",
+    "packages": {
+      "spotlight": "Spotlight",
+      "push": "Push",
+      "launch": "Launch"
+    },
+    "shorts": "{count, plural, one {# YouTube Short} other {# YouTube Shorts}} on our channel",
+    "reels": "{count, plural, one {# Instagram Reel} other {# Instagram Reels}} on our account",
+    "sponsored": "Sponsored slot in the top rails for {count} days",
+    "hero": "First in the homepage spotlight for {count} days",
+    "buy": "Boost for {price}",
+    "fineprint": "Sponsored slots are always marked \"Sponsored\". A Boost buys reach, not rank: it never changes your game's Brain Rank, which only players' behaviour decides. Videos are posted within 5 working days.",
+    "yours": "Your Boosts",
+    "none": "You have not boosted a game yet.",
+    "videosSoon": "Your videos are being made. The links appear here, and we e-mail you.",
+    "short": "Short {n}",
+    "reel": "Reel {n}",
+    "window": "Sponsored {from} to {to}",
+    "status": {
+      "pending_payment": "Awaiting payment",
+      "paid": "Paid, in production",
+      "live": "Live",
+      "done": "Finished",
+      "cancelled": "Cancelled"
+    }
   }
 }

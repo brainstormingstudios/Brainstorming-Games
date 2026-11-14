@@ -7,17 +7,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@brainstorming/ui';
 import { localizePath } from '@/i18n/config';
 import { Link, useLocale } from '@/i18n/navigation';
-import { BUILD_TIME } from '@/lib/config';
+import { PRERENDERED_UNTIL } from '@/lib/config';
 import { getAnonId } from '@/lib/data/local';
 import type { GameSummary } from '@/lib/data/types';
 import { variantFor } from '@/lib/domain/abTest';
+import { isPromoActive } from '@/lib/domain/premium';
 import { gameHref } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
 import { GameCover } from './GameCover';
 
 /** A game page exists in this build only if the game was already live when the build started. */
 export function isPrebuilt(game: Pick<GameSummary, 'releasedAt'>): boolean {
-  return game.releasedAt != null && game.releasedAt <= BUILD_TIME;
+  return game.releasedAt != null && game.releasedAt <= PRERENDERED_UNTIL;
 }
 
 export interface GameTileProps {
@@ -144,6 +145,11 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
             >
               <Sparkles aria-hidden="true" className="size-3" />
               {t('sparkBadge')}
+            </span>
+          ) : null}
+          {isPromoActive(game.promo) ? (
+            <span data-testid="sponsored-badge" className="inline-flex items-center rounded-full bg-navy-950/85 px-2 py-0.5 text-[0.7rem] font-extrabold text-white">
+              {t('sponsored')}
             </span>
           ) : null}
           {game.isMultiplayer ? (

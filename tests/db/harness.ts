@@ -56,12 +56,15 @@ export async function as<T>(
   role: Role,
   userId: string | null,
   fn: (q: <R = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<R[]>) => Promise<T>,
+  /** Assurance level of the session: `aal2` has passed the owner code, `aal1` has not. */
+  aal: 'aal1' | 'aal2' = 'aal2',
 ): Promise<T> {
   return db.transaction(async (tx) => {
     await tx.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claim.role', $2, true)`, [
       userId ?? '',
       role,
     ]);
+    await tx.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ aal, sub: userId ?? '', role })]);
     await tx.exec(`set local role ${role}`);
     const q = async <R = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
       (await tx.query<R>(sql, params)).rows;

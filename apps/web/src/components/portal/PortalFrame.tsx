@@ -8,6 +8,8 @@ import {
   Bug,
   CalendarDays,
   ClipboardCheck,
+  CreditCard,
+  Mail,
   Database,
   ExternalLink,
   Gamepad2,
@@ -29,7 +31,6 @@ import { AccountMenu, LoginDialog } from '@/components/auth/AccountMenu';
 import { Logo } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/SettingsToggles';
 import { Link } from '@/i18n/navigation';
-import { IS_MOCK } from '@/lib/config';
 import { productPath } from '@/lib/sites';
 
 export type PortalKind = 'developers' | 'manage';
@@ -51,6 +52,7 @@ const NAV: Record<PortalKind, PortalNavItem[]> = {
     { key: 'feedback', href: '/dev/feedback', icon: Bug },
     { key: 'devlogs', href: '/dev/devlogs', icon: Megaphone },
     { key: 'studio', href: '/dev/studio', icon: Store },
+    { key: 'boost', href: '/dev/boost', icon: Rocket },
     { key: 'payouts', href: '/dev/payouts', icon: Wallet },
     { key: 'jams', href: '/jams', icon: CalendarDays },
     { key: 'docs', href: '/dev/docs/quick-start', icon: BookOpen, match: ['/dev/docs'] },
@@ -64,7 +66,10 @@ const NAV: Record<PortalKind, PortalNavItem[]> = {
     { key: 'jams', href: '/admin/jams', icon: CalendarDays },
     { key: 'moderation', href: '/admin/moderation', icon: ShieldAlert },
     { key: 'progression', href: '/admin/progression', icon: Target },
+    { key: 'promotions', href: '/admin/promotions', icon: Megaphone },
+    { key: 'payments', href: '/admin/payments', icon: CreditCard },
     { key: 'revenue', href: '/admin/revenue', icon: BarChart3 },
+    { key: 'emails', href: '/admin/emails', icon: Mail },
     { key: 'database', href: '/admin/database', icon: Database },
     { key: 'audit', href: '/admin/audit', icon: ScrollText },
   ],
@@ -119,11 +124,6 @@ export function PortalFrame({ kind, dismissLabel, children }: { kind: PortalKind
       <div className="portal" data-portal={kind} data-testid={kind === 'developers' ? 'dev-portal' : 'admin-console'}>
         <header className="portal-bar">
           <Logo label={t(`${kind}.home`)} href={ROOT[kind]} tag={t(`${kind}.name`)} />
-          {IS_MOCK ? (
-            <span title={tc('mockModeHint')} className="mock-badge hidden md:inline">
-              {tc('mockMode')}
-            </span>
-          ) : null}
           <span className="ml-auto flex items-center gap-1.5">
             <Link href="/" className="portal-site-link" data-testid="open-player-site">
               <ExternalLink aria-hidden="true" className="size-4" />

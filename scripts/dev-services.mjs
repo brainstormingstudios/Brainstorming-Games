@@ -16,11 +16,13 @@
  *   node scripts/dev-services.mjs [--port 4100] [--site http://localhost:3000]
  */
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize, sep } from 'node:path';
-import { ROOT, TSX, WEB } from './lib/run.mjs';
+import { ROOT, TSX, WEB, loadEnv } from './lib/run.mjs';
+
+loadEnv();
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -99,6 +101,8 @@ const MIME = {
 const tables = new Map();
 let clock = 1;
 let saveTimer = null;
+/** @type {Map<string, string> | null} */
+let stashed = null;
 
 function loadDb() {
   try {
@@ -264,9 +268,167 @@ function seedOriginals() {
 }
 
 loadDb();
-if (SEED && getRows('games').length === 0) {
+// The BS Originals are always in the catalogue: any that are missing (a fresh database, or one an
+// automated test emptied) are added back on start. Games and accounts people created are untouched.
+if (SEED) {
   const n = seedOriginals();
-  if (n) console.log(`[dev-services] added ${n} first-party game(s) to the empty catalogue`);
+  if (n) console.log(`[dev-services] added ${n} BS Original(s) to the catalogue`);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Owner code: a time-based one-time password (RFC 6238, the kind every authenticator app makes).
+// The secret never goes into the database tables a browser can read: it is kept in
+// .local/owner-keys.json and checked here. A correct code unlocks the management portal for
+// 12 hours through an HttpOnly cookie that page scripts cannot read.
+// ---------------------------------------------------------------------------------------------
+const OWNER_FILE = join(ROOT, '.local', 'owner-keys.json');
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+/** @type {Record<string, { secret: string, confirmed: boolean }>} */
+let ownerKeys = {};
+try {
+  ownerKeys = JSON.parse(readFileSync(OWNER_FILE, 'utf8'));
+} catch {
+  // nobody has set a code up yet
+}
+/** token -> { uid, expires } */
+const ownerSessions = new Map();
+/** uid -> { fails, until } */
+const ownerLocks = new Map();
+
+const saveOwnerKeys = () => {
+  mkdirSync(dirname(OWNER_FILE), { recursive: true });
+  writeFileSync(OWNER_FILE, JSON.stringify(ownerKeys, null, 2));
+};
+function base32(bytes) {
+  let bits = '';
+  for (const b of bytes) bits += b.toString(2).padStart(8, '0');
+  let out = '';
+  for (let i = 0; i + 5 <= bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5), 2)];
+  return out;
+}
+function unbase32(text) {
+  let bits = '';
+  for (const ch of text.replace(/=+$/, '').toUpperCase()) {
+    const v = B32.indexOf(ch);
+    if (v >= 0) bits += v.toString(2).padStart(5, '0');
+  }
+  const out = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.slice(i, i + 8), 2));
+  return Buffer.from(out);
+}
+function totpAt(secret, counter) {
+  const msg = Buffer.alloc(8);
+  msg.writeBigUInt64BE(BigInt(counter));
+  const h = createHmac('sha1', unbase32(secret)).update(msg).digest();
+  const o = h[h.length - 1] & 15;
+  const n = ((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3];
+  return String(n % 1_000_000).padStart(6, '0');
+}
+function totpOk(secret, code) {
+  const now = Math.floor(Date.now() / 30_000);
+  const given = Buffer.from(String(code).replace(/\D/g, '').padStart(6, '0').slice(0, 6));
+  // One step either side allows for a clock that is a little off.
+  return [-1, 0, 1].some((d) => timingSafeEqual(Buffer.from(totpAt(secret, now + d)), given));
+}
+const cookieOf = (req, name) => new RegExp(`(?:^|;\\s*)${name}=([^;]+)`).exec(req.headers.cookie ?? '')?.[1] ?? null;
+const isAdmin = (uid) => getRows('users').some((u) => u.id === uid && u.role === 'admin' && !u.bannedAt);
+function ownerUnlocked(req, uid) {
+  const token = cookieOf(req, 'bg_owner');
+  const session = token ? ownerSessions.get(token) : null;
+  return Boolean(session && session.uid === uid && session.expires > Date.now());
+}
+
+async function ownerApi(req, res, action) {
+  const body = req.method === 'POST' ? JSON.parse((await readBody(req)) || '{}') : {};
+  const uid = String(req.method === 'GET' ? new URL(req.url, 'http://x').searchParams.get('uid') ?? '' : body.uid ?? '');
+  res.setHeader('cache-control', 'no-store');
+  if (!uid || !isAdmin(uid)) return json(res, 403, { error: 'not_allowed' });
+  const key = ownerKeys[uid];
+  if (action === 'status') return json(res, 200, { enrolled: Boolean(key?.confirmed), unlocked: ownerUnlocked(req, uid) });
+  if (action === 'enroll') {
+    // A code that is already set up can only be replaced from an unlocked session.
+    if (key?.confirmed && !ownerUnlocked(req, uid)) return json(res, 403, { error: 'not_allowed' });
+    const secret = base32(randomBytes(20));
+    ownerKeys[uid] = { secret, confirmed: false };
+    saveOwnerKeys();
+    const email = getRows('users').find((u) => u.id === uid)?.email ?? 'owner';
+    const label = encodeURIComponent(`Brainstorming Games:${email}`);
+    return json(res, 200, { secret, uri: `otpauth://totp/${label}?secret=${secret}&issuer=Brainstorming%20Games&algorithm=SHA1&digits=6&period=30` });
+  }
+  if (action === 'verify') {
+    const lock = ownerLocks.get(uid);
+    if (lock && lock.until > Date.now()) return json(res, 429, { error: 'rate_limited', retryInSeconds: Math.ceil((lock.until - Date.now()) / 1000) });
+    if (!key || !totpOk(key.secret, body.code)) {
+      // Five wrong codes lock the account for five minutes, then every further miss doubles it.
+      const fails = (lock?.fails ?? 0) + 1;
+      ownerLocks.set(uid, { fails, until: fails >= 5 ? Date.now() + 300_000 * 2 ** (fails - 5) : 0 });
+      return json(res, 200, { ok: false });
+    }
+    ownerLocks.delete(uid);
+    if (!key.confirmed) {
+      key.confirmed = true;
+      saveOwnerKeys();
+    }
+    const token = randomBytes(32).toString('hex');
+    ownerSessions.set(token, { uid, expires: Date.now() + 12 * 3_600_000 });
+    res.setHeader('set-cookie', `bg_owner=${token}; Path=/; Max-Age=43200; HttpOnly; SameSite=Lax`);
+    return json(res, 200, { ok: true });
+  }
+  if (action === 'lock') {
+    const token = cookieOf(req, 'bg_owner');
+    if (token) ownerSessions.delete(token);
+    res.setHeader('set-cookie', 'bg_owner=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+    return json(res, 200, { ok: true });
+  }
+  return json(res, 404, { error: 'not_found' });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Automated e-mails. Every message is rendered with the same templates as the live site, saved to
+// .local/mail (open the .html file to see it) and listed in the management portal. With a Gmail
+// app password in .env.local it is also really sent, from the official address, for free.
+// ---------------------------------------------------------------------------------------------
+const MAIL_DIR = join(ROOT, '.local', 'mail');
+const CONTACT = (process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'brainstormingstudios26@gmail.com').trim();
+const GMAIL_USER = (process.env.GMAIL_USER || CONTACT).trim();
+const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
+let transport = null;
+async function mailer() {
+  if (!GMAIL_PASS) return null;
+  if (!transport) {
+    const nodemailer = (await import('nodemailer')).default;
+    transport = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
+  }
+  return transport;
+}
+
+async function sendMailNow(body) {
+  const { renderMail } = await import('../supabase/functions/_shared/mailTemplates.ts');
+  const to = String(body.to ?? '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return { error: 'invalid_address' };
+  const ctx = {
+    siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, ''),
+    developersUrl: (process.env.NEXT_PUBLIC_DEVELOPERS_URL || 'http://localhost:3001').replace(/\/+$/, ''),
+    contactEmail: CONTACT,
+  };
+  const mail = renderMail(String(body.template), body.data ?? {}, ctx);
+  const row = { id: randomUUID(), to, template: String(body.template), subject: mail.subject, status: 'saved', error: null, createdAt: new Date().toISOString() };
+  mkdirSync(MAIL_DIR, { recursive: true });
+  writeFileSync(join(MAIL_DIR, `${row.createdAt.replace(/[:.]/g, '-')}-${row.template}.html`), mail.html);
+  // Addresses on the test domains never leave this machine.
+  const testAddress = /@example\.(test|com)$/i.test(to) || /\.test$/i.test(to);
+  const t = testAddress ? null : await mailer();
+  if (t) {
+    try {
+      await t.sendMail({ from: { name: 'Brainstorming Games', address: GMAIL_USER }, replyTo: CONTACT, to, subject: mail.subject, html: mail.html, text: mail.text });
+      row.status = 'sent';
+    } catch (err) {
+      row.status = 'failed';
+      row.error = String(err?.message ?? err).slice(0, 300);
+    }
+  }
+  setTable('emails', [...getRows('emails'), row].slice(-500));
+  return row;
 }
 
 /** A file of a first-party game (or the SDK every one of them loads from its own folder). */
@@ -307,6 +469,8 @@ function cors(req, res) {
     res.setHeader('access-control-allow-origin', origin);
     res.setHeader('vary', 'origin');
   }
+  // The owner-code cookie is sent with these requests, so credentials are allowed for our own sites.
+  if (origin) res.setHeader('access-control-allow-credentials', 'true');
   res.setHeader('access-control-allow-methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.setHeader('access-control-allow-headers', 'content-type');
   res.setHeader('access-control-max-age', '600');
@@ -389,6 +553,13 @@ const server = createServer(async (req, res) => {
   try {
     if (path === '/__mock/health') return json(res, 200, { ok: true, store: STORE });
 
+    if (path.startsWith('/__mock/owner/')) return await ownerApi(req, res, path.slice('/__mock/owner/'.length));
+
+    if (path === '/__mock/mail' && req.method === 'POST') {
+      const body = JSON.parse((await readBody(req, 256 * 1024)) || '{}');
+      return json(res, 200, await sendMailNow(body));
+    }
+
     if (path.startsWith('/__mock/db/')) {
       const rest = path.slice('/__mock/db/'.length);
       res.setHeader('cache-control', 'no-store');
@@ -400,6 +571,23 @@ const server = createServer(async (req, res) => {
           .map(([name, t]) => ({ name, rows: getRows(name).length, bytes: Buffer.byteLength(t.text) }))
           .sort((a, b) => b.bytes - a.bytes);
         return json(res, 200, { file: DB_FILE, tables: list, totalBytes: list.reduce((n, t) => n + t.bytes, 0) });
+      }
+      if (rest === 'seed' && req.method === 'POST') {
+        // Puts back any BS Original that is missing, without touching anything else.
+        return json(res, 200, { ok: true, added: seedOriginals() });
+      }
+      if (rest === 'stash' && req.method === 'POST') {
+        // Automated tests empty the database. They stash it first and restore it afterwards.
+        stashed = new Map([...tables].map(([k, v]) => [k, v.text]));
+        return json(res, 200, { ok: true, tables: stashed.size });
+      }
+      if (rest === 'restore' && req.method === 'POST') {
+        if (!stashed) return json(res, 200, { ok: true, restored: 0 });
+        tables.clear();
+        for (const [name, text] of stashed) setTable(name, text);
+        const restored = stashed.size;
+        stashed = null;
+        return json(res, 200, { ok: true, restored });
       }
       if (rest === 'reset' && req.method === 'POST') {
         if ([...tables.values()].some((t) => t.text.length > 2)) {

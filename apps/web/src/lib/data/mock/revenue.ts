@@ -1,3 +1,6 @@
+import { formatMoney } from '@/lib/domain/revenue';
+import { studioEmail } from './dev';
+import { sendMail } from './mail';
 import { maskPayoutProfile, validatePayoutProfile } from '@/lib/domain/payoutProfile';
 import type { GameImpressions } from '@/lib/domain/revenue';
 import { emitTopic } from '../bus';
@@ -73,7 +76,10 @@ export const mockRevenue: RevenueRepo = {
       })),
     ]);
     const owners = new Map(readTable('studios').map((s) => [s.id, s.ownerId]));
-    for (const s of run.statements) notify(owners.get(s.studioId), 'revenue', `Your ${run.month} statement is ready`, '', '/dev/payouts/');
+    for (const s of run.statements) {
+      notify(owners.get(s.studioId), 'revenue', `Your ${run.month} statement is ready`, '', '/dev/payouts/');
+      sendMail(studioEmail(s.studioId), 'statement_ready', { month: run.month, earned: formatMoney(s.earned, run.currency), due: formatMoney(s.payoutDue, run.currency) });
+    }
     audit(staff.id, 'revenue_run', 'revenue_month', run.month, { statements: run.statements.length, net: run.totals.net });
     emitTopic('revenue');
     emitTopic('notifications');
@@ -97,6 +103,7 @@ export const mockRevenue: RevenueRepo = {
     );
     const owner = readTable('studios').find((s) => s.id === studioId)?.ownerId;
     notify(owner, 'payout', 'Payout sent', `${(amount / 100).toFixed(2)} ${currency}`, '/dev/payouts/');
+    sendMail(studioEmail(studioId), 'payout_sent', { amount: formatMoney(amount, currency), reference: reference.trim() });
     audit(staff.id, 'payout', 'studio', studioId, { months, amount, method });
     emitTopic('revenue');
   },

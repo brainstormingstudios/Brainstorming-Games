@@ -50,4 +50,12 @@ describe('discovery', () => {
     expect(site!.s.by_day).toHaveLength(30);
     await expect(as(db, 'authenticated', admin, (q) => q(`select public.refresh_rank_scores()`))).resolves.toBeDefined();
   });
+
+  it('refuses an admin whose session has not passed the owner code', async () => {
+    // Same admin, same role: only the second factor is missing (a stolen password or magic link).
+    await expect(as(db, 'authenticated', admin, (q) => q(`select public.admin_db_stats()`), 'aal1')).rejects.toThrow(/not_allowed/);
+    await expect(as(db, 'authenticated', admin, (q) => q(`select public.admin_set_site_config('home', '{}')`), 'aal1')).rejects.toThrow(/not_allowed/);
+    const reports = await as(db, 'authenticated', admin, (q) => q(`select * from public.reports`), 'aal1');
+    expect(reports).toEqual([]);
+  });
 });

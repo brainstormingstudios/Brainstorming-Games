@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { ADMIN, DEV, addGame, resetSite, signIn as signInDialog, testCover } from './helpers';
+import { type Page } from '@playwright/test';
+import { ADMIN, DEV, addGame, expect, resetSite, signIn as signInDialog, test, testCover, unlockOwner } from './helpers';
 
 async function signIn(page: Page, email: string, username: string, birthYear = '1990') {
   await signInDialog(page, email, username, birthYear);
@@ -100,6 +100,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await admin.goto(`${ADMIN}/jams/`);
   await admin.getByTestId('login-button').click();
   await signIn(admin, 'admin@example.test', 'site_admin', '1980');
+  await unlockOwner(admin, 'admin@example.test');
   await admin.getByTestId('jam-new').click();
   await admin.getByTestId('jam-title').fill('Winter Jam');
   await admin.getByTestId('jam-slug').fill('winter-jam');

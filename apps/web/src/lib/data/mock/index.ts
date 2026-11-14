@@ -4,6 +4,7 @@ import { getAnonId, guestFavourites, guestHistory, guestRatings } from '../local
 import { RepoError, type AuthRepo, type EventsRepo, type PlayerRepo, type Repo } from '../repo';
 import { mockAdmin } from './admin';
 import { currentUserId, mockAuth } from './auth';
+import { mockBilling } from './billing';
 import { mockDev } from './dev';
 import { mockGrowth } from './growth';
 import { mockRevenue } from './revenue';
@@ -375,6 +376,7 @@ export function createMockRepo(): Repo {
   if (typeof window !== 'undefined') window.__bgMock = mockTools;
   return {
     mode: 'mock',
+    billing: mockBilling,
     growth: mockGrowth,
     revenue: mockRevenue,
     catalogue: mockCatalogue,

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { ADMIN, DEV, addGame, deleteUpload, resetSite, signIn, uploadProbe } from './helpers';
+import { ADMIN, DEV, addGame, deleteUpload, expect, resetSite, signIn, test, unlockOwner, uploadProbe } from './helpers';
 
 /**
  * Phase 4: in-game ads through the SDK create impressions; the admin uploads a revenue CSV,
@@ -41,6 +40,7 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
     await page.getByTestId('login-button').click();
     await signIn(page, 'admin@example.test', 'finance_admin', '1980');
     await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await unlockOwner(page, 'admin@example.test');
     await page.getByLabel('Month').fill(new Date().toISOString().slice(0, 7));
     await page.getByTestId('revenue-csv').fill('country,gross,refunds,invalid_traffic\nALL,120.00,10.00,10.00');
     await page.getByTestId('revenue-preview').click();

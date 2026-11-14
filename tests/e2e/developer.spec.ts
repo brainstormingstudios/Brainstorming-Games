@@ -3,8 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { expect, test, type Page } from '@playwright/test';
-import { ADMIN, DEV, resetSite, signIn as signInDialog } from './helpers';
+import { type Page } from '@playwright/test';
+import { ADMIN, DEV, expect, resetSite, signIn as signInDialog, test, unlockOwner } from './helpers';
 
 const PROBE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'sdk-probe');
 
@@ -83,6 +83,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.goto(`${ADMIN}/qa/`);
   await page.getByRole('button', { name: 'Log in' }).first().click();
   await signIn(page, 'admin@example.test', 'qa_admin', '1985');
+  await unlockOwner(page, 'admin@example.test');
   await expect(page.getByTestId('qa-row')).toHaveCount(1);
   await page.getByTestId('qa-review-link').click();
   await page.getByTestId('qa-approve').click();

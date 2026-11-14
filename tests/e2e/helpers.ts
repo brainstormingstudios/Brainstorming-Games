@@ -1,9 +1,28 @@
+import { createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test as base, type APIRequestContext, type Page } from '@playwright/test';
 
 export const PLAY = 'http://localhost:4100';
+
+/**
+ * The sign-in normally lives in a cookie shared by every tab and all three sites. Tests need
+ * several people at once, so every tab opened by a test keeps its own sign-in instead.
+ */
+export const test = base.extend({
+  context: async ({ context }, use) => {
+    await context.addInitScript(() => {
+      try {
+        window.sessionStorage.setItem('bg.session.tab', '"1"');
+      } catch {
+        // storage unavailable on this page
+      }
+    });
+    await use(context);
+  },
+});
+export { expect };
 /** The developer portal and the management portal are separate sites (and separate sign-ins). */
 export const DEV = 'http://localhost:3001';
 export const ADMIN = 'http://localhost:3002';
@@ -128,4 +147,38 @@ interface MockWindow {
     removeGame(id: string): void;
     reset(): void;
   };
+}
+
+/** The current 6-digit code for a base32 secret (RFC 6238), as an authenticator app would show it. */
+function totp(secret: string): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const ch of secret.toUpperCase()) bits += alphabet.indexOf(ch).toString(2).padStart(5, '0');
+  const key = Buffer.from((bits.match(/.{8}/g) ?? []).map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
+  const h = createHmac('sha1', key).update(counter).digest();
+  const o = h[h.length - 1]! & 15;
+  const n = ((h[o]! & 127) << 24) | (h[o + 1]! << 16) | (h[o + 2]! << 8) | h[o + 3]!;
+  return String(n % 1_000_000).padStart(6, '0');
+}
+
+const ownerSecrets = new Map<string, string>();
+
+/**
+ * Passes the management portal's owner-code screen: sets the code up the first time (reading the
+ * key off the screen like a phone would), and types the current code after that.
+ */
+export async function unlockOwner(page: Page, email: string): Promise<void> {
+  const gate = page.getByTestId('owner-code');
+  await expect(gate).toBeVisible();
+  if (await page.getByTestId('owner-setup').isVisible()) {
+    await page.getByTestId('owner-setup').click();
+    ownerSecrets.set(email, (await page.getByTestId('owner-secret').innerText()).trim());
+  }
+  const secret = ownerSecrets.get(email);
+  if (!secret) throw new Error(`no owner-code secret known for ${email}`);
+  await page.getByTestId('owner-code-input').fill(totp(secret));
+  await page.getByTestId('owner-code-submit').click();
+  await expect(gate).toHaveCount(0);
 }

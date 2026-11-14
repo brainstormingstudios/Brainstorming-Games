@@ -1,5 +1,6 @@
 'use client';
 
+import { isHeroActive } from '@/lib/domain/premium';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Play, Rocket } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
@@ -200,6 +201,9 @@ export function HomeView({ initialGames, config: builtConfig, seed }: HomeViewPr
     if (games.length < HERO_MIN_GAMES) return [];
     const byId = new Map(games.map((g) => [g.id, g]));
     const picked = config.heroGameIds.map((id) => byId.get(id)).filter((g): g is GameSummary => g != null);
+    // A Boost with hero days comes first after the games the team pinned.
+    const heroBoost = games.filter((g) => !picked.includes(g) && isHeroActive(g.promo));
+    picked.push(...heroBoost);
     const others = games.filter((g) => !picked.includes(g));
     const featuredFirst = [...sortGames(others.filter((g) => g.status === 'featured'), 'recommended'), ...sortGames(others.filter((g) => g.status !== 'featured'), 'trending')];
     return [...picked, ...featuredFirst].slice(0, 3);

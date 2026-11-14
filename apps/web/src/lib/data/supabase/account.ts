@@ -18,6 +18,10 @@ interface ProfileRow {
   avatar_cosmetics: Record<string, string>;
   profile_public: boolean;
   playtest_opt_in: boolean;
+  premium_plan: 'plus' | 'max' | null;
+  premium_until: string | null;
+  premium_auto_renew: boolean | null;
+  premium_from_pass: boolean | null;
   created_at: string;
 }
 
@@ -66,6 +70,10 @@ export const supabaseAuth: AuthRepo = {
       avatar: profile?.avatar_cosmetics ?? {},
       profilePublic: profile?.profile_public ?? true,
       playtestOptIn: profile?.playtest_opt_in ?? false,
+      premium:
+        profile?.premium_plan && profile.premium_until
+          ? { plan: profile.premium_plan, until: profile.premium_until, autoRenew: Boolean(profile.premium_auto_renew), fromPass: Boolean(profile.premium_from_pass) }
+          : null,
       createdAt: profile?.created_at ?? user.created_at,
     };
   },
@@ -77,6 +85,12 @@ export const supabaseAuth: AuthRepo = {
   async signInWithProvider(provider, next) {
     const { error } = await getSupabase().auth.signInWithOAuth({ provider, options: { redirectTo: redirect(next) } });
     if (error) throw new RepoError('unavailable', error.message);
+  },
+  async signInWithGoogleIdToken(idToken) {
+    // Supabase checks Google's signature and the audience before it trusts the e-mail.
+    const { error } = await getSupabase().auth.signInWithIdToken({ provider: 'google', token: idToken });
+    if (error) throw new RepoError('invalid', error.message);
+    emitTopic('session', { local: true });
   },
   async completeSignup(username, birthYear, locale) {
     const { error } = await getSupabase().rpc('complete_signup', { p_username: username, p_birth_year: birthYear, p_locale: locale });
@@ -138,6 +152,42 @@ export const supabaseAuth: AuthRepo = {
   async gameToken(gameId) {
     const { token } = await callFunction<{ token: string | null }>('game-token', { gameId });
     return token;
+  },
+  async ownerCodeStatus() {
+    const mfa = getSupabase().auth.mfa;
+    const [factors, level] = await Promise.all([mfa.listFactors(), mfa.getAuthenticatorAssuranceLevel()]);
+    return {
+      enrolled: (factors.data?.totp ?? []).some((f) => f.status === 'verified'),
+      // aal2 means this session has passed the code. The database checks the same claim.
+      unlocked: level.data?.currentLevel === 'aal2',
+    };
+  },
+  async ownerCodeEnroll() {
+    const mfa = getSupabase().auth.mfa;
+    // Half-finished set-ups are removed so there is only ever one pending secret.
+    const existing = await mfa.listFactors();
+    for (const f of existing.data?.all ?? []) if (f.factor_type === 'totp' && f.status !== 'verified') await mfa.unenroll({ factorId: f.id });
+    const { data, error } = await mfa.enroll({ factorType: 'totp', friendlyName: `Owner code ${new Date().toISOString().slice(0, 10)}` });
+    if (error || !data) throw toRepoError(error ?? { message: 'enroll failed' });
+    return { secret: data.totp.secret, uri: data.totp.uri };
+  },
+  async ownerCodeVerify(code) {
+    const mfa = getSupabase().auth.mfa;
+    const factors = await mfa.listFactors();
+    const all = (factors.data?.all ?? []).filter((f) => f.factor_type === 'totp');
+    const factor = all.find((f) => f.status === 'verified') ?? all[0];
+    if (!factor) return false;
+    const { error } = await mfa.challengeAndVerify({ factorId: factor.id, code: code.replace(/\D/g, '') });
+    if (error) {
+      if (/rate|too many/i.test(error.message)) throw new RepoError('rate_limited');
+      return false;
+    }
+    emitTopic('session', { local: true });
+    return true;
+  },
+  async ownerCodeLock() {
+    // A session cannot step back down from aal2: locking means signing out.
+    await getSupabase().auth.signOut();
   },
 };
 

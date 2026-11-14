@@ -31,6 +31,7 @@ import type { SessionUser } from '@/lib/data/repo';
 import type { EventType, GameSummary } from '@/lib/data/types';
 import { track } from '@/lib/events/client';
 import { getPrefs } from '@/lib/prefs';
+import { activePlan } from '@/lib/domain/premium';
 import { celebrate } from './celebrate';
 
 const LAST_MIDGAME_KEY = 'bg.ads.lastMidgame';
@@ -110,6 +111,7 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     enabled: ctx.preview || INGAME_AD_PROVIDER !== 'none',
     lastMidgameAt: lastMidgame,
   });
+  const applyPremium = (u: SessionUser | null) => rules.setPremium(activePlan(u?.premium));
   const started = Date.now();
   let gameContext: Record<string, unknown> | null = null;
   let progress: number | null = null;
@@ -216,6 +218,11 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
       return { shown: true };
     },
     'ad.rewarded': async () => {
+      // Max members get the reward straight away, no video.
+      if (rules.instantRewards) {
+        event('rewarded_granted', { premium: true });
+        return { rewarded: true, reason: 'premium' };
+      }
       const reason = rules.checkRewarded();
       if (reason) return { rewarded: false, reason };
       event('ad_requested', { kind: 'rewarded' });
@@ -329,6 +336,7 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
       .then((next) => {
         const changed = (next?.id ?? null) !== (user?.id ?? null);
         user = next;
+      applyPremium(next);
         if (changed) emit('auth', toBgUser(user));
         emit('settings', currentSettings(user));
       })

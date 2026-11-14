@@ -3,7 +3,7 @@
   'use strict';
   var BG = window.BG;
   var SHAPES = [
-    ['#ffd43b', '<circle cx="12" cy="12" r="9"/>'],
+    ['#00c0f0', '<circle cx="12" cy="12" r="9"/>'],
     ['#6fe3ff', '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/>'],
     ['#ff7a59', '<path d="M12 2.5 22 20.5H2z"/>'],
     ['#3ddc84', '<path d="M12 2 22 12 12 22 2 12z"/>'],

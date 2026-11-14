@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { addGame, deleteUpload, resetSite, uploadProbe } from './helpers';
+import { addGame, deleteUpload, expect, resetSite, test, uploadProbe } from './helpers';
 
 /**
  * Phase 1 acceptance: with no games every page shows its empty state; a game added through the

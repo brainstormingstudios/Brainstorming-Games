@@ -6,7 +6,8 @@ import type { AdminRepo } from '../repo';
 import { requireStaff } from './auth';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable, writeSiteConfig } from './db';
 import { pickAbWinners } from './growth';
-import { kpisFor, mediaFor, ownerOf, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
+import { sendMail } from './mail';
+import { kpisFor, mediaFor, ownerOf, studioEmail, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -85,6 +86,9 @@ export const mockAdmin: AdminRepo = {
       if (g.status === 'in_review') updateGameRow(g.id, { status: 'draft' });
       notify(owner, 'qa', 'Submission rejected', notes, link);
     }
+    const to = studioEmail(g.studioId);
+    if (action === 'approve') sendMail(to, 'review_approved', { game: g.title, gameId: g.id, notes: notes.trim(), update: Boolean(g.releasedAt) && g.status !== 'in_review' });
+    else sendMail(to, action === 'changes' ? 'review_changes' : 'review_rejected', { game: g.title, gameId: g.id, notes });
     audit(staff.id, `qa_${action}`, 'game_version', versionId, { gameId: g.id, notes, schoolSafe });
     emitTopic('qa');
     emitTopic('dev-games');
@@ -134,6 +138,7 @@ export const mockAdmin: AdminRepo = {
       updateGameRow(gameId, { status: 'paused' });
     }
     notify(ownerOf(gameId), 'launch', promote ? 'You are invited to Rise Launch' : 'Spark Launch ended', reason, `/dev/games/view/?id=${gameId}`);
+    sendMail(studioEmail(g.studioId), promote ? 'rise_invite' : 'spark_ended', { game: g.title, gameId, reason });
     audit(staff.id, promote ? 'spark_promote' : 'spark_decline', 'game', gameId, { reason, kpis });
     emitTopic('qa');
     emitTopic('dev-games');

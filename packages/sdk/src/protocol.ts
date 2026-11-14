@@ -35,6 +35,7 @@ export interface BgUser {
 }
 
 export type AdSkipReason =
+  | 'premium'
   | 'cooldown'
   | 'spark'
   | 'disabled'

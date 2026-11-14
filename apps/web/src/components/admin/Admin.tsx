@@ -18,6 +18,7 @@ import {
   type BadgeTone,
 } from '@brainstorming/ui';
 import { PreQaReportView } from '@/components/dev/PreQaReportView';
+import { OwnerCodeGate } from './OwnerCode';
 import { GameStatusBadge } from '@/components/dev/StatusBadge';
 import { GameFrame } from '@/components/game/GameFrame';
 import { localizePath } from '@/i18n/config';
@@ -61,6 +62,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         art="sad"
       />
     );
+  else body = <OwnerCodeGate userId={user.id}>{children}</OwnerCodeGate>;
   return <div className="page">{body}</div>;
 }
 

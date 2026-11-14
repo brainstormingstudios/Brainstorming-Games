@@ -29,6 +29,7 @@ export interface CatalogueTables {
   media: MockTables['media'];
   ratings: MockTables['ratings'];
   gameStats: MockTables['gameStats'];
+  boosts: MockTables['boosts'];
 }
 
 export function readCatalogueTables(): CatalogueTables {
@@ -39,6 +40,7 @@ export function readCatalogueTables(): CatalogueTables {
     media: readTable('media'),
     ratings: readTable('ratings'),
     gameStats: readTable('gameStats'),
+    boosts: readTable('boosts'),
   };
 }
 
@@ -130,6 +132,11 @@ export function toSummary(game: MockGame, t: CatalogueTables): GameSummary {
     coverSquare: first('cover_square'),
     preview: first('preview_landscape'),
     previewPortrait: first('preview_portrait'),
+    promo: (() => {
+      const now = new Date().toISOString();
+      const b = t.boosts.find((x) => x.gameId === game.id && (x.status === 'paid' || x.status === 'live') && (x.endsAt ?? '') > now);
+      return b ? { until: b.endsAt!, heroUntil: b.heroUntil } : null;
+    })(),
     coverVariants: media
       .filter((m) => m.kind === 'cover_landscape' && m.variantLabel != null)
       .map(toAsset),

@@ -7,6 +7,7 @@ import {
   Crown,
   Dices,
   Flame,
+  Gem,
   Globe,
   Handshake,
   Hash,
@@ -49,6 +50,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'quests', href: '/quests', icon: Target },
   { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
   { key: 'jams', href: '/jams', icon: CalendarDays },
+  { key: 'premium', href: '/premium', icon: Gem },
 ];
 
 export const TAGS_NAV: NavItem = { key: 'allTags', href: '/tags', icon: Hash };

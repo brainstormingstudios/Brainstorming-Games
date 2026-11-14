@@ -17,6 +17,7 @@ import type {
 import type { DevRepo } from '../repo';
 import { readCatalogueTables, statsFor } from './catalogue';
 import { requireUser } from './auth';
+import { sendMail } from './mail';
 import {
   audit,
   fail,
@@ -173,6 +174,12 @@ export function updateVersionRow(versionId: string, patch: Partial<MockVersion>)
 export function ownerOf(gameId: string): string | null {
   const g = readTable('games').find((x) => x.id === gameId);
   return readTable('studios').find((s) => s.id === g?.studioId)?.ownerId ?? null;
+}
+
+/** The address to write to about a studio: its owner's account, else its contact address. */
+export function studioEmail(studioId: string | null | undefined): string | null {
+  const studio = readTable('studios').find((s) => s.id === studioId);
+  return readTable('users').find((u) => u.id === studio?.ownerId)?.email ?? studio?.contactEmail ?? null;
 }
 
 /** Makes a version the live one (mirror of app.publish_version). */
@@ -333,6 +340,7 @@ export const mockDev: DevRepo = {
     mutateTable('studios', (rows) => {
       rows.push(row);
     });
+    sendMail(user.email, 'welcome_studio', { studio: row.name });
     emitTopic('studio');
     return toDevStudio(row);
   },
@@ -557,6 +565,7 @@ export const mockDev: DevRepo = {
     }
     updateVersionRow(latest.id, { qaStatus: 'in_review' });
     if (['draft', 'changes_requested', 'paused'].includes(g.status)) updateGameRow(gameId, { status: 'in_review' });
+    sendMail(studioEmail(g.studioId), 'submission_received', { game: g.title, version: latest.version, studio: readTable('studios').find((x) => x.id === g.studioId)?.name, gameId });
     emitTopic('dev-games');
     emitTopic('qa');
   },

@@ -1,5 +1,6 @@
 import { AGE_GATE } from '@/lib/config';
-import { OWNER_EMAILS } from '@/lib/config';
+import { GOOGLE_CLIENT_ID, OWNER_EMAILS, PLAY_ORIGIN } from '@/lib/config';
+import { sendMail } from './mail';
 import { isMinorByBirthYear } from '@/lib/domain/ageGate';
 import { emitTopic } from '../bus';
 import { getAnonId, guestFavourites, guestHistory, session as tabSession, uuid } from '../local';
@@ -12,9 +13,34 @@ import { fail, mutateTable, newId, nowIso, readTable, takeToken, type MockUser }
  * Mock-mode convenience: an e-mail that starts with `admin@` gets the admin role.
  */
 const SESSION_KEY = 'bg.mock.uid';
+/** Cookie that carries the sign-in. Cookies ignore the port, so localhost:3000, :3001 and :3002 share it. */
+const SESSION_COOKIE = 'bg_uid';
+/** Set by automated tests so each tab can be a different person. */
+const TAB_SCOPED = 'bg.session.tab';
+const MONTH_SECONDS = 30 * 24 * 60 * 60;
+
+const tabScoped = () => tabSession.get<string | null>(TAB_SCOPED, null) != null;
+
+function readSessionId(): string | null {
+  if (typeof document === 'undefined') return null;
+  if (tabScoped()) return tabSession.get<string | null>(SESSION_KEY, null);
+  const match = /(?:^|;\s*)bg_uid=([^;]+)/.exec(document.cookie);
+  return match ? decodeURIComponent(match[1]!) : null;
+}
+
+/** Signs this browser in (or out, with null) on every site of the product. */
+function writeSessionId(id: string | null): void {
+  if (typeof document === 'undefined') return;
+  if (tabScoped()) {
+    if (id) tabSession.set(SESSION_KEY, id);
+    else writeSessionId(null);
+    return;
+  }
+  document.cookie = `${SESSION_COOKIE}=${id ? encodeURIComponent(id) : ''}; Path=/; Max-Age=${id ? MONTH_SECONDS : 0}; SameSite=Lax`;
+}
 
 export function currentUserId(): string | null {
-  return tabSession.get<string | null>(SESSION_KEY, null);
+  return readSessionId();
 }
 
 export function currentMockUser(): MockUser | null {
@@ -57,6 +83,7 @@ export function toSessionUser(u: MockUser): SessionUser {
     avatar: u.avatar,
     profilePublic: u.profilePublic,
     playtestOptIn: u.playtestOptIn,
+    premium: u.premiumPlan && u.premiumUntil ? { plan: u.premiumPlan, until: u.premiumUntil, autoRenew: Boolean(u.premiumAutoRenew), fromPass: Boolean(u.premiumFromPass) } : null,
     createdAt: u.createdAt,
   };
 }
@@ -77,7 +104,7 @@ export function updateUser(id: string, patch: Partial<MockUser>): MockUser {
 // Guest favourites and history already live in this browser, so a mock login keeps them as
 // they are. Guest saves are merged into cloud saves by the saves repo.
 function startSession(user: MockUser) {
-  tabSession.set(SESSION_KEY, user.id);
+  writeSessionId(user.id);
   updateUser(user.id, { lastActive: nowIso() });
   emitTopic('session', { local: true });
 }
@@ -128,7 +155,36 @@ function base64url(value: unknown): string {
     .replace(/=+$/, '');
 }
 
+/** The owner code is checked by the local services process, never in the browser. */
+async function ownerCall<T>(action: string, body?: Record<string, unknown>): Promise<T> {
+  const user = requireUser();
+  const base = `${PLAY_ORIGIN}/__mock/owner/${action}`;
+  const res = await fetch(body ? base : `${base}?uid=${encodeURIComponent(user.id)}`, {
+    method: body ? 'POST' : 'GET',
+    credentials: 'include',
+    headers: body ? { 'content-type': 'text/plain' } : undefined,
+    body: body ? JSON.stringify({ uid: user.id, ...body }) : undefined,
+  }).catch(() => null);
+  if (!res) fail('unavailable', 'The local services are not running (npm run dev starts them).');
+  if (res.status === 429) fail('rate_limited');
+  if (!res.ok) fail('not_allowed');
+  return (await res.json()) as T;
+}
+
 export const mockAuth: AuthRepo = {
+  async ownerCodeStatus() {
+    return ownerCall('status');
+  },
+  async ownerCodeEnroll() {
+    return ownerCall('enroll', {});
+  },
+  async ownerCodeVerify(code) {
+    const { ok } = await ownerCall<{ ok: boolean }>('verify', { code });
+    return ok;
+  },
+  async ownerCodeLock() {
+    await ownerCall('lock', {});
+  },
   async session() {
     const user = currentMockUser();
     return user ? toSessionUser(user) : null;
@@ -140,7 +196,27 @@ export const mockAuth: AuthRepo = {
     return { status: 'signed_in' };
   },
   async signInWithProvider(provider) {
-    startSession(findOrCreate(`${provider}-player-${getAnonId().slice(0, 8)}@example.test`));
+    // Without the provider's keys there is no real Google or Apple identity to read, so the local
+    // build signs in the e-mail typed in the form instead (see LoginForm). Never a throwaway account.
+    void provider;
+    fail('invalid', 'Type your e-mail address above, then use the e-mail button. Google and Apple need their keys set up (docs/DEPLOY.md).');
+  },
+  async signInWithGoogleIdToken(idToken) {
+    // Google's button returned a signed ID token. The local build reads the e-mail from it (the
+    // live site has Supabase verify the signature). Same Google account, same Brainstorming account.
+    const part = idToken.split('.')[1] ?? '';
+    let claims: { email?: string; email_verified?: boolean; name?: string; aud?: string; exp?: number };
+    try {
+      claims = JSON.parse(decodeURIComponent(escape(atob(part.replace(/-/g, '+').replace(/_/g, '/')))));
+    } catch {
+      fail('invalid', 'Google sign-in failed. Try again.');
+    }
+    if (!claims.email || claims.email_verified === false) fail('invalid', 'Your Google account has no verified e-mail address.');
+    if (GOOGLE_CLIENT_ID && claims.aud !== GOOGLE_CLIENT_ID) fail('invalid', 'Google sign-in failed. Try again.');
+    if (claims.exp && claims.exp * 1000 < Date.now()) fail('invalid', 'Google sign-in expired. Try again.');
+    const user = findOrCreate(claims.email);
+    if (!user.displayName && claims.name) updateUser(user.id, { displayName: claims.name.slice(0, 40) });
+    startSession(readTable('users').find((u) => u.id === user.id)!);
   },
   async completeSignup(username, birthYear, locale) {
     const user = requireUser();
@@ -162,6 +238,7 @@ export const mockAuth: AuthRepo = {
       avatar: { colour: 'classic', headphones: 'studio', glow: 'cyan' },
     });
     emitTopic('session', { local: true });
+    sendMail(user.email, 'welcome_player', { name: name });
     return toSessionUser(updated);
   },
   async usernameAvailable(username) {
@@ -169,7 +246,7 @@ export const mockAuth: AuthRepo = {
     return /^[a-z0-9_]{3,20}$/.test(name) && !readTable('users').some((u) => u.username === name);
   },
   async signOut() {
-    tabSession.remove(SESSION_KEY);
+    writeSessionId(null);
     emitTopic('session', { local: true });
   },
   async updateProfile(patch) {
@@ -197,7 +274,8 @@ export const mockAuth: AuthRepo = {
       return rest;
     });
     updateUser(user.id, { consent: 'pending' });
-    // In production the parental-consent Edge Function e-mails this link. Mock mode shows it.
+    // E-mailed to the parent. The local build also shows the link, so it can be tested without a mailbox.
+    sendMail(parentEmail.trim(), 'parental_consent', { username: user.username, link: `${window.location.origin}/parents/consent/?token=${token}` });
     return { devLink: `/parents/consent/?token=${token}` };
   },
   async consentView(token) {
@@ -242,7 +320,7 @@ export const mockAuth: AuthRepo = {
     mutateTable('scores', (rows) => rows.filter((r) => r.userId !== user.id));
     mutateTable('notifications', (rows) => rows.filter((r) => r.userId !== user.id));
     mutateTable('consents', (rows) => rows.filter((r) => r.userId !== user.id));
-    tabSession.remove(SESSION_KEY);
+    writeSessionId(null);
     emitTopic('session', { local: true });
   },
   async gameToken(gameId) {

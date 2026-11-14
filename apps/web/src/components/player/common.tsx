@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Bell, Brain, Users } from 'lucide-react';
+import { Bell, Brain, Gem, Users } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Button, EmptyState, Skeleton, TextField, cn, useToast } from '@brainstorming/ui';
 import { Link } from '@/i18n/navigation';
@@ -9,6 +9,7 @@ import { requestLogin } from '@/lib/auth/loginPrompt';
 import { getRepo, RepoError } from '@/lib/data';
 import type { SessionUser } from '@/lib/data/repo';
 import { isRestricted } from '@/lib/domain/ageGate';
+import { activePlan } from '@/lib/domain/premium';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
 import { usePrefs } from '@/lib/prefs';
@@ -48,9 +49,19 @@ export function HeaderChips() {
   });
   if (!user?.username) return null;
   const unread = (notes.data ?? []).filter((n) => !n.read).length;
+  const plan = activePlan(user.premium);
   const chip = 'flex h-11 items-center gap-1.5 rounded-control px-2.5 text-sm font-extrabold hover:bg-surface-2';
   return (
     <div className="flex items-center gap-0.5">
+      <Link
+        href="/premium"
+        data-testid="premium-chip"
+        className={cn(chip, 'hidden lg:flex', plan ? 'text-primary' : 'text-fg-muted hover:text-fg')}
+        title={plan ? t('premiumMember', { plan: plan === 'max' ? 'Max' : 'Plus' }) : t('goPremium')}
+      >
+        <Gem aria-hidden="true" className="size-5" />
+        <span>{plan ? (plan === 'max' ? 'Max' : 'Plus') : t('premiumShort')}</span>
+      </Link>
       <Link href="/quests" className={cn(chip, 'text-glow')} title={t('points', { count: user.brainPoints })} data-testid="points-chip">
         <Brain aria-hidden="true" className="size-5" />
         <span className="hidden sm:inline">{t('pointsShort', { count: user.brainPoints })}</span>

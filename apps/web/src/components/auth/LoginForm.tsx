@@ -1,11 +1,12 @@
 'use client';
 
+import { SocialSignIn } from './SocialSignIn';
 import { useTranslations } from 'next-intl';
 import { Mail } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Button, Mascot, TextField } from '@brainstorming/ui';
 import { useLocale } from '@/i18n/navigation';
-import { AGE_GATE, IS_MOCK, MASCOT_NAME } from '@/lib/config';
+import { AGE_GATE, MASCOT_NAME } from '@/lib/config';
 import { getRepo, RepoError } from '@/lib/data';
 import type { SessionUser } from '@/lib/data/repo';
 
@@ -23,7 +24,7 @@ type Step = 'start' | 'inbox' | 'profile' | 'consent';
 const errorText = (err: unknown, fallback: string) =>
   err instanceof RepoError && err.message && err.message !== err.code ? err.message : fallback;
 
-/** E-mail magic link or Google / Discord, then username and birth year, then parental consent. */
+/** E-mail, Google or Apple, then username and birth year, then parental consent. */
 export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
   const t = useTranslations('auth');
   const tc = useTranslations('common');
@@ -60,21 +61,6 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
       const result = await repo.auth.signInWithEmail(email.trim(), next);
       if (result.status === 'email_sent') setStep('inbox');
       else await afterSignIn();
-    } catch (err) {
-      setError(errorText(err, tc('errorBody')));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const provider = async (p: 'google' | 'discord') => {
-    setBusy(true);
-    setError(null);
-    try {
-      const repo = await getRepo();
-      await repo.auth.signInWithProvider(p, next);
-      // Supabase redirects away; mock mode signs in straight away.
-      if (repo.mode === 'mock') await afterSignIn();
     } catch (err) {
       setError(errorText(err, tc('errorBody')));
     } finally {
@@ -142,15 +128,12 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
             </Button>
           </form>
           <p className="text-center text-sm text-fg-muted">{t('or')}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="outline" onClick={() => void provider('google')} disabled={busy}>
-              {t('google')}
-            </Button>
-            <Button variant="outline" onClick={() => void provider('discord')} disabled={busy}>
-              {t('discord')}
-            </Button>
-          </div>
-          {IS_MOCK ? <p className="rounded-control bg-surface-3 px-3 py-2 text-xs text-fg-muted">{t('mockHint')}</p> : null}
+          <SocialSignIn
+            next={next}
+            disabled={busy}
+            onSignedIn={() => void afterSignIn()}
+            onError={(message) => setError(message)}
+          />
         </>
       ) : null}
 

@@ -4,7 +4,7 @@
 //   { action: 'reveal', studioId }   → admin only: the decrypted details, to send a payout
 // Details are encrypted with AES-GCM (key in the PAYOUT_ENCRYPTION_KEY secret) and stored in
 // studio_payout_profiles, a table with no client policies at all.
-import { adminClient, json, preflight, requireUser, userClient } from '../_shared/http.ts';
+import { adminClient, hasOwnerCode, json, preflight, requireUser, userClient } from '../_shared/http.ts';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
   if (body.action === 'reveal') {
     const { data: me } = await db.from('profiles').select('role').eq('id', user.id).single();
-    if (me?.role !== 'admin') return json(req, 403, { error: 'not_allowed' });
+    if (me?.role !== 'admin' || !hasOwnerCode(req)) return json(req, 403, { error: 'not_allowed' });
     const { data: row } = await db.from('studio_payout_profiles').select('*').eq('studio_id', body.studioId ?? '').maybeSingle();
     if (!row) return json(req, 404, { error: 'not_found' });
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(row.iv) }, await key(), unb64(row.ciphertext));

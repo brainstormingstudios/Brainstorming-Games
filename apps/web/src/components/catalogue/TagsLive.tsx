@@ -6,14 +6,14 @@ import { EmptyState, buttonClass, chipClass } from '@brainstorming/ui';
 import { Link } from '@/i18n/navigation';
 import { tagLabel } from '@/lib/catalogue/categories';
 import { collectTags } from '@/lib/catalogue/listings';
-import { BUILD_TIME } from '@/lib/config';
+import { PRERENDERED_UNTIL } from '@/lib/config';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 
 export function TagsLive({ initial }: { initial: { tag: string; count: number }[] }) {
   const t = useTranslations('listing');
   const te = useTranslations('empty');
   // Tags from games published since the build are added on top of the pre-rendered counts.
-  const { data } = useRepoQuery((repo) => repo.catalogue.list({ changedSince: BUILD_TIME }), [], {
+  const { data } = useRepoQuery((repo) => repo.catalogue.list({ changedSince: PRERENDERED_UNTIL }), [], {
     topics: ['catalogue'],
   });
   const tags = useMemo(() => {

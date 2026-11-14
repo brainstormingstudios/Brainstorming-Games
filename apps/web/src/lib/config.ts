@@ -35,6 +35,14 @@ export const DEVELOPERS_URL = trim(process.env.NEXT_PUBLIC_DEVELOPERS_URL, 'http
 export const MANAGE_URL = trim(process.env.NEXT_PUBLIC_MANAGE_URL, 'http://localhost:3002');
 
 /**
+ * Live site: the parent domain shared by the three sites (for example `.brainstorming.games`).
+ * When set, the sign-in is kept in a cookie on that domain, so signing in once covers the player
+ * site and both portals. The game origin must NOT be under this domain (games could read it);
+ * `scripts/postbuild.mjs` refuses to build otherwise. Empty: each site keeps its own sign-in.
+ */
+export const AUTH_COOKIE_DOMAIN = (process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN ?? '').trim();
+
+/**
  * In mock mode on a developer machine the three sites are three origins, so the mock tables live
  * in the local services process (`scripts/dev-services.mjs`) instead of one origin's localStorage.
  * Empty anywhere else: the mock then falls back to localStorage.
@@ -63,8 +71,24 @@ export const OWNER_EMAILS = (process.env.NEXT_PUBLIC_OWNER_EMAILS ?? '')
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
+/**
+ * Google sign-in: the OAuth client id from Google Cloud (free). With it, the "Continue with Google"
+ * button is Google's own, and the same Google account always opens the same Brainstorming account.
+ */
+export const GOOGLE_CLIENT_ID = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim();
+
+/** Payments: Razorpay's public key id. Empty means the local test checkout (no money moves). */
+export const RAZORPAY_KEY_ID = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '').trim();
+
 /** ISO time of this build. Games changed after it are fetched live on the client. */
 export const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME ?? '1970-01-01T00:00:00.000Z';
+
+/**
+ * Games the build itself contains are those released before this time. The local build reads its
+ * catalogue from the local database at run time, never at build time, so for it nothing is in the
+ * build: every game is fetched live and opened through the client fallback page.
+ */
+export const PRERENDERED_UNTIL = IS_MOCK ? '1970-01-01T00:00:00.000Z' : BUILD_TIME;
 
 export const IS_DEV = process.env.NODE_ENV !== 'production';
 
@@ -116,7 +140,8 @@ export const SOCIAL_LINKS = {
   discord: (process.env.NEXT_PUBLIC_SOCIAL_DISCORD ?? '').trim(),
 } as const;
 
-export const CONTACT_EMAIL = (process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? '').trim();
+/** The official address: shown on the Contact page and used as the sender of automated e-mails. */
+export const CONTACT_EMAIL = (process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? '').trim() || 'brainstormingstudios26@gmail.com';
 
 /** Current version of the developer terms; recorded when a studio accepts them. */
 export const DEVELOPER_TERMS_VERSION = '2026-11-draft-1';

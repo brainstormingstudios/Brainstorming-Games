@@ -9,6 +9,8 @@ import type { AdSkipReason } from './protocol';
  *             start again between them)
  *   banners   at most 2 at once, and only while gameplay is stopped
  *   Spark     every ad call is refused during a Spark Launch
+ *   Premium   Plus: a midgame at most every 10 minutes and none in the first 3; no banners.
+ *             Max: no ads at all, and rewarded calls grant the reward without an ad.
  */
 export const AD_RULES = {
   midgameCooldownMs: 180_000,
@@ -23,7 +25,11 @@ export interface AdRulesOptions {
   now?: () => number;
   /** When the player last saw a midgame ad (any game), e.g. restored from storage. */
   lastMidgameAt?: number;
+  /** The player's membership, if any. */
+  premium?: 'plus' | 'max' | null;
 }
+
+const PREMIUM_MIDGAME = { cooldownMs: 10 * 60_000, minGameplayMs: 3 * 60_000 } as const;
 
 export class AdRules {
   private readonly now: () => number;
@@ -34,12 +40,24 @@ export class AdRules {
   private gameplaySinceRewarded = true;
   private readonly banners = new Set<string>();
   private adActive = false;
+  private premium: 'plus' | 'max' | null;
   /** True once the game has reported gameplay through the SDK. */
   usedGameplayEvents = false;
 
   constructor(private readonly options: AdRulesOptions) {
     this.now = options.now ?? (() => Date.now());
     this.lastMidgameAt = options.lastMidgameAt ?? Number.NEGATIVE_INFINITY;
+    this.premium = options.premium ?? null;
+  }
+
+  /** The player's plan can change while a game is open (they sign in, or buy). */
+  setPremium(plan: 'plus' | 'max' | null): void {
+    this.premium = plan;
+  }
+
+  /** Max members get the reward of a rewarded ad without watching one. */
+  get instantRewards(): boolean {
+    return this.premium === 'max' && !this.options.spark;
   }
 
   get playing(): boolean {
@@ -84,8 +102,10 @@ export class AdRules {
     const base = this.common();
     if (base) return base;
     // Too early in the session and too soon after the last one both answer "cooldown".
-    if (this.gameplayTime() < AD_RULES.midgameMinGameplayMs) return 'cooldown';
-    if (this.now() - this.lastMidgameAt < AD_RULES.midgameCooldownMs) return 'cooldown';
+    if (this.premium === 'max') return 'premium';
+    const rule = this.premium === 'plus' ? PREMIUM_MIDGAME : { cooldownMs: AD_RULES.midgameCooldownMs, minGameplayMs: AD_RULES.midgameMinGameplayMs };
+    if (this.gameplayTime() < rule.minGameplayMs) return 'cooldown';
+    if (this.now() - this.lastMidgameAt < rule.cooldownMs) return 'cooldown';
     return null;
   }
 
@@ -98,6 +118,7 @@ export class AdRules {
 
   checkBanner(containerId: string): AdSkipReason | null {
     if (this.options.spark) return 'spark';
+    if (this.premium) return 'premium';
     if (!this.options.enabled) return 'disabled';
     if (this.playing) return 'gameplay-active';
     if (!this.banners.has(containerId) && this.banners.size >= AD_RULES.maxBanners) return 'limit';

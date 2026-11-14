@@ -26,6 +26,7 @@ import { functionsUrl, getSupabase } from './client';
 import { toRepoError } from './errors';
 import { supabaseAuth, supabaseQuests, supabaseSaves, supabaseScores } from './account';
 import { supabaseAdmin, supabaseDev } from './dev';
+import { supabaseBilling } from './billing';
 import { supabaseGrowth } from './growth';
 import { supabaseRevenue } from './revenue';
 import {
@@ -70,6 +71,8 @@ export interface GameCardRow {
   likes: number;
   dislikes: number;
   rank_score?: number | null;
+  promo_until?: string | null;
+  promo_hero_until?: string | null;
   version_id: string | null;
   version: string | null;
   storage_prefix: string | null;
@@ -94,7 +97,7 @@ const CARD_COLUMNS =
   'id,slug,title,short_description,category,tags,orientation,platforms,is_multiplayer,size_bytes,' +
   'initial_load_bytes,status,school_safe,released_at,updated_at,spark_started_at,studio_id,studio_slug,' +
   'studio_name,studio_country,studio_first_party,studio_verified,media,plays,plays_7d,rating10,votes,' +
-  'likes,dislikes,version_id,version,storage_prefix,entry_file,uses_sdk,rank_score';
+  'likes,dislikes,version_id,version,storage_prefix,entry_file,uses_sdk,rank_score,promo_until,promo_hero_until';
 
 export function cardToSummary(row: GameCardRow): GameSummary {
   const media = row.media ?? [];
@@ -142,6 +145,7 @@ export function cardToSummary(row: GameCardRow): GameSummary {
       dislikes: Number(row.dislikes ?? 0),
       rank: Number(row.rank_score ?? 0),
     },
+    promo: row.promo_until ? { until: row.promo_until, heroUntil: row.promo_hero_until ?? null } : null,
     versionId: row.version_id,
     version: row.version,
     playPath: row.storage_prefix ? `${row.storage_prefix}/${row.entry_file ?? 'index.html'}` : null,
@@ -442,6 +446,7 @@ export function createSupabaseRepo(): Repo {
   });
   return {
     mode: 'supabase',
+    billing: supabaseBilling,
     growth: supabaseGrowth((ids) => catalogue.byIds(ids)),
     revenue: supabaseRevenue,
     catalogue,

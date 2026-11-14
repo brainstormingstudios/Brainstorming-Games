@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { mergeLive } from '@/lib/catalogue/listings';
-import { BUILD_TIME } from '@/lib/config';
+import { PRERENDERED_UNTIL } from '@/lib/config';
 import type { GameSummary } from '@/lib/data/types';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 
@@ -13,7 +13,7 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
  */
 export function useLiveGames(initial: GameSummary[]): { games: GameSummary[]; settled: boolean } {
   const { data, loading } = useRepoQuery(
-    (repo) => repo.catalogue.list({ changedSince: BUILD_TIME }),
+    (repo) => repo.catalogue.list({ changedSince: PRERENDERED_UNTIL }),
     [],
     { topics: ['catalogue', 'ratings'] },
   );

@@ -74,7 +74,7 @@
     sparks.forEach(function (s) {
       ctx.beginPath(); ctx.arc(cx + Math.cos(s.a) * s.r, cy + Math.sin(s.a) * s.r, 7, 0, Math.PI * 2); ctx.fill();
     });
-    ctx.fillStyle = '#ffd43b';
+    ctx.fillStyle = '#00c0f0';
     ctx.beginPath(); ctx.arc(cx + Math.cos(dot) * R, cy + Math.sin(dot) * R, 6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#6fe3ff';
     ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * R, cy + Math.sin(angle) * R, 11, 0, Math.PI * 2); ctx.fill();

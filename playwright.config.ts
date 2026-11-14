@@ -26,6 +26,9 @@ const channel = localChannel();
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testMatch: /\.spec\.ts$/,
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
   outputDir: './.local/test-results',
   fullyParallel: false,
   workers: 1,

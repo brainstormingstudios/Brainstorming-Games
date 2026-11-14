@@ -1,3 +1,4 @@
+import { isPromoActive } from '@/lib/domain/premium';
 import { LIMITS } from '@/lib/config';
 import {
   DEFAULT_RAIL_ORDER,
@@ -9,7 +10,7 @@ import {
   type SiteConfig,
   type SortOrder,
 } from '@/lib/data/types';
-import { injectSparkSlots, orderSparkForExposure } from '@/lib/domain/spark';
+import { hashString, injectSparkSlots, orderSparkForExposure } from '@/lib/domain/spark';
 import { gameInCategory } from './categories';
 
 /** Pure catalogue logic: the same functions run at build time and in the browser. */
@@ -111,6 +112,24 @@ export interface RailOptions {
 /** A game counts as "updated" once it has shipped a second version. */
 const isUpdated = (g: GameSummary) => g.version != null && g.version !== '1' && g.version !== '1.0.0';
 
+/** Rails that carry a sponsored slot. */
+const SPONSORED_RAILS: RailId[] = ['top-picks', 'trending', 'new'];
+/** Where in a rail the sponsored slot goes (0-based): visible without scrolling, never first. */
+const SPONSORED_INDEX = 2;
+
+/**
+ * Puts one boosted game at the sponsored position of a rail (rotating between boosted games by
+ * seed). If the game is already in the first few tiles it simply stays where it earned its place.
+ */
+export function injectSponsored(list: GameSummary[], sponsored: readonly GameSummary[], seed: string): GameSummary[] {
+  if (sponsored.length === 0) return list;
+  const pick = sponsored[hashString(seed) % sponsored.length]!;
+  const at = list.findIndex((g) => g.id === pick.id);
+  if (at > -1 && at <= SPONSORED_INDEX + 3) return list;
+  const rest = list.filter((g) => g.id !== pick.id);
+  return [...rest.slice(0, SPONSORED_INDEX), pick, ...rest.slice(SPONSORED_INDEX)];
+}
+
 /** Builds the homepage rails from the public catalogue. Empty rails are kept; the UI decides. */
 export function buildRails(
   games: readonly GameSummary[],
@@ -119,6 +138,7 @@ export function buildRails(
 ): Rail[] {
   const live = games.filter(isPublic);
   const spark = live.filter((g) => g.status === 'spark');
+  const sponsored = live.filter((g) => isPromoActive(g.promo, new Date(now)));
   const take = (list: GameSummary[]) => list.slice(0, size);
 
   const build: Record<RailId, () => GameSummary[]> = {
@@ -135,13 +155,14 @@ export function buildRails(
   };
 
   const order = [...config.railOrder, ...DEFAULT_RAIL_ORDER.filter((id) => !config.railOrder.includes(id))];
-  void now;
   return order
     .filter((id) => !config.hiddenRails.includes(id))
     .map((id) => {
       const base = build[id]();
       // Spark games get 1 in 10 slots everywhere except their own rail.
-      const railGames = id === 'fresh' ? base : injectSparkSlots(base, spark, `${seed}:${id}`);
+      const withSpark = id === 'fresh' ? base : injectSparkSlots(base, spark, `${seed}:${id}`);
+      // A boosted game gets one labelled slot near the start of the main rails.
+      const railGames = SPONSORED_RAILS.includes(id) ? injectSponsored(withSpark, sponsored, `${seed}:${id}`).slice(0, size) : withSpark;
       return { id, games: railGames, href: RAIL_HREF[id] };
     });
 }

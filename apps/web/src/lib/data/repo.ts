@@ -8,6 +8,8 @@
  *   - Emit the matching bus topic after every mutation so open screens refresh.
  */
 import type { AvatarCosmetics } from '@brainstorming/ui';
+import type { BoostOrder, BoostPackage, CheckoutIntent, EmailRow, PaymentRow, PremiumPlan, PremiumStatus, Wallpaper } from './billingTypes';
+import type { PremiumState } from '@/lib/domain/premium';
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
 import type { Currency, GameImpressions, GameLine, RevenueRow, RevenueRun } from '@/lib/domain/revenue';
@@ -147,10 +149,12 @@ export interface SessionUser {
   avatar: AvatarCosmetics;
   profilePublic: boolean;
   playtestOptIn: boolean;
+  /** Brainstorming Premium, when the player has (or had) it. */
+  premium: PremiumState | null;
   createdAt: string;
 }
 
-export type OAuthProvider = 'google' | 'discord';
+export type OAuthProvider = 'google' | 'apple' | 'discord';
 
 export interface SignInResult {
   /** A magic link was e-mailed (Supabase), or the session already started (mock). */
@@ -172,6 +176,8 @@ export interface AuthRepo {
   session(): Promise<SessionUser | null>;
   signInWithEmail(email: string, next?: string): Promise<SignInResult>;
   signInWithProvider(provider: OAuthProvider, next?: string): Promise<void>;
+  /** Google Identity Services: signs in with the ID token Google's own button returned. */
+  signInWithGoogleIdToken(idToken: string): Promise<void>;
   completeSignup(username: string, birthYear: number, locale: string): Promise<SessionUser>;
   usernameAvailable(username: string): Promise<boolean>;
   signOut(): Promise<void>;
@@ -184,6 +190,16 @@ export interface AuthRepo {
   deleteAccount(): Promise<void>;
   /** Short-lived ES256 token `{ sub, gameId, exp }` for a game's own server. */
   gameToken(gameId: string): Promise<string | null>;
+  /**
+   * The owner code: the second lock on the management portal. `enrolled` once an authenticator
+   * app is set up; `unlocked` after a correct code in this browser session.
+   */
+  ownerCodeStatus(): Promise<{ enrolled: boolean; unlocked: boolean }>;
+  /** Starts (or restarts) the set-up: the secret to add to an authenticator app. */
+  ownerCodeEnroll(): Promise<{ secret: string; uri: string }>;
+  /** Checks a 6-digit code. Throws `rate_limited` after too many wrong ones. */
+  ownerCodeVerify(code: string): Promise<boolean>;
+  ownerCodeLock(): Promise<void>;
 }
 
 export interface SavesRepo {
@@ -541,8 +557,37 @@ export interface GrowthRepo {
   saveCosmetic(id: string, patch: { cost: number; minLevel: number; active: boolean }): Promise<void>;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Billing: Premium for players, Boost for developers, and the management view of both
+// ---------------------------------------------------------------------------------------------
+
+export interface BillingRepo {
+  premiumStatus(): Promise<PremiumStatus>;
+  /** Starts a subscription. Adults only. */
+  subscribe(plan: PremiumPlan): Promise<CheckoutIntent>;
+  /** Stops renewal; the paid period runs to its end. */
+  cancel(): Promise<void>;
+  /** Local checkout only: completes a test payment. */
+  completeTestPayment(intentId: string): Promise<void>;
+  /** After a Razorpay payment: waits for the server to confirm it. */
+  confirmPayment(reference: string): Promise<boolean>;
+  wallpapers(): Promise<Wallpaper[]>;
+  /** Max members: a link that gives a friend 7 days of Plus. */
+  createGuestPass(): Promise<{ code: string }>;
+  redeemGuestPass(code: string): Promise<void>;
+  /** Developer: buy a Boost for one of their live games. */
+  orderBoost(gameId: string, pkg: BoostPackage): Promise<CheckoutIntent>;
+  myBoosts(): Promise<BoostOrder[]>;
+  // Staff
+  boosts(): Promise<BoostOrder[]>;
+  updateBoost(id: string, patch: { status?: BoostOrder['status']; shortUrls?: string[]; reelUrls?: string[]; notes?: string }): Promise<void>;
+  payments(): Promise<PaymentRow[]>;
+  emails(): Promise<EmailRow[]>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
+  billing: BillingRepo;
   growth: GrowthRepo;
   revenue: RevenueRepo;
   catalogue: CatalogueRepo;

@@ -1,5 +1,7 @@
 'use client';
 
+import { activePlan, showsDisplayAd } from '@/lib/domain/premium';
+import { useSession } from '@/lib/hooks/useSession';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +35,7 @@ const NO_ADS = /^\/(dev|admin|about|contact|parents|school-safe|terms|privacy|de
  */
 export function AdSlot({ placement, className }: { placement: AdPlacement; className?: string }) {
   const t = useTranslations('ads');
+  const { user } = useSession();
   const { path } = splitLocale(usePathname() ?? '/');
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -63,6 +66,8 @@ export function AdSlot({ placement, className }: { placement: AdPlacement; class
   }, [visible]);
 
   if (NO_ADS.test(path)) return null;
+  // Members see fewer display ads (Plus) or none (Max).
+  if (!showsDisplayAd(activePlan(user?.premium), placement)) return null;
   const showPlaceholder = !live && (IS_DEV || IS_MOCK);
   if (!live && !showPlaceholder) return null;
   return (

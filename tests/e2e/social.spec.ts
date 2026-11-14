@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { addGame, deleteUpload, resetSite, signIn, uploadProbe } from './helpers';
+import { addGame, deleteUpload, expect, resetSite, signIn, test, uploadProbe } from './helpers';
 
 /**
  * Phase 3 acceptance: two players (two tabs: one shared mock database, separate sessions)

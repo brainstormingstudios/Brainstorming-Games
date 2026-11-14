@@ -1,3 +1,4 @@
+import type { Promo } from '@/lib/domain/premium';
 /**
  * Domain types shared by the mock and Supabase data layers, the build snapshot and the UI.
  * Dates are ISO strings so every value survives JSON (static props, localStorage, postMessage).
@@ -97,6 +98,8 @@ export interface GameSummary {
   coverSquare: MediaAsset | null;
   preview: MediaAsset | null;
   previewPortrait: MediaAsset | null;
+  /** A paid Boost in progress: sponsored placement (always labelled) and maybe the hero. */
+  promo?: Promo | null;
   /** Extra landscape covers taking part in a thumbnail A/B test. */
   coverVariants: MediaAsset[];
   stats: GameStats;

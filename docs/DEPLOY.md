@@ -111,7 +111,52 @@ The site's own rules stay on whatever you configure: no ad ever covers the game 
 appear on `/dev`, `/admin` or policy pages, and minors, visitors of unknown age and school-safe
 mode only get non-personalised ads.
 
-## 7. Monthly routine
+## 7. Three sites, one sign-in
+
+The player site, the developer portal and the management portal are three Cloudflare Pages
+projects built from this repository (`npm run build` makes `apps/web/out`, `out-developers` and
+`out-manage`). Give them, for example, `brainstorming.games`, `developers.brainstorming.games` and
+`manage.brainstorming.games`, and set `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.brainstorming.games` so one
+sign-in covers all three. Serve games from a different domain (for example `bgplay.net`): the build
+refuses a cookie domain that would cover the game origin.
+
+## 8. The owner code (management portal)
+
+Every admin must also pass a 6-digit code from an authenticator app. On the live site this is
+Supabase multi-factor sign-in: turn on Authentication > Multi-Factor > TOTP. The database itself
+refuses staff actions from a session without the code (migration 0012), so a stolen password or a
+stolen sign-in link opens nothing. The first time an admin opens the portal it shows a QR code to
+scan with Google Authenticator, Microsoft Authenticator or Authy.
+
+To make your co-founder an admin: they sign up on the site, then you open Moderation > Players and
+press **Make admin** (or run `update public.profiles set role = 'admin' where username = '…'`).
+
+## 9. Payments (Premium and Boost)
+
+1. Create a Razorpay account (no monthly fee) and complete its business verification.
+2. Subscriptions > Plans: create **Plus** at ₹99 monthly and **Max** at ₹199 monthly.
+3. Supabase secrets: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PLAN_PLUS`,
+   `RAZORPAY_PLAN_MAX`, `RAZORPAY_WEBHOOK_SECRET`. GitHub variable: `NEXT_PUBLIC_RAZORPAY_KEY_ID`.
+4. Deploy `billing` and `razorpay-webhook` (the webhook with `--no-verify-jwt`).
+5. Razorpay > Webhooks: URL `https://<project>.supabase.co/functions/v1/razorpay-webhook`, the same
+   secret, events `subscription.activated`, `subscription.charged`, `subscription.cancelled`,
+   `subscription.halted`, `subscription.completed`, `order.paid`.
+
+A membership or Boost only ever starts from Razorpay's signed webhook, never from the browser.
+Without the keys, the site shows a clearly marked test checkout where no money moves.
+
+## 10. Google and Apple sign-in
+
+- **Google** (free): create an OAuth client in Google Cloud, set `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, and
+  add the same client to Supabase > Authentication > Providers > Google.
+- **Apple**: needs an Apple Developer account (USD 99 a year): create a Services ID and key, then
+  fill Supabase > Authentication > Providers > Apple. The button switches on with the live site.
+
+## 11. E-mails
+
+See [EMAIL.md](EMAIL.md).
+
+## 12. Monthly routine
 
 1. Download the month's AdSense report as CSV (`country,gross,refunds,invalid_traffic`).
 2. `/admin/revenue/`: paste it, preview the split, publish the statements.

@@ -26,6 +26,16 @@ const LOCALES = ['en'];
 const DEFAULT_LOCALE = 'en';
 const PREFIXED = LOCALES.filter((l) => l !== DEFAULT_LOCALE);
 
+// A shared sign-in cookie on the parent domain would be readable by game code if games were served
+// from that domain too. Refuse to build such a setup.
+const cookieDomain = (process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN || '').trim().replace(/^\./, '');
+if (cookieDomain && new URL(PLAY_ORIGIN).hostname.endsWith(cookieDomain)) {
+  console.error(
+    `[postbuild] NEXT_PUBLIC_AUTH_COOKIE_DOMAIN (.${cookieDomain}) covers the game origin (${PLAY_ORIGIN}). Serve games from a different domain, or unset the cookie domain.`,
+  );
+  process.exit(1);
+}
+
 if (!existsSync(OUT)) {
   console.error(`[postbuild] ${OUT} does not exist. Run the Next build first.`);
   process.exit(1);
@@ -84,6 +94,19 @@ if (ADSENSE && IS_PLAY) {
   src.img.push('https:');
   src.connect.push(...google);
   src.frame.push(...google);
+}
+// Google sign-in (its own button) and Razorpay Checkout, only when their keys are configured.
+if (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+  src.script.push('https://accounts.google.com/gsi/client');
+  src.style.push('https://accounts.google.com/gsi/style');
+  src.frame.push('https://accounts.google.com/gsi/');
+  src.connect.push('https://accounts.google.com/gsi/');
+}
+if (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && SITE !== 'manage') {
+  src.script.push('https://checkout.razorpay.com');
+  src.frame.push('https://api.razorpay.com', 'https://checkout.razorpay.com');
+  src.connect.push('https://api.razorpay.com', 'https://lumberjack.razorpay.com');
+  src.img.push('https://cdn.razorpay.com');
 }
 if (CF_ANALYTICS) {
   src.script.push('https://static.cloudflareinsights.com');

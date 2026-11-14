@@ -4,6 +4,8 @@
  * straight away.
  */
 import { MOCK_DB_URL } from '@/lib/config';
+import type { BoostStatus } from '@/lib/domain/premium';
+import type { EmailRow, PaymentRow } from '../billingTypes';
 import { ALL_TOPICS, emitTopic, onExternalSignal } from '../bus';
 import { local, uuid } from '../local';
 import { RepoError, type RepoErrorCode } from '../repo';
@@ -158,6 +160,10 @@ export interface MockUser {
   locale: string;
   lastActive: string | null;
   bannedAt: string | null;
+  premiumPlan?: 'plus' | 'max' | null;
+  premiumUntil?: string | null;
+  premiumAutoRenew?: boolean;
+  premiumFromPass?: boolean;
   createdAt: string;
 }
 
@@ -282,6 +288,27 @@ export interface MockTables {
   followers: { studioId: string; userId: string; createdAt: string }[];
   /** Tile impressions and clicks per game and UTC day (the discovery algorithm's raw input). */
   impressions: { gameId: string; day: string; impressions: number; clicks: number }[];
+  /** Checkouts started but not paid yet. */
+  intents: { id: string; kind: 'premium' | 'boost'; userId: string; ref: string; pkg: 'spotlight' | 'push' | 'launch' | null; amount: number; createdAt: string }[];
+  payments: PaymentRow[];
+  boosts: {
+    id: string;
+    gameId: string;
+    studioId: string;
+    package: 'spotlight' | 'push' | 'launch';
+    amount: number;
+    status: BoostStatus;
+    shortUrls: string[];
+    reelUrls: string[];
+    startsAt: string | null;
+    endsAt: string | null;
+    heroUntil: string | null;
+    notes: string;
+    createdAt: string;
+  }[];
+  guestPasses: { code: string; fromUserId: string; createdAt: string; redeemedBy: string | null; redeemedAt: string | null }[];
+  /** Written by the local services process for every automated e-mail. */
+  emails: EmailRow[];
   jams: { id: string; slug: string; title: string; theme: string; descriptionMd: string; startsAt: string; endsAt: string; status: 'draft' | 'published' | 'closed'; createdAt: string }[];
   jamEntries: { jamId: string; gameId: string; studioId: string; submittedAt: string; rank: number | null }[];
   variantStats: { gameId: string; label: string; impressions: number; clicks: number; winner: boolean; decidedAt: string | null }[];
