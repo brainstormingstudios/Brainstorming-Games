@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect width="1280" height="720" fill="#ffd43b"/>
+  <text x="640" y="330" font-family="'Segoe UI', system-ui, sans-serif" font-size="300" font-weight="800" letter-spacing="-10" fill="#141207">7 × 8</text>
+  <rect x="80" y="420" width="1120" height="18" rx="9" fill="#141207" opacity="0.18"/>
+  <rect x="80" y="420" width="700" height="18" rx="9" fill="#141207"/>
+  <text x="80" y="640" font-family="'Segoe UI', system-ui, sans-serif" font-size="112" font-weight="800" letter-spacing="-4" fill="#141207">Sum Sprint</text>
+</svg>

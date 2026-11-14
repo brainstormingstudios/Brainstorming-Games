@@ -9,6 +9,29 @@ export const WEB = join(ROOT, 'apps', 'web');
 export const OUT = join(WEB, 'out');
 export const GENERATED = join(WEB, 'src', 'generated');
 
+/**
+ * The three websites built from apps/web (see apps/web/next.config.ts). `out` is the static
+ * export folder, `port` the local port, `urlEnv` the variable that holds the public URL.
+ */
+export const SITES = {
+  play: { out: OUT, port: 3000, urlEnv: 'NEXT_PUBLIC_SITE_URL', label: 'player site' },
+  developers: { out: join(WEB, 'out-developers'), port: 3001, urlEnv: 'NEXT_PUBLIC_DEVELOPERS_URL', label: 'developer portal' },
+  manage: { out: join(WEB, 'out-manage'), port: 3002, urlEnv: 'NEXT_PUBLIC_MANAGE_URL', label: 'management portal' },
+};
+
+/** Sites named with `--site a,b` on the command line, or all three. */
+export function sitesFromArgs(argv = process.argv) {
+  const i = argv.indexOf('--site');
+  const names = i > -1 ? String(argv[i + 1] ?? '').split(',') : Object.keys(SITES);
+  for (const n of names) {
+    if (!(n in SITES)) {
+      console.error(`Unknown site "${n}". Use: ${Object.keys(SITES).join(', ')}`);
+      process.exit(1);
+    }
+  }
+  return names;
+}
+
 const bin = (...parts) => join(ROOT, 'node_modules', ...parts);
 export const TSX = bin('tsx', 'dist', 'cli.mjs');
 export const NEXT = bin('next', 'dist', 'bin', 'next');

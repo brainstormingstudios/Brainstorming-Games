@@ -1,16 +1,24 @@
-import { Fredoka, Nunito } from 'next/font/google';
+import localFont from 'next/font/local';
 
-// Self-hosted at build time by next/font: no request ever goes to Google from a visitor.
-export const fredoka = Fredoka({
-  subsets: ['latin'],
-  variable: '--font-fredoka',
+// The font files live in this repo (src/fonts, copied from the @fontsource-variable packages,
+// SIL Open Font License). Nothing is fetched at build time, and no request ever goes to a font
+// service from a visitor.
+
+/** Headings and buttons: Bricolage Grotesque, a grotesque with some character, set tight. */
+export const displayFont = localFont({
+  src: '../fonts/bricolage-grotesque-latin-wght-normal.woff2',
+  variable: '--font-display-face',
   display: 'swap',
-  weight: ['500', '600', '700'],
+  weight: '200 800',
 });
 
-export const nunito = Nunito({
-  subsets: ['latin'],
-  variable: '--font-nunito',
+/** Body text: Figtree. */
+export const bodyFont = localFont({
+  src: '../fonts/figtree-latin-wght-normal.woff2',
+  variable: '--font-body-face',
   display: 'swap',
-  weight: ['400', '600', '700', '800'],
+  weight: '300 900',
 });
+
+/** Class names that define both font variables; goes on <html>. */
+export const fontClasses = [displayFont.variable, bodyFont.variable].join(' ');

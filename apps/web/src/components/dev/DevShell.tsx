@@ -1,11 +1,8 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createContext, useContext, type ReactNode } from 'react';
-import { Button, EmptyState, Skeleton, cn } from '@brainstorming/ui';
-import { splitLocale } from '@/i18n/config';
-import { Link } from '@/i18n/navigation';
+import { Button, EmptyState, Skeleton } from '@brainstorming/ui';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import type { DevStudio } from '@/lib/data/devTypes';
 import type { SessionUser } from '@/lib/data/repo';
@@ -24,43 +21,6 @@ export function useDev(): DevContextValue {
   const ctx = useContext(DevContext);
   if (!ctx) throw new Error('useDev outside DevShell');
   return ctx;
-}
-
-const NAV = [
-  { key: 'dashboard', href: '/dev' },
-  { key: 'newGame', href: '/dev/games/new' },
-  { key: 'feedback', href: '/dev/feedback' },
-  { key: 'devlogs', href: '/dev/devlogs' },
-  { key: 'jams', href: '/jams' },
-  { key: 'studio', href: '/dev/studio' },
-  { key: 'payouts', href: '/dev/payouts' },
-  { key: 'docs', href: '/dev/docs/quick-start' },
-] as const;
-
-export function DevNav() {
-  const t = useTranslations('dev.nav');
-  const { path } = splitLocale(usePathname() ?? '/');
-  const clean = path.replace(/\/+$/, '') || '/';
-  return (
-    <nav aria-label={t('label')} className="-mx-1 mb-5 flex gap-1 overflow-x-auto pb-1">
-      {NAV.map((item) => {
-        const active = item.href === '/dev' ? clean === '/dev' : clean.startsWith(item.href.replace(/\/quick-start$/, ''));
-        return (
-          <Link
-            key={item.key}
-            href={item.href}
-            aria-current={active ? 'page' : undefined}
-            className={cn(
-              'shrink-0 rounded-full px-3.5 py-2 text-sm font-bold whitespace-nowrap',
-              active ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
-            )}
-          >
-            {t(item.key)}
-          </Link>
-        );
-      })}
-    </nav>
-  );
 }
 
 /**
@@ -104,10 +64,5 @@ export function DevShell({ children }: { children: ReactNode }) {
     body = <DevContext.Provider value={{ user, studio: studio.data }}>{children}</DevContext.Provider>;
   }
 
-  return (
-    <div className="page" data-testid="dev-portal">
-      <DevNav />
-      {body}
-    </div>
-  );
+  return <div className="page">{body}</div>;
 }

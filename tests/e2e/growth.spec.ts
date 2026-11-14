@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addGame, resetSite, signIn as signInDialog, testCover } from './helpers';
+import { ADMIN, DEV, addGame, resetSite, signIn as signInDialog, testCover } from './helpers';
 
 async function signIn(page: Page, email: string, username: string, birthYear = '1990') {
   await signInDialog(page, email, username, birthYear);
@@ -7,7 +7,8 @@ async function signIn(page: Page, email: string, username: string, birthYear = '
 }
 
 /**
- * Phase 5: three people in three tabs (one shared mock database, separate sessions).
+ * Phase 5: three people in three tabs, across the three sites (one shared mock database, a
+ * separate sign-in on each site).
  * A developer, a player on the playtest panel and an admin exercise thumbnail tests, the
  * playtest survey, studio follows and devlogs, a jam, moderation, the quest editor and the
  * featured row.
@@ -18,7 +19,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await resetSite(dev);
 
   // The developer creates a studio; its Spark game has two covers, so a thumbnail test runs.
-  await dev.goto('/dev/');
+  await dev.goto(`${DEV}/`);
   await dev.getByTestId('dev-login').click();
   await signIn(dev, 'studio@example.test', 'studio_owner');
   await dev.getByTestId('studio-name').fill('Probe Studio');
@@ -71,7 +72,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(player.getByText('Thanks. A moderator will take a look.')).toBeVisible();
 
   // The developer publishes a devlog: the follower is notified and it shows on the studio page.
-  await dev.goto('/dev/devlogs/');
+  await dev.goto(`${DEV}/devlogs/`);
   await dev.getByRole('button', { name: 'New post' }).click();
   await dev.getByLabel('Title').fill('Winter update');
   await dev.getByLabel('Post', { exact: true }).fill('We added **snow levels** and fixed the jump bug.');
@@ -85,7 +86,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(player.getByTestId('devlog-post')).toContainText('snow levels');
 
   // The developer sees the thumbnail test and the playtest answers.
-  await dev.goto(`/dev/games/view/?id=${gameId}`);
+  await dev.goto(`${DEV}/games/view/?id=${gameId}`);
   const abRow = dev.getByTestId('ab-row').filter({ hasText: new RegExp(`^${variant}`) });
   // One impression per page view that showed the tile, and exactly one click.
   await expect(abRow.locator('td').nth(1)).toHaveText('1');
@@ -96,7 +97,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
 
   // An admin opens a jam; the developer enters; the admin ranks the entry.
   const admin = await context.newPage();
-  await admin.goto('/admin/jams/');
+  await admin.goto(`${ADMIN}/jams/`);
   await admin.getByTestId('login-button').click();
   await signIn(admin, 'admin@example.test', 'site_admin', '1980');
   await admin.getByTestId('jam-new').click();
@@ -108,6 +109,8 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(admin.getByTestId('jam-row')).toContainText('Winter Jam');
 
   await dev.goto('/jams/');
+  await dev.getByTestId('login-button').click();
+  await signIn(dev, 'studio@example.test', 'studio_owner');
   await dev.getByTestId('jam-card').click();
   await expect(dev.getByTestId('jam-page')).toContainText('Theme: Snow');
   await dev.getByTestId('jam-enter').click();
@@ -118,7 +121,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(player.getByTestId('jam-entry')).toContainText('Rank #1');
 
   // Moderation: the report is in the queue; the devlog can be hidden.
-  await admin.goto('/admin/moderation/');
+  await admin.goto(`${ADMIN}/moderation/`);
   const report = admin.getByTestId('report-row');
   await expect(report).toContainText('Probe Studio');
   await expect(report).toContainText('scam site');
@@ -132,7 +135,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(player.getByTestId('devlog-post')).toHaveCount(0);
 
   // Quest editor: a new reward is saved and shown.
-  await admin.goto('/admin/progression/');
+  await admin.goto(`${ADMIN}/progression/`);
   const quest = admin.getByTestId('quest-row').first();
   await quest.getByTestId('quest-reward').fill('33');
   await quest.getByTestId('quest-save').click();
@@ -140,7 +143,7 @@ test('thumbnail test, playtest, follow + devlog, jam, moderation and editors', a
   await expect(admin.getByTestId('quest-row').first().getByTestId('quest-reward')).toHaveValue('33');
 
   // Featured row: picked in the admin console, live on the homepage straight away.
-  await admin.goto('/admin/home/');
+  await admin.goto(`${ADMIN}/home/`);
   await admin.getByTestId('featured-picker-add').click();
   await admin.getByTestId('featured-save').click();
   await expect(admin.getByText('Homepage saved.')).toBeVisible();

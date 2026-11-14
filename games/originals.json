@@ -1,0 +1,208 @@
+{
+  "studio": {
+    "slug": "brainstorming-studios",
+    "name": "Brainstorming Studios",
+    "country": "IN",
+    "bio": "The team behind Brainstorming Games. Our own games are the BS Originals."
+  },
+  "games": [
+    {
+      "slug": "project-homecoming",
+      "title": "Project Homecoming",
+      "shortDescription": "A deep-space 3D adventure across the solar system: repair your ship, follow an impossible signal and guide the crew home.",
+      "descriptionMd": "**Project Homecoming** is a 3D space exploration adventure that runs straight in your browser.\n\nYour ship is damaged and a long way from Earth. Repair it, chart a course across the solar system, follow a signal that should not exist, and bring the crew home.\n\nProgress is saved on your device, and to your account when you are logged in.",
+      "howToPlayMd": "1. Press **Play** and follow the opening story.\n2. Explore, repair the ship and follow the on-screen objectives.\n3. Your progress saves by itself, so you can come back later.",
+      "faq": [
+        {
+          "q": "Does it save my progress?",
+          "a": "Yes. Progress is saved on this device, and to your Brainstorming account if you are logged in."
+        },
+        {
+          "q": "Does it work on phones?",
+          "a": "Yes, in landscape. A recent phone or a computer gives the smoothest picture."
+        },
+        {
+          "q": "Can I change the graphics quality?",
+          "a": "Yes. The in-game settings have graphics options for slower devices."
+        }
+      ],
+      "category": "adventure",
+      "tags": [
+        "space",
+        "3d",
+        "exploration",
+        "story",
+        "singleplayer"
+      ],
+      "orientation": "landscape",
+      "engine": "Three.js",
+      "hasProgress": true,
+      "status": "featured",
+      "media": [
+        {
+          "kind": "cover_landscape",
+          "file": "cover-landscape.webp",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "kind": "cover_portrait",
+          "file": "cover-portrait.webp",
+          "width": 800,
+          "height": 1200
+        },
+        {
+          "kind": "cover_square",
+          "file": "cover-square.webp",
+          "width": 800,
+          "height": 800
+        },
+        {
+          "kind": "preview_landscape",
+          "file": "preview.mp4",
+          "width": 1280,
+          "height": 720
+        }
+      ]
+    },
+    {
+      "slug": "brain-pairs",
+      "title": "Brain Pairs",
+      "shortDescription": "Flip the cards and find all eight pairs in as few moves as you can.",
+      "descriptionMd": "**Brain Pairs** is a quick memory game. Sixteen cards, eight pairs. Remember where each shape hides and clear the board in as few moves as possible.",
+      "howToPlayMd": "1. Tap a card to flip it, then a second one.\n2. Matching cards stay open.\n3. Clear the board. Fewer moves and less time give a higher score.",
+      "controls": [
+        {
+          "action": "Flip a card",
+          "keyboard": "Click, or Tab and Enter",
+          "touch": "Tap"
+        }
+      ],
+      "faq": [
+        {
+          "q": "How is the score worked out?",
+          "a": "You start from 2,000 and lose 40 for every move and 5 for every second."
+        },
+        {
+          "q": "Is there a time limit?",
+          "a": "No. Take as long as you like; faster rounds simply score more."
+        },
+        {
+          "q": "Is my best saved?",
+          "a": "Yes, your fewest moves are saved."
+        }
+      ],
+      "category": "puzzle",
+      "tags": [
+        "memory",
+        "cards",
+        "brain",
+        "singleplayer"
+      ],
+      "orientation": "any",
+      "engine": "JavaScript",
+      "status": "rise",
+      "media": [
+        {
+          "kind": "cover_landscape",
+          "file": "cover.svg",
+          "width": 1280,
+          "height": 720
+        }
+      ]
+    },
+    {
+      "slug": "orbit-dodge",
+      "title": "Orbit Dodge",
+      "shortDescription": "Circle the core, switch direction with one tap and slip between the sparks.",
+      "descriptionMd": "**Orbit Dodge** is a one-button arcade game. You circle a core that throws out sparks. One tap switches your direction. Collect the yellow dots and last as long as you can while everything speeds up.",
+      "howToPlayMd": "1. Tap, click or press **Space** to switch direction.\n2. Avoid the orange sparks as they cross your orbit.\n3. Collect yellow dots: 10 points each.",
+      "controls": [
+        {
+          "action": "Switch direction",
+          "keyboard": "Space or click",
+          "touch": "Tap"
+        }
+      ],
+      "faq": [
+        {
+          "q": "Does it get harder?",
+          "a": "Yes. You move faster and sparks come more often the longer you last."
+        },
+        {
+          "q": "Can I play with one hand?",
+          "a": "Yes. The whole game is one tap."
+        },
+        {
+          "q": "Is there a leaderboard?",
+          "a": "Yes. Your score is sent to the game leaderboard when a round ends."
+        }
+      ],
+      "category": "arcade",
+      "tags": [
+        "one-button",
+        "reflex",
+        "endless",
+        "singleplayer"
+      ],
+      "orientation": "any",
+      "engine": "JavaScript",
+      "status": "rise",
+      "media": [
+        {
+          "kind": "cover_landscape",
+          "file": "cover.svg",
+          "width": 1280,
+          "height": 720
+        }
+      ]
+    },
+    {
+      "slug": "sum-sprint",
+      "title": "Sum Sprint",
+      "shortDescription": "Sixty seconds of quick sums. Keep a streak going to score big.",
+      "descriptionMd": "**Sum Sprint** gives you 60 seconds of mental arithmetic. Pick the right answer out of four. Every correct answer in a row is worth more, and a wrong one costs two seconds.",
+      "howToPlayMd": "1. Read the sum.\n2. Tap the right answer, or press **1** to **4**.\n3. Build a streak before the bar runs out.",
+      "controls": [
+        {
+          "action": "Choose an answer",
+          "keyboard": "1, 2, 3, 4",
+          "touch": "Tap"
+        }
+      ],
+      "faq": [
+        {
+          "q": "What kinds of sums are there?",
+          "a": "Addition and subtraction first, then multiplication as your score grows."
+        },
+        {
+          "q": "What does a wrong answer cost?",
+          "a": "Two seconds, and your streak goes back to zero."
+        },
+        {
+          "q": "Is it good practice for school?",
+          "a": "It is quick mental-maths practice, and it works in school-safe mode."
+        }
+      ],
+      "category": "word-trivia",
+      "tags": [
+        "maths",
+        "quiz",
+        "brain",
+        "timed",
+        "singleplayer"
+      ],
+      "orientation": "any",
+      "engine": "JavaScript",
+      "status": "rise",
+      "media": [
+        {
+          "kind": "cover_landscape",
+          "file": "cover.svg",
+          "width": 1280,
+          "height": 720
+        }
+      ]
+    }
+  ]
+}

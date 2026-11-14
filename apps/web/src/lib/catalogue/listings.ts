@@ -45,6 +45,9 @@ export function sortGames(games: readonly GameSummary[], sort: SortOrder = 'popu
       );
     case 'trending':
       return list.sort((a, b) => trendingScore(b) - trendingScore(a) || time(b.releasedAt) - time(a.releasedAt));
+    case 'recommended':
+      // Brain Rank first; games without a score yet fall back to popularity.
+      return list.sort((a, b) => (b.stats.rank ?? 0) - (a.stats.rank ?? 0) || popularScore(b) - popularScore(a) || byTitle(a, b));
     case 'popular':
     default:
       return list.sort((a, b) => popularScore(b) - popularScore(a) || time(b.releasedAt) - time(a.releasedAt));
@@ -85,6 +88,7 @@ export interface Rail {
 }
 
 const RAIL_HREF: Record<RailId, string | null> = {
+  'top-picks': null,
   fresh: null,
   trending: '/trending',
   new: '/new',
@@ -118,6 +122,7 @@ export function buildRails(
   const take = (list: GameSummary[]) => list.slice(0, size);
 
   const build: Record<RailId, () => GameSummary[]> = {
+    'top-picks': () => take(sortGames(live, 'recommended')),
     fresh: () => take(orderSparkForExposure(spark, seed)),
     trending: () => take(sortGames(live, 'trending')),
     new: () => take(sortGames(live, 'new')),

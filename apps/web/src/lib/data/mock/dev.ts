@@ -359,7 +359,8 @@ export const mockDev: DevRepo = {
   },
   async game(gameId) {
     const s = myStudioRow();
-    const g = readTable('games').find((x) => x.id === gameId && x.studioId === s?.id);
+    const staff = requireUser().role !== 'player';
+    const g = readTable('games').find((x) => x.id === gameId && (staff || x.studioId === s?.id));
     if (!g) return null;
     return detailFor(g);
   },
@@ -577,7 +578,7 @@ export const mockDev: DevRepo = {
     emitTopic('catalogue');
   },
   async kpis(gameId, from, to) {
-    requireOwnGame(gameId);
+    if (requireUser().role === 'player') requireOwnGame(gameId);
     return kpisFor(gameId, from, to);
   },
   async feedback() {

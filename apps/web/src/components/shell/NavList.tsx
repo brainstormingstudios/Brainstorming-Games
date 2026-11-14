@@ -30,9 +30,7 @@ function Row({
         onClick={onNavigate}
         className={cn(
           'nav-row flex h-10 items-center gap-3 rounded-control px-3 text-[0.95rem] font-bold transition-colors',
-          active
-            ? 'bg-primary text-primary-fg'
-            : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+          active ? 'bg-surface-2 text-fg [&>svg]:text-primary' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
         )}
       >
         <Icon aria-hidden="true" className="size-5 shrink-0" />

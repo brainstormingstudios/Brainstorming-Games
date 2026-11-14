@@ -1,4 +1,5 @@
 import { AGE_GATE } from '@/lib/config';
+import { OWNER_EMAILS } from '@/lib/config';
 import { isMinorByBirthYear } from '@/lib/domain/ageGate';
 import { emitTopic } from '../bus';
 import { getAnonId, guestFavourites, guestHistory, session as tabSession, uuid } from '../local';
@@ -81,9 +82,14 @@ function startSession(user: MockUser) {
   emitTopic('session', { local: true });
 }
 
+/** Owners (the list in .env.local) and, for tests and demos, any `admin@` address. */
+const isOwner = (email: string) => email.startsWith('admin@') || OWNER_EMAILS.includes(email);
+
 function findOrCreate(email: string): MockUser {
   const normalised = email.trim().toLowerCase();
   let user = readTable('users').find((u) => u.email === normalised);
+  // An owner who signed up before being added to the owner list is promoted at the next sign-in.
+  if (user && isOwner(normalised) && user.role !== 'admin') user = updateUser(user.id, { role: 'admin' });
   if (user) return user;
   user = {
     id: newId(),
@@ -93,7 +99,7 @@ function findOrCreate(email: string): MockUser {
     birthYear: null,
     isMinor: true,
     consent: 'pending',
-    role: normalised.startsWith('admin@') ? 'admin' : 'player',
+    role: isOwner(normalised) ? 'admin' : 'player',
     brainPoints: 0,
     level: 1,
     streakDays: 0,

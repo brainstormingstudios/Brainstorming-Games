@@ -1,5 +1,6 @@
 import { emitTopic } from '../bus';
-import type { DevlogPost, Jam, ReportKind, ReportRecord } from '../growthTypes';
+import { rankScore, type RankInputs } from '@/lib/domain/ranking';
+import type { DevlogPost, DiscoveryReport, DiscoveryRow, Jam, ReportKind, ReportRecord, SiteStats } from '../growthTypes';
 import { getAnonId } from '../local';
 import { RepoError, type GrowthRepo } from '../repo';
 import type { GameSummary } from '../types';
@@ -34,6 +35,36 @@ const toJam = (r: Row): Jam => ({
   status: r.status as Jam['status'],
   entries: Number((r.jam_entries as { count?: number }[] | null)?.[0]?.count ?? 0),
 });
+
+const isoDay = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+
+/** Builds a discovery report from a game_stats row and the game's daily impression rows. */
+function toReport(gameId: string, stats: Row | null, releasedAt: string, days: Row[]): DiscoveryReport {
+  const num = (v: unknown) => (v == null ? null : Number(v));
+  const inputs: RankInputs = {
+    impressions: Number(stats?.impressions_14d ?? 0),
+    clicks: Number(stats?.clicks_14d ?? 0),
+    plays: Number(stats?.plays_14d ?? 0),
+    conversion: num(stats?.conversion_14d),
+    avgSessionSec: num(stats?.avg_session_sec_14d),
+    d1: num(stats?.d1_14d),
+    likes: Number(stats?.likes_180d ?? 0),
+    dislikes: Number(stats?.dislikes_180d ?? 0),
+    ageDays: releasedAt ? Math.max(0, (Date.now() - new Date(releasedAt).getTime()) / 86_400_000) : 0,
+  };
+  const byDay = new Map(days.map((d) => [String(d.day), d]));
+  return {
+    gameId,
+    inputs,
+    // The stored score is from the last daily job; the formula is identical.
+    score: stats?.rank_score != null ? Number(stats.rank_score) : rankScore(inputs),
+    byDay: Array.from({ length: 30 }, (_, i) => {
+      const day = isoDay(i - 29);
+      const row = byDay.get(day);
+      return { day, impressions: Number(row?.impressions ?? 0), clicks: Number(row?.clicks ?? 0) };
+    }),
+  };
+}
 
 /** Names for a set of ids from a public view, as a map. */
 async function names(view: string, column: string, ids: string[]): Promise<Map<string, Row>> {
@@ -97,7 +128,62 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
     async recordVariantHits(hits) {
       if (hits.length === 0) return;
       // Best effort: a lost batch only delays a test.
-      await getSupabase().rpc('record_variant_stats', { p_anon_id: getAnonId(), p_rows: hits.slice(0, 100) });
+      await getSupabase().rpc('record_tile_hits', { p_anon_id: getAnonId(), p_rows: hits.slice(0, 100) });
+    },
+    async discovery(gameId) {
+      const db = getSupabase();
+      const [stats, game, days] = await Promise.all([
+        db.from('game_stats').select('*').eq('game_id', gameId).maybeSingle<Row>(),
+        db.from('games').select('released_at').eq('id', gameId).maybeSingle<Row>(),
+        db.from('game_impressions').select('day, impressions, clicks').eq('game_id', gameId).gte('day', isoDay(-29)).order('day'),
+      ]);
+      const g = check(game);
+      if (!g) return null;
+      return toReport(gameId, check(stats), String(g.released_at ?? ''), (check(days) ?? []) as Row[]);
+    },
+    async discoveryAll() {
+      const db = getSupabase();
+      const games = (check(await db.from('games').select('id, slug, title, status, released_at, studios(name), game_stats(*)').not('released_at', 'is', null).limit(500)) ?? []) as Row[];
+      const days = (check(await db.from('game_impressions').select('game_id, day, impressions, clicks').gte('day', isoDay(-29))) ?? []) as Row[];
+      return games
+        .map((r): DiscoveryRow => {
+          const stats = (Array.isArray(r.game_stats) ? r.game_stats[0] : r.game_stats) as Row | null;
+          return {
+            ...toReport(String(r.id), stats ?? null, String(r.released_at ?? ''), days.filter((d) => d.game_id === r.id)),
+            slug: String(r.slug),
+            title: String(r.title),
+            studioName: String((r.studios as { name?: string } | null)?.name ?? ''),
+            status: r.status as DiscoveryRow['status'],
+          };
+        })
+        .sort((a, b) => b.score - a.score);
+    },
+    async siteStats() {
+      const r = (check(await getSupabase().rpc('admin_site_stats')) ?? {}) as Row;
+      const n = (v: unknown) => Number(v ?? 0);
+      return {
+        players7d: n(r.players_7d),
+        plays7d: n(r.plays_7d),
+        playsToday: n(r.plays_today),
+        impressions7d: n(r.impressions_7d),
+        accounts: n(r.accounts),
+        studios: n(r.studios),
+        gamesByStatus: (r.games_by_status as SiteStats['gamesByStatus']) ?? {},
+        inReview: n(r.in_review),
+        openReports: n(r.open_reports),
+        byDay: ((r.by_day as Row[]) ?? []).map((d) => ({ day: String(d.day), plays: n(d.plays), players: n(d.players), impressions: n(d.impressions) })),
+      };
+    },
+    async databaseStats() {
+      const r = (check(await getSupabase().rpc('admin_db_stats')) ?? {}) as Row;
+      return {
+        engine: String(r.version ?? 'PostgreSQL'),
+        totalBytes: Number(r.total_bytes ?? 0),
+        // The free Supabase plan stores 500 MB.
+        limitBytes: 500 * 1024 * 1024,
+        connections: r.connections == null ? null : Number(r.connections),
+        tables: ((r.tables as Row[]) ?? []).map((t) => ({ name: String(t.name), rows: Number(t.rows ?? 0), bytes: Number(t.bytes ?? 0) })),
+      };
     },
     async variantStats(gameId) {
       const rows = (check(await getSupabase().from('media_variant_stats').select('*').eq('game_id', gameId).order('variant_label')) ?? []) as Row[];
@@ -247,7 +333,7 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       }));
     },
     async setUser(userId_, patch) {
-      check(await getSupabase().rpc('admin_set_user', { p_user: userId_, p_banned: patch.banned ?? null, p_reset_username: patch.resetUsername ?? false }));
+      check(await getSupabase().rpc('admin_set_user', { p_user: userId_, p_banned: patch.banned ?? null, p_role: patch.role ?? null, p_reset_username: patch.resetUsername ?? false }));
       emitTopic('admin');
     },
     async findStudios(query) {

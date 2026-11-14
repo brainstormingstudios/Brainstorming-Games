@@ -200,8 +200,9 @@ export function HomeView({ initialGames, config: builtConfig, seed }: HomeViewPr
     if (games.length < HERO_MIN_GAMES) return [];
     const byId = new Map(games.map((g) => [g.id, g]));
     const picked = config.heroGameIds.map((id) => byId.get(id)).filter((g): g is GameSummary => g != null);
-    const rest = sortGames(games.filter((g) => !picked.includes(g)), 'trending');
-    return [...picked, ...rest].slice(0, 3);
+    const others = games.filter((g) => !picked.includes(g));
+    const featuredFirst = [...sortGames(others.filter((g) => g.status === 'featured'), 'recommended'), ...sortGames(others.filter((g) => g.status !== 'featured'), 'trending')];
+    return [...picked, ...featuredFirst].slice(0, 3);
   }, [games, config.heroGameIds]);
   const featured = useMemo(() => {
     const byId = new Map(games.map((g) => [g.id, g]));

@@ -3,6 +3,9 @@
  * language added later is prefixed (`/xx/game/x/`): add it here, add `messages/<code>.json`
  * and run `npm run gen:routes`.
  */
+import { SITE } from '@/lib/config';
+import { siteOrigin, sitePath } from '@/lib/sites';
+
 export const locales = ['en'] as const;
 export type Locale = (typeof locales)[number];
 
@@ -47,6 +50,14 @@ export function splitLocale(pathname: string): { locale: Locale; path: string } 
  */
 export function localizePath(path: string, locale: Locale): string {
   if (/^([a-z][a-z0-9+.-]*:|\/\/|#)/i.test(path)) return path;
+  // The developer and management portals are separate websites: a path that belongs to another
+  // site becomes an absolute URL there.
+  const target = sitePath(path);
+  if (target.site !== SITE) return `${siteOrigin(target.site)}${localPath(target.path, locale)}`;
+  return localPath(target.path, locale);
+}
+
+function localPath(path: string, locale: Locale): string {
   const [, pathname = '/', suffix = ''] = /^([^?#]*)(.*)$/.exec(path) ?? [];
   let p = pathname.startsWith('/') ? pathname : `/${pathname}`;
   const lastSegment = p.slice(p.lastIndexOf('/') + 1);

@@ -24,6 +24,24 @@ export const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '
 /** No Supabase URL means the whole app runs on the in-browser mock data layer. */
 export const IS_MOCK = SUPABASE_URL === '';
 
+/**
+ * The product is three separate sites built from this codebase: the player site, the developer
+ * portal and the management portal. Each build is one of them (`NEXT_PUBLIC_BG_SITE`).
+ */
+export type SiteId = 'play' | 'developers' | 'manage';
+const site = process.env.NEXT_PUBLIC_BG_SITE;
+export const SITE: SiteId = site === 'developers' || site === 'manage' ? site : 'play';
+export const DEVELOPERS_URL = trim(process.env.NEXT_PUBLIC_DEVELOPERS_URL, 'http://localhost:3001');
+export const MANAGE_URL = trim(process.env.NEXT_PUBLIC_MANAGE_URL, 'http://localhost:3002');
+
+/**
+ * In mock mode on a developer machine the three sites are three origins, so the mock tables live
+ * in the local services process (`scripts/dev-services.mjs`) instead of one origin's localStorage.
+ * Empty anywhere else: the mock then falls back to localStorage.
+ */
+export const MOCK_DB_URL =
+  IS_MOCK && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(PLAY_ORIGIN) ? `${PLAY_ORIGIN}/__mock/db` : '';
+
 export const ADSENSE_CLIENT = (process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? '').trim();
 /** In-game ad provider: `mock` | `adsense-h5` | `none`. */
 export const INGAME_AD_PROVIDER = (process.env.NEXT_PUBLIC_INGAME_ADS ?? (IS_MOCK ? 'mock' : 'none')).trim();
@@ -34,6 +52,16 @@ export const EVENTS_TRANSPORT: 'function' | 'rpc' =
 export const CF_ANALYTICS_TOKEN = (process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN ?? '').trim();
 export const POSTHOG_KEY = (process.env.NEXT_PUBLIC_POSTHOG_KEY ?? '').trim();
 export const SENTRY_DSN = (process.env.NEXT_PUBLIC_SENTRY_DSN ?? '').trim();
+
+/**
+ * Mock mode only: e-mail addresses that are owners of the site and get the admin role when they
+ * sign in (comma separated, from `NEXT_PUBLIC_OWNER_EMAILS` in .env.local). On the live site the
+ * role is stored in the database instead: see docs/DATABASE.md.
+ */
+export const OWNER_EMAILS = (process.env.NEXT_PUBLIC_OWNER_EMAILS ?? '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 /** ISO time of this build. Games changed after it are fetched live on the client. */
 export const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME ?? '1970-01-01T00:00:00.000Z';

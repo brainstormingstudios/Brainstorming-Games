@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { expect, test, type Page } from '@playwright/test';
-import { resetSite, signIn as signInDialog } from './helpers';
+import { ADMIN, DEV, resetSite, signIn as signInDialog } from './helpers';
 
 const PROBE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'sdk-probe');
 
@@ -33,7 +33,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await resetSite(page);
 
   // 1. Studio signup.
-  await page.goto('/dev/');
+  await page.goto(`${DEV}/`);
   await page.getByTestId('dev-login').click();
   await signIn(page, 'dev@example.test', 'probe_dev');
   await page.getByTestId('studio-name').fill('Probe Studio');
@@ -80,9 +80,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await expect(page.getByTestId('game-status').first()).toHaveText('In review');
 
   // 5. Admin approves to Spark.
-  await page.getByTestId('account-button').click();
-  await page.getByTestId('logout-button').click();
-  await page.goto('/admin/qa/');
+  await page.goto(`${ADMIN}/qa/`);
   await page.getByRole('button', { name: 'Log in' }).first().click();
   await signIn(page, 'admin@example.test', 'qa_admin', '1985');
   await expect(page.getByTestId('qa-row')).toHaveCount(1);
@@ -108,11 +106,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.waitForTimeout(1500);
 
   // 7. Back as the developer: the KPI page counts the play.
-  await page.goto('/dev/');
-  await page.getByTestId('account-button').click();
-  await page.getByTestId('logout-button').click();
-  await page.getByTestId('dev-login').click();
-  await signIn(page, 'dev@example.test', 'probe_dev');
+  await page.goto(`${DEV}/`);
   await expect(page.getByTestId('dev-game-row').getByTestId('game-status')).toHaveText('Spark Launch');
   await page.getByRole('link', { name: 'KPIs' }).click();
   await expect(page.getByTestId('kpi-page').locator('[data-kpi="plays"] dd').first()).not.toHaveText('0');

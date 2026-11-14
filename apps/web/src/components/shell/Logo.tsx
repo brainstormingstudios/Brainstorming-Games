@@ -1,47 +1,31 @@
-import brand from '@/generated/brand.json';
+import type { CSSProperties } from 'react';
+import { Mascot } from '@brainstorming/ui';
 import { Link } from '@/i18n/navigation';
 
-const RATIO = brand.logo.ratio;
+const NAME = 'Brainstorming';
 
 /**
- * The brand lockup. Two processed versions of the same artwork are stacked and CSS shows the one
- * for the active theme (white wordmark on navy, navy wordmark on white), so there is no flash
- * and no JavaScript involved. On very narrow screens only the mascot is shown.
+ * The brand lockup: the mascot, a clear gap, then the name set in the display face with a
+ * "Games" tag (or the name of a portal). On hover the mascot hops and blinks, the letters do a
+ * small wave and the tag tilts: all CSS (`.brand-lockup` in globals.css), nothing to download.
+ * On very narrow screens only the mascot is shown.
  */
-export function Logo({ label, height = 40 }: { label: string; height?: number }) {
-  const width = Math.round(height * RATIO);
-  const img = (theme: 'dark' | 'light') => (
-    <img
-      src={`/brand/logo-${theme}-96.webp`}
-      srcSet={`/brand/logo-${theme}-48.webp 1x, /brand/logo-${theme}-96.webp 2x, /brand/logo-${theme}-192.webp 4x`}
-      width={width}
-      height={height}
-      alt=""
-      decoding="async"
-      fetchPriority="high"
-      className={theme === 'dark' ? 'hidden dark:block' : 'hidden light:block'}
-    />
-  );
+export function Logo({ label, tag = 'Games', href = '/' }: { label: string; tag?: string; href?: string }) {
   return (
-    <Link
-      href="/"
-      aria-label={label}
-      prefetch
-      className="flex shrink-0 items-center rounded-control"
-      data-testid="logo"
-    >
-      <span className="hidden xs:block">
-        {img('dark')}
-        {img('light')}
+    <Link href={href} aria-label={label} prefetch className="brand-lockup" data-testid="logo">
+      <span className="brand-mark">
+        <Mascot size={38} animated={false} eager />
       </span>
-      <img
-        src="/brand/mascot-64.webp"
-        srcSet="/brand/mascot-64.webp 1x, /brand/mascot-128.webp 2x"
-        width={40}
-        height={40}
-        alt=""
-        className="xs:hidden"
-      />
+      <span className="brand-word" aria-hidden="true">
+        <span className="brand-name">
+          {NAME.split('').map((letter, i) => (
+            <span key={i} style={{ '--i': i } as CSSProperties}>
+              {letter}
+            </span>
+          ))}
+        </span>
+        <span className="brand-tag">{tag}</span>
+      </span>
     </Link>
   );
 }

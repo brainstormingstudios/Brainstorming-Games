@@ -5,20 +5,21 @@
  *   - otherwise the nearest 404.html up the tree, with status 404
  *   - `_headers` rules are applied to every response
  *
- *   node scripts/serve-static.mjs [--port 3000] [--dir apps/web/out]
+ *   node scripts/serve-static.mjs [--site play|developers|manage] [--port 3000] [--dir apps/web/out]
  */
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
-import { OUT, ROOT } from './lib/run.mjs';
+import { ROOT, SITES } from './lib/run.mjs';
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > -1 ? process.argv[i + 1] : fallback;
 };
-const PORT = Number(arg('port', process.env.PORT || 3000));
-const DIR = resolve(ROOT, arg('dir', OUT));
+const SITE = SITES[arg('site', 'play')] ?? SITES.play;
+const PORT = Number(arg('port', process.env.PORT || SITE.port));
+const DIR = resolve(ROOT, arg('dir', SITE.out));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

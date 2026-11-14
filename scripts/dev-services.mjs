@@ -5,13 +5,19 @@
  *     different origin from the site exactly as they do in production (R2 at play.<domain>).
  *   - Mock presigned uploads: PUT /__mock/upload/<key> stores a file under .local/play.
  *   - Mock pre-QA: POST /__mock/pre-qa runs scripts/pre-qa.ts against an uploaded build.
+ *   - The local database: /__mock/db/* keeps the mock tables in one place, so the player site,
+ *     the developer portal and the management portal (three origins) all see the same data.
+ *     It is saved to .local/mock-db.json and survives restarts.
+ *   - First-party games: /originals/<slug>/* serves the games in /games, and the database is
+ *     seeded with them the first time it is empty (skip with --no-seed).
  *
  * Mock mode only. It binds to 127.0.0.1 and refuses anything that is not a web game file.
  *
  *   node scripts/dev-services.mjs [--port 4100] [--site http://localhost:3000]
  */
 import { spawn } from 'node:child_process';
-import { createReadStream, createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize, sep } from 'node:path';
 import { ROOT, TSX, WEB } from './lib/run.mjs';
@@ -21,9 +27,21 @@ const arg = (name, fallback) => {
   return i > -1 ? process.argv[i + 1] : fallback;
 };
 const PORT = Number(arg('port', process.env.PLAY_PORT || 4100));
-const SITE_ORIGINS = arg('site', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000,http://127.0.0.1:3000')
+const DEFAULT_SITES = [
+  process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  process.env.NEXT_PUBLIC_DEVELOPERS_URL || 'http://localhost:3001',
+  process.env.NEXT_PUBLIC_MANAGE_URL || 'http://localhost:3002',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
+].join(',');
+const SITE_ORIGINS = arg('site', DEFAULT_SITES)
   .split(',')
   .map((s) => s.trim().replace(/\/+$/, ''));
+const SEED = !process.argv.includes('--no-seed');
+const GAMES = join(ROOT, 'games');
+const DB_FILE = join(ROOT, '.local', 'mock-db.json');
+const SDK_FILE = join(WEB, 'public', 'sdk', 'v1', 'bg-sdk.js');
 const STORE = join(ROOT, '.local', 'play');
 const MAX_FILE = 260 * 1024 * 1024;
 
@@ -73,6 +91,201 @@ const MIME = {
   '.basis': 'application/octet-stream',
   '.map': 'application/json',
 };
+
+// ---------------------------------------------------------------------------------------------
+// The local database: named tables of JSON rows, each with a version that goes up on every write.
+// ---------------------------------------------------------------------------------------------
+/** @type {Map<string, { version: number, text: string }>} */
+const tables = new Map();
+let clock = 1;
+let saveTimer = null;
+
+function loadDb() {
+  try {
+    const saved = JSON.parse(readFileSync(DB_FILE, 'utf8'));
+    for (const [name, text] of Object.entries(saved.tables ?? {})) tables.set(name, { version: clock++, text: String(text) });
+  } catch {
+    // no saved database yet
+  }
+}
+
+function saveDbSoon() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    try {
+      mkdirSync(dirname(DB_FILE), { recursive: true });
+      writeFileSync(DB_FILE, JSON.stringify({ tables: Object.fromEntries([...tables].map(([k, v]) => [k, v.text])) }));
+    } catch (err) {
+      console.error('[dev-services] could not save the local database:', String(err));
+    }
+  }, 400);
+}
+
+function setTable(name, rows) {
+  tables.set(name, { version: clock++, text: typeof rows === 'string' ? rows : JSON.stringify(rows) });
+  saveDbSoon();
+}
+
+const getRows = (name) => {
+  try {
+    const rows = JSON.parse(tables.get(name)?.text ?? '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+};
+
+function dirBytes(dir) {
+  let total = 0;
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const st = statSync(full);
+    total += st.isDirectory() ? dirBytes(full) : st.size;
+  }
+  return total;
+}
+
+/**
+ * Adds the first-party games from /games/originals.json to an empty catalogue, published by the
+ * first-party studio. Runs once; after that the games are ordinary rows the portals can manage.
+ */
+function seedOriginals() {
+  const manifestFile = join(GAMES, 'originals.json');
+  if (!existsSync(manifestFile)) return 0;
+  const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'));
+  const base = `http://localhost:${PORT}/originals`;
+  const now = new Date().toISOString();
+  const studios = getRows('studios');
+  const games = getRows('games');
+  const versions = getRows('versions');
+  const media = getRows('media');
+  let studio = studios.find((x) => x.slug === manifest.studio.slug);
+  if (!studio) {
+    studio = {
+      id: randomUUID(),
+      ownerId: null,
+      slug: manifest.studio.slug,
+      name: manifest.studio.name,
+      bio: manifest.studio.bio ?? '',
+      avatarUrl: null,
+      country: manifest.studio.country ?? null,
+      contactEmail: null,
+      links: [],
+      verified: true,
+      isFirstParty: true,
+      level: 'partner',
+      suspendedAt: null,
+      termsVersion: null,
+      termsAcceptedAt: null,
+      guardianName: null,
+      createdAt: now,
+    };
+    studios.push(studio);
+  }
+  let added = 0;
+  for (const g of manifest.games) {
+    const dir = join(GAMES, g.slug);
+    if (!existsSync(join(dir, 'index.html')) || games.some((x) => x.slug === g.slug)) continue;
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const bytes = dirBytes(dir);
+    games.push({
+      id,
+      studioId: studio.id,
+      slug: g.slug,
+      title: g.title,
+      shortDescription: g.shortDescription ?? '',
+      descriptionMd: g.descriptionMd ?? '',
+      howToPlayMd: g.howToPlayMd ?? '',
+      controls: g.controls ?? [],
+      faq: g.faq ?? [],
+      featuresMd: g.featuresMd ?? '',
+      tipsMd: g.tipsMd ?? '',
+      category: g.category,
+      tags: g.tags ?? [],
+      orientation: g.orientation ?? 'landscape',
+      platforms: g.platforms ?? ['desktop', 'mobile', 'tablet'],
+      engine: g.engine ?? null,
+      isMultiplayer: Boolean(g.isMultiplayer),
+      hasProgress: Boolean(g.hasProgress),
+      schoolSafe: g.schoolSafe !== false,
+      sizeBytes: bytes,
+      initialLoadBytes: g.initialLoadBytes ?? null,
+      status: g.status ?? 'rise',
+      sparkStartedAt: null,
+      riseStartedAt: now,
+      exclusiveUntil: null,
+      currentVersionId: versionId,
+      maxScorePerSec: g.maxScorePerSec ?? null,
+      createdAt: now,
+      releasedAt: now,
+      updatedAt: now,
+    });
+    versions.push({
+      id: versionId,
+      gameId: id,
+      version: String(g.version ?? '1'),
+      storagePrefix: `originals/${g.slug}`,
+      fileCount: 1,
+      totalBytes: bytes,
+      entryFile: 'index.html',
+      usesSdk: true,
+      preQaReport: null,
+      qaStatus: 'approved',
+      qaNotes: null,
+      previewToken: randomUUID(),
+      createdAt: now,
+    });
+    for (const m of g.media ?? []) {
+      media.push({
+        id: randomUUID(),
+        gameId: id,
+        kind: m.kind,
+        url: `${base}/${g.slug}/${m.file}`,
+        widths: [],
+        width: m.width,
+        height: m.height,
+        placeholder: null,
+        variantLabel: null,
+        isActive: true,
+        createdAt: now,
+      });
+    }
+    added++;
+  }
+  if (added) {
+    setTable('studios', studios);
+    setTable('games', games);
+    setTable('versions', versions);
+    setTable('media', media);
+  }
+  return added;
+}
+
+loadDb();
+if (SEED && getRows('games').length === 0) {
+  const n = seedOriginals();
+  if (n) console.log(`[dev-services] added ${n} first-party game(s) to the empty catalogue`);
+}
+
+/** A file of a first-party game (or the SDK every one of them loads from its own folder). */
+function resolveOriginal(key) {
+  const m = /^originals\/([a-z0-9-]+)\/(.*)$/.exec(key);
+  if (!m) return undefined;
+  if (m[2] === 'bg-sdk.js') return existsSync(SDK_FILE) ? SDK_FILE : null;
+  let decoded;
+  try {
+    decoded = decodeURIComponent(m[2] || 'index.html');
+  } catch {
+    return null;
+  }
+  if (decoded.includes('\0') || /(^|[\\/])\.\.([\\/]|$)/.test(decoded)) return null;
+  const root = join(GAMES, m[1]);
+  const full = normalize(join(root, decoded));
+  if (!full.startsWith(root + sep) || !(extname(full).toLowerCase() in MIME)) return null;
+  return full;
+}
 
 function resolveKey(key) {
   let decoded;
@@ -176,6 +389,50 @@ const server = createServer(async (req, res) => {
   try {
     if (path === '/__mock/health') return json(res, 200, { ok: true, store: STORE });
 
+    if (path.startsWith('/__mock/db/')) {
+      const rest = path.slice('/__mock/db/'.length);
+      res.setHeader('cache-control', 'no-store');
+      if (rest === 'versions' && req.method === 'GET') {
+        return json(res, 200, Object.fromEntries([...tables].map(([k, v]) => [k, v.version])));
+      }
+      if (rest === 'stats' && req.method === 'GET') {
+        const list = [...tables]
+          .map(([name, t]) => ({ name, rows: getRows(name).length, bytes: Buffer.byteLength(t.text) }))
+          .sort((a, b) => b.bytes - a.bytes);
+        return json(res, 200, { file: DB_FILE, tables: list, totalBytes: list.reduce((n, t) => n + t.bytes, 0) });
+      }
+      if (rest === 'reset' && req.method === 'POST') {
+        if ([...tables.values()].some((t) => t.text.length > 2)) {
+          try {
+            writeFileSync(
+              DB_FILE.replace(/\.json$/, '.backup.json'),
+              JSON.stringify({ tables: Object.fromEntries([...tables].map(([k, v]) => [k, v.text])) }),
+            );
+          } catch {
+            // a backup is best effort
+          }
+        }
+        tables.clear();
+        clock += 1;
+        // An emptied table still needs a new version so open pages notice.
+        setTable('games', []);
+        const seeded = url.searchParams.get('seed') === '1' ? seedOriginals() : 0;
+        return json(res, 200, { ok: true, seeded });
+      }
+      const name = /^table\/([A-Za-z]{1,40})$/.exec(rest)?.[1];
+      if (name && req.method === 'GET') {
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        return res.end(tables.get(name)?.text ?? '[]');
+      }
+      if (name && req.method === 'POST') {
+        const text = await readBody(req, 32 * 1024 * 1024);
+        JSON.parse(text); // refuse anything that is not JSON
+        setTable(name, text);
+        return json(res, 200, { version: tables.get(name).version });
+      }
+      return json(res, 404, { error: 'not_found' });
+    }
+
     if (path.startsWith('/__mock/upload/') && req.method === 'PUT') {
       return upload(req, res, path.slice('/__mock/upload/'.length));
     }
@@ -199,7 +456,9 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' || req.method === 'HEAD') {
-      const file = resolveKey(path.replace(/^\/+/, '') || 'index.html');
+      const key = path.replace(/^\/+/, '') || 'index.html';
+      const original = resolveOriginal(key.endsWith('/') ? `${key}index.html` : key);
+      const file = original === undefined ? resolveKey(key) : original;
       if (!file || !existsSync(file) || !statSync(file).isFile()) {
         res.writeHead(404, { 'content-type': 'text/plain' });
         return res.end('Not found');
@@ -227,6 +486,21 @@ const server = createServer(async (req, res) => {
     json(res, 500, { error: String(err) });
   }
 });
+
+// A browser tab closing mid-request must never take the local database down with it.
+const crashLog = join(ROOT, '.local', 'dev-services.log');
+for (const event of ['uncaughtException', 'unhandledRejection']) {
+  process.on(event, (err) => {
+    const line = `${new Date().toISOString()} ${event}: ${err?.stack ?? err}\n`;
+    console.error(`[dev-services] ${line}`);
+    try {
+      writeFileSync(crashLog, line, { flag: 'a' });
+    } catch {
+      // logging is best effort
+    }
+  });
+}
+server.on('clientError', (_err, socket) => socket.destroy());
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[dev-services] play origin http://localhost:${PORT} (store: ${STORE})`);

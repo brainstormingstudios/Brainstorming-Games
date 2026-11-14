@@ -1,5 +1,49 @@
 /** Types for the growth features: devlog feed, studio follows, thumbnail tests, playtests, jams, moderation. */
-import type { GameSummary } from './types';
+import type { RankInputs } from '@/lib/domain/ranking';
+import type { GameStatus, GameSummary } from './types';
+
+/** What the discovery algorithm knows about one game, and the score it gives. */
+export interface DiscoveryReport {
+  gameId: string;
+  inputs: RankInputs;
+  /** Brain Rank, 0 to 100. */
+  score: number;
+  /** Tile impressions and clicks per day, oldest first (30 days). */
+  byDay: { day: string; impressions: number; clicks: number }[];
+}
+
+export interface DiscoveryRow extends DiscoveryReport {
+  slug: string;
+  title: string;
+  studioName: string;
+  status: GameStatus;
+}
+
+/** The management portal's overview of the whole site. */
+export interface SiteStats {
+  players7d: number;
+  plays7d: number;
+  playsToday: number;
+  impressions7d: number;
+  accounts: number;
+  studios: number;
+  gamesByStatus: Partial<Record<GameStatus, number>>;
+  inReview: number;
+  openReports: number;
+  /** Plays and tile impressions per day, oldest first (30 days). */
+  byDay: { day: string; plays: number; players: number; impressions: number }[];
+}
+
+/** Size of the database, for the management portal's database page. */
+export interface DatabaseStats {
+  /** "PostgreSQL 15.x" on the live site, or the local test store in mock mode. */
+  engine: string;
+  totalBytes: number;
+  /** Plan limit to compare against, when known. */
+  limitBytes: number | null;
+  connections: number | null;
+  tables: { name: string; rows: number; bytes: number }[];
+}
 
 export interface DevlogPost {
   id: string;

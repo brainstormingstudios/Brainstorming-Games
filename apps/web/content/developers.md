@@ -44,7 +44,7 @@ One small script (under 15 KB) gives your game:
 - player accounts, cloud saves and a signed token for your own server;
 - leaderboards, quests and party invites.
 
-Already on CrazyGames? Our shim maps `window.CrazyGames.SDK` calls onto ours, so most games port in minutes.
+There is one SDK to learn, ours, and one short list of rules. Both are in the developer docs.
 
 # Requirements
 

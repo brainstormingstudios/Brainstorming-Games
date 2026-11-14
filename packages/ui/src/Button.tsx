@@ -11,10 +11,9 @@ const base =
   'aria-disabled:opacity-50 aria-disabled:pointer-events-none';
 
 const variants: Record<ButtonVariant, string> = {
-  // Cyan is always a fill with navy text, so it passes contrast on both themes.
-  primary: 'bg-primary text-primary-fg hover:shadow-glow hover:-translate-y-px',
-  secondary:
-    'bg-navy-600 text-white hover:bg-navy-400 light:bg-navy-800 light:hover:bg-navy-600',
+  // The accent is always a fill with ink text, so it passes contrast on both themes.
+  primary: 'bg-primary text-primary-fg hover:-translate-y-px hover:brightness-105 hover:shadow-[0_10px_24px_-12px_var(--primary)]',
+  secondary: 'border border-border bg-surface-2 text-fg hover:border-fg-muted',
   outline: 'border border-border bg-transparent text-fg hover:bg-surface-2',
   ghost: 'bg-transparent text-fg hover:bg-surface-2',
   danger: 'bg-danger text-navy-950 hover:brightness-110',

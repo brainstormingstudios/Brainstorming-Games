@@ -56,10 +56,10 @@ export function fallbackGradient(slug: string): string {
   for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
   const angle = 120 + (h % 90);
   const stops = [
-    ['#0c2a6e', '#1e3f95'],
-    ['#1e3f95', '#00c0f0'],
-    ['#000c30', '#1e3f95'],
-    ['#0c2a6e', '#4a72c8'],
+    ['#ff7a59', '#ffb020'],
+    ['#7c5cff', '#19b8e6'],
+    ['#12a37a', '#b6e24a'],
+    ['#e8467c', '#7c5cff'],
   ][h % 4]!;
   return `linear-gradient(${angle}deg, ${stops[0]}, ${stops[1]})`;
 }

@@ -138,9 +138,9 @@ BG.quests.track('boss_defeated');          // counts towards cross-game quests
 
 `BG.game.settings` is `{ muteAudio, disableChat, lowData, schoolSafe }`. Respect them: hide chat when `disableChat` is true, prefer smaller assets when `lowData` is true. `BG.game.onSettingsChange(cb)` tells you when they change.
 
-## Coming from CrazyGames
+## The rules
 
-Load `bg-crazygames-shim.js` after the SDK and most `window.CrazyGames.SDK` calls work unchanged. See the porting guide in the developer docs.
+What a game must and must not do with the SDK is in [SDK_RULES.md](SDK_RULES.md): one SDK only, the signals every game sends, the ad rules, saves, fairness and the technical limits.
 
 ## Testing your integration
 

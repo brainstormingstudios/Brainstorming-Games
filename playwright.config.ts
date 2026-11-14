@@ -48,17 +48,30 @@ export default defineConfig({
       testMatch: /catalogue\.spec\.ts/,
     },
   ],
-  // The suite runs against the real static export, served the way Cloudflare Pages serves it,
-  // plus the local play origin. Build first: `npm run build`.
+  // The suite runs against the real static exports of all three sites, served the way
+  // Cloudflare Pages serves them, plus the local play origin and database. Build first:
+  // `npm run build`. Every test empties the local database (a backup is kept in .local).
   webServer: [
     {
-      command: 'node scripts/serve-static.mjs --port 3000',
+      command: 'node scripts/serve-static.mjs --site play',
       url: `${SITE}/offline/`,
       reuseExistingServer: !CI,
       timeout: 30_000,
     },
     {
-      command: 'node scripts/dev-services.mjs --port 4100',
+      command: 'node scripts/serve-static.mjs --site developers',
+      url: 'http://localhost:3001/login/',
+      reuseExistingServer: !CI,
+      timeout: 30_000,
+    },
+    {
+      command: 'node scripts/serve-static.mjs --site manage',
+      url: 'http://localhost:3002/login/',
+      reuseExistingServer: !CI,
+      timeout: 30_000,
+    },
+    {
+      command: 'node scripts/dev-services.mjs --port 4100 --no-seed',
       url: 'http://localhost:4100/__mock/health',
       reuseExistingServer: !CI,
       timeout: 30_000,

@@ -36,7 +36,10 @@ import type {
   AdminQuest,
   AdminStudioRow,
   AdminUserRow,
+  DatabaseStats,
   DevlogPost,
+  DiscoveryReport,
+  DiscoveryRow,
   Jam,
   JamDetail,
   JamInput,
@@ -44,6 +47,7 @@ import type {
   PlaytestSummary,
   ReportInput,
   ReportRecord,
+  SiteStats,
   VariantHit,
   VariantStat,
 } from './growthTypes';
@@ -496,7 +500,10 @@ export interface GrowthRepo {
   setFollowing(studioId: string, on: boolean): Promise<void>;
   /** Published devlogs, newest first: everyone's, one studio's or one game's. */
   devlogFeed(options?: { studioSlug?: string; gameId?: string; limit?: number }): Promise<DevlogPost[]>;
+  /** Tile impressions and clicks. `variant` is empty for a game with one cover. */
   recordVariantHits(hits: VariantHit[]): Promise<void>;
+  /** The discovery algorithm's view of one game: the developer's own, or any game for staff. */
+  discovery(gameId: string): Promise<DiscoveryReport | null>;
   /** Developer: the running or finished thumbnail test of an own game. */
   variantStats(gameId: string): Promise<VariantStat[]>;
   /** Whether the signed-in panel member already answered for this game. */
@@ -511,6 +518,10 @@ export interface GrowthRepo {
   report(input: ReportInput): Promise<void>;
 
   // Staff only from here on.
+  /** Every released game with its discovery inputs and score, best first. */
+  discoveryAll(): Promise<DiscoveryRow[]>;
+  siteStats(): Promise<SiteStats>;
+  databaseStats(): Promise<DatabaseStats>;
   adminJams(): Promise<Jam[]>;
   saveJam(input: JamInput): Promise<void>;
   deleteJam(id: string): Promise<void>;
@@ -518,7 +529,8 @@ export interface GrowthRepo {
   reports(): Promise<ReportRecord[]>;
   resolveReport(id: string, status: 'actioned' | 'dismissed'): Promise<void>;
   findUsers(query: string): Promise<AdminUserRow[]>;
-  setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean }): Promise<void>;
+  /** `role` can only be changed by an admin (not by a moderator). */
+  setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean; role?: UserRole }): Promise<void>;
   findStudios(query: string): Promise<AdminStudioRow[]>;
   setStudio(studioId: string, patch: { suspended?: boolean; verified?: boolean }): Promise<void>;
   adminDevlogs(): Promise<AdminDevlogRow[]>;

@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
 export const PLAY = 'http://localhost:4100';
+/** The developer portal and the management portal are separate sites (and separate sign-ins). */
+export const DEV = 'http://localhost:3001';
+export const ADMIN = 'http://localhost:3002';
 const PROBE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'sdk-probe');
 
 const TYPES: Record<string, string> = {
@@ -89,6 +92,9 @@ export async function addGame(page: Page, game: TestGame): Promise<string> {
 
 /** Clears the mock database and all guest data so each test starts from an empty site. */
 export async function resetSite(page: Page): Promise<void> {
+  // The three sites share one local database: empty it (no first-party games either).
+  const reset = await page.request.post(`${PLAY}/__mock/db/reset?seed=0`);
+  expect(reset.ok(), 'reset the local database').toBeTruthy();
   await page.goto('/offline/');
   await page.evaluate(() => {
     window.localStorage.clear();

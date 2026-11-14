@@ -39,3 +39,8 @@ desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+# The developer and management portals: build caches and static exports
+.next-developers
+.next-manage
+out-developers
+out-manage

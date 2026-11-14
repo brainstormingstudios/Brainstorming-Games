@@ -97,7 +97,7 @@ export function validateBuild(entries: readonly ZipEntryInfo[]): BuildValidation
 
 /** Whether HTML or JS source references the SDK (checked on index.html and small scripts). */
 export function mentionsSdk(source: string): boolean {
-  return /bg-sdk\.js|@brainstorming\/sdk|\bBG\.init\s*\(|bg-crazygames-shim/.test(source);
+  return /bg-sdk\.js|@brainstorming\/sdk|\bBG\.init\s*\(/.test(source);
 }
 
 /** Absolute URLs inside index.html (`src="/x.js"`) break on the play origin's sub-folder. */

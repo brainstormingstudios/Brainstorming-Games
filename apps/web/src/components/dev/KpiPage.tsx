@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge, Button, Card, Skeleton, chipClass, type BadgeTone } from '@brainstorming/ui';
+import { DiscoveryPanel } from '@/components/analytics/Discovery';
 import { addDays, BENCHMARKS, grade, kpisToCsv, summarise, type Grade } from '@/lib/domain/kpis';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 
@@ -74,6 +75,7 @@ export function KpiPage() {
           </Button>
         </div>
       </div>
+      {id ? <DiscoveryPanel gameId={id} /> : null}
       {kpis.loading && !kpis.data ? (
         <Skeleton className="h-64 w-full" />
       ) : (

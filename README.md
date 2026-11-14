@@ -81,7 +81,8 @@ Lint and typecheck are clean.
   jam manager, moderation (reports, bans, studio suspension, hiding devlogs), quest and locker
   editors, monthly revenue run, audit log.
 - **SDK** (`@brainstorming/sdk`, 5.4 KB gzipped): ads with shared rules, saves, leaderboards,
-  quests, invites, and a CrazyGames-compatible shim. See [docs/SDK.md](docs/SDK.md).
+  quests and invites. It is the only SDK on the platform; the rules are in
+  [docs/SDK_RULES.md](docs/SDK_RULES.md). See [docs/SDK.md](docs/SDK.md).
 - **Ads:** off until configured. Never over or inside the game frame, never on `/dev`, `/admin`
   or policy pages. Minors, visitors of unknown age and school-safe mode get non-personalised
   ads only.

@@ -295,6 +295,14 @@ function Users() {
               {u.isMinor ? <Badge>{t('minor')}</Badge> : null}
               {u.banned ? <Badge tone="danger">{t('banned')}</Badge> : null}
               <span className="ml-auto flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void act(async () => (await getRepo()).growth.setUser(u.id, { role: u.role === 'admin' ? 'player' : 'admin' }), t('roleSaved'))}
+                  data-testid="user-role"
+                >
+                  {u.role === 'admin' ? t('removeAdmin') : t('makeAdmin')}
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => void act(async () => (await getRepo()).growth.setUser(u.id, { resetUsername: true }), t('nameReset'))}>
                   {t('resetName')}
                 </Button>

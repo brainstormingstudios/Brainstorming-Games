@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -14,17 +14,16 @@ import {
   Switch,
   TextAreaField,
   buttonClass,
-  cn,
   useToast,
   type BadgeTone,
 } from '@brainstorming/ui';
 import { PreQaReportView } from '@/components/dev/PreQaReportView';
 import { GameStatusBadge } from '@/components/dev/StatusBadge';
 import { GameFrame } from '@/components/game/GameFrame';
-import { localizePath, splitLocale } from '@/i18n/config';
+import { localizePath } from '@/i18n/config';
 import { Link, useLocale } from '@/i18n/navigation';
 import { requestLogin } from '@/lib/auth/loginPrompt';
-import { PLAY_ORIGIN } from '@/lib/config';
+import { IS_MOCK, PLAY_ORIGIN } from '@/lib/config';
 import { getRepo, RepoError } from '@/lib/data';
 import { QA_CHECKLIST, type QaChecklistItem } from '@/lib/data/devTypes';
 import type { GameSummary } from '@/lib/data/types';
@@ -35,25 +34,10 @@ import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { isStaff, useSession } from '@/lib/hooks/useSession';
 
-const NAV = [
-  ['overview', '/admin'],
-  ['qa', '/admin/qa'],
-  ['spark', '/admin/spark'],
-  ['featured', '/admin/home'],
-  ['jams', '/admin/jams'],
-  ['moderation', '/admin/moderation'],
-  ['progression', '/admin/progression'],
-  ['revenue', '/admin/revenue'],
-  ['audit', '/admin/audit'],
-] as const;
-
-export function AdminShell({ children, extraNav = [] }: { children: ReactNode; extraNav?: readonly (readonly [string, string])[] }) {
+export function AdminShell({ children }: { children: ReactNode }) {
   const t = useTranslations('admin');
   const ta = useTranslations('auth');
   const { user, ready } = useSession();
-  const { path } = splitLocale(usePathname() ?? '/');
-  const clean = path.replace(/\/+$/, '') || '/';
-  const items = [...NAV, ...extraNav];
   let body: ReactNode = children;
   if (!ready) body = <Skeleton className="h-64 w-full" />;
   else if (!user)
@@ -64,30 +48,20 @@ export function AdminShell({ children, extraNav = [] }: { children: ReactNode; e
         action={<Button onClick={() => void requestLogin()}>{ta('logIn')}</Button>}
       />
     );
-  else if (!isStaff(user)) body = <EmptyState title={t('notAllowedTitle')} description={t('notAllowedBody')} art="sad" />;
-  return (
-    <div className="page" data-testid="admin-console">
-      <nav aria-label={t('nav.label')} className="-mx-1 mb-5 flex gap-1 overflow-x-auto pb-1">
-        {items.map(([key, href]) => {
-          const active = href === '/admin' ? clean === '/admin' : clean.startsWith(href);
-          return (
-            <Link
-              key={key}
-              href={href}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'shrink-0 rounded-full px-3.5 py-2 text-sm font-bold whitespace-nowrap',
-                active ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
-              )}
-            >
-              {t(`nav.${key}` as 'nav.overview')}
-            </Link>
-          );
-        })}
-      </nav>
-      {body}
-    </div>
-  );
+  else if (!isStaff(user))
+    body = (
+      <EmptyState
+        title={t('notAllowedTitle')}
+        description={
+          <>
+            {t('notAllowedBody')} <span data-testid="not-allowed-email">{t('notAllowedWho', { email: user.email })}</span>
+            <span className="mt-2 block">{IS_MOCK ? t('notAllowedHowMock') : t('notAllowedHowLive')}</span>
+          </>
+        }
+        art="sad"
+      />
+    );
+  return <div className="page">{body}</div>;
 }
 
 export function useAct() {

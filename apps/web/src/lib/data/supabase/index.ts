@@ -69,6 +69,7 @@ export interface GameCardRow {
   votes: number;
   likes: number;
   dislikes: number;
+  rank_score?: number | null;
   version_id: string | null;
   version: string | null;
   storage_prefix: string | null;
@@ -93,7 +94,7 @@ const CARD_COLUMNS =
   'id,slug,title,short_description,category,tags,orientation,platforms,is_multiplayer,size_bytes,' +
   'initial_load_bytes,status,school_safe,released_at,updated_at,spark_started_at,studio_id,studio_slug,' +
   'studio_name,studio_country,studio_first_party,studio_verified,media,plays,plays_7d,rating10,votes,' +
-  'likes,dislikes,version_id,version,storage_prefix,entry_file,uses_sdk';
+  'likes,dislikes,version_id,version,storage_prefix,entry_file,uses_sdk,rank_score';
 
 export function cardToSummary(row: GameCardRow): GameSummary {
   const media = row.media ?? [];
@@ -139,6 +140,7 @@ export function cardToSummary(row: GameCardRow): GameSummary {
       votes: Number(row.votes ?? 0),
       likes: Number(row.likes ?? 0),
       dislikes: Number(row.dislikes ?? 0),
+      rank: Number(row.rank_score ?? 0),
     },
     versionId: row.version_id,
     version: row.version,
@@ -167,6 +169,7 @@ export function pageToDetail(row: GamePageRow): GameDetail {
 export { toRepoError } from './errors';
 
 const SORT_COLUMN = {
+  recommended: 'rank_score',
   popular: 'popular_score',
   trending: 'trending_score',
   new: 'released_at',

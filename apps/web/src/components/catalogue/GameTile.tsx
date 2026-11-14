@@ -46,18 +46,18 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
   const prebuilt = isPrebuilt(game);
   const canPreview = Boolean(game.preview) && !lowData;
 
-  // Thumbnail A/B test: each visitor always sees the same cover; impressions and clicks are
-  // counted per cover. The tracker is only downloaded for games that run a test.
+  // Every tile shown is an impression and every click is counted: the discovery algorithm's raw
+  // input. In a thumbnail A/B test each visitor always sees the same cover, counted per cover.
   const link = useRef<HTMLAnchorElement>(null);
   const testing = game.coverVariants.length >= 2;
   const [variant, setVariant] = useState<string | null>(null);
   useEffect(() => {
-    if (!testing) return;
-    setVariant(variantFor(getAnonId(), game.id, game.coverVariants.map((m) => m.variantLabel ?? '')));
+    // '' means "no test": the tile is still counted for the discovery algorithm.
+    setVariant(testing ? variantFor(getAnonId(), game.id, game.coverVariants.map((m) => m.variantLabel ?? '')) : '');
   }, [testing, game.id, game.coverVariants]);
   useEffect(() => {
     const el = link.current;
-    if (!variant || !el || typeof IntersectionObserver === 'undefined') return;
+    if (variant == null || !el || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
@@ -97,8 +97,8 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
       hard={!prebuilt}
       data-testid="game-tile"
       data-slug={game.slug}
-      data-variant={variant ?? undefined}
-      className={cn('group block rounded-card', className)}
+      data-variant={variant || undefined}
+      className={cn('game-tile group block rounded-card', className)}
       onPointerEnter={(e) => {
         if (e.pointerType !== 'mouse') return;
         arm(HOVER_DELAY, false);
@@ -119,7 +119,7 @@ export function GameTile({ game, priority, sizes, className }: GameTileProps) {
           e.preventDefault();
           return;
         }
-        if (variant) void import('@/lib/growth/abTracker').then((m) => m.recordClick(game.id, variant));
+        if (variant != null) void import('@/lib/growth/abTracker').then((m) => m.recordClick(game.id, variant));
       }}
     >
       <span className="relative block aspect-video overflow-hidden rounded-card border border-border bg-surface shadow-card transition-[transform,box-shadow] duration-200 ease-(--ease-spring) group-hover:-translate-y-1 group-hover:shadow-glow group-focus-visible:shadow-glow">

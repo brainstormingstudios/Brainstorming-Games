@@ -51,7 +51,7 @@ function apply(p: Prefs): void {
   if (p.schoolSafe) d.setAttribute('data-school-safe', 'true');
   else d.removeAttribute('data-school-safe');
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', p.theme === 'light' ? '#fcfcfc' : '#0c2a6e');
+  if (meta) meta.setAttribute('content', p.theme === 'light' ? '#ffffff' : '#0d0e10');
 }
 
 export function getPrefs(): Prefs {

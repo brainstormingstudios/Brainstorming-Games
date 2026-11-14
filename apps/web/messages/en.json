@@ -62,7 +62,7 @@
     "new": "New",
     "trending": "Trending",
     "updated": "Updated",
-    "originals": "Originals",
+    "originals": "BS Originals",
     "multiplayer": "Multiplayer",
     "quests": "Quests",
     "leaderboards": "Leaderboards",
@@ -170,12 +170,13 @@
       "fresh": "Fresh games",
       "trending": "Trending",
       "new": "New",
-      "originals": "Brainstorming Originals",
+      "originals": "BS Originals",
       "multiplayer": "Multiplayer",
       "made-in-india": "Made in India",
       "under-10mb": "Under 10 MB",
       "updated": "Updated",
-      "top-rated": "Top rated"
+      "top-rated": "Top rated",
+      "top-picks": "Top picks"
     },
     "railScrollLeft": "Scroll {title} left",
     "railScrollRight": "Scroll {title} right"
@@ -374,7 +375,7 @@
     "games": "Games by {name}",
     "gamesCount": "{count, plural, one {# game} other {# games}}",
     "verified": "Verified studio",
-    "firstParty": "Brainstorming Original",
+    "firstParty": "BS Original",
     "noGamesTitle": "No games published yet",
     "noGamesBody": "This studio has not released a game here yet.",
     "notFoundTitle": "We could not find that studio",
@@ -431,7 +432,6 @@
       "feedback": "Feedback",
       "devlogs": "Devlogs",
       "studio": "Studio page",
-      "referrals": "Referrals",
       "payouts": "Payouts",
       "docs": "Docs",
       "jams": "Jams"
@@ -783,6 +783,34 @@
       "playtestFun": "Fun",
       "playtestClarity": "Clarity",
       "playtestAgain": "Would play again"
+    },
+    "discovery": {
+      "title": "Brain Rank",
+      "intro": "Brain Rank is how the site decides which games get the best shelf space. It rewards games people click, keep playing and come back to. It cannot be bought.",
+      "exploring": "Exploration: {count, number} more guaranteed impressions before the numbers alone decide.",
+      "explored": "Exploration finished: the score now rests on how players respond.",
+      "ctr": "Click rate",
+      "session": "Avg. session",
+      "d1": "Day-1 return",
+      "funnelTitle": "From impression to a real play",
+      "funnel": {
+        "impressions": "Impressions",
+        "clicks": "Clicks",
+        "plays": "Plays",
+        "engaged": "1 min+ plays"
+      },
+      "window": "Last 14 days. Each rate is shown against the step before it.",
+      "breakdownTitle": "Where the score comes from",
+      "parts": {
+        "clickRate": "Click rate",
+        "conversion": "Conversion",
+        "playtime": "Playtime",
+        "retention": "Retention",
+        "rating": "Rating",
+        "exploration": "Exploration",
+        "freshness": "Freshness"
+      },
+      "chartTitle": "Impressions and clicks, last 30 days"
     }
   },
   "admin": {
@@ -792,20 +820,17 @@
       "overview": "Overview",
       "qa": "QA queue",
       "spark": "Spark decisions",
-      "featured": "Featured",
-      "quests": "Quests",
-      "cosmetics": "Cosmetics",
+      "featured": "Homepage",
       "jams": "Jams",
-      "reports": "Reports",
-      "users": "Users",
-      "studios": "Studios",
       "revenue": "Revenue",
       "audit": "Audit log",
       "moderation": "Moderation",
-      "progression": "Quests & locker"
+      "progression": "Quests & locker",
+      "games": "Games",
+      "database": "Database"
     },
-    "notAllowedTitle": "Staff only",
-    "notAllowedBody": "This console is for the Brainstorming Games team.",
+    "notAllowedTitle": "This portal is for the site owners",
+    "notAllowedBody": "Only admins of Brainstorming Games can open the management portal.",
     "overview": {
       "title": "Overview",
       "inQueue": "Waiting for review",
@@ -1018,7 +1043,10 @@
       "hide": "Hide",
       "unhide": "Show again",
       "hiddenDone": "Devlog hidden.",
-      "shownDone": "Devlog visible again."
+      "shownDone": "Devlog visible again.",
+      "makeAdmin": "Make admin",
+      "removeAdmin": "Remove admin",
+      "roleSaved": "Role updated."
     },
     "progression": {
       "title": "Quests & locker",
@@ -1034,7 +1062,74 @@
       "active": "Active",
       "save": "Save",
       "saved": "Saved."
-    }
+    },
+    "site": {
+      "title": "Site overview",
+      "intro": "What is happening on Brainstorming Games, and what is waiting for a decision.",
+      "runJobs": "Run the daily job now",
+      "jobsDone": "Daily job finished.",
+      "needsYou": "Needs a decision",
+      "allClear": "Nothing waiting",
+      "queues": {
+        "inReview": "Submissions to review",
+        "sparkDue": "Spark Launches to decide",
+        "openReports": "Open reports"
+      },
+      "stats": {
+        "players7d": "Players (7 days)",
+        "plays7d": "Plays (7 days)",
+        "playsToday": "Plays today",
+        "impressions7d": "Impressions (7 days)",
+        "gamesLive": "Games live",
+        "studios": "Studios",
+        "accounts": "Accounts",
+        "plays": "Plays",
+        "players": "Players",
+        "impressions": "Impressions"
+      },
+      "playsChart": "Plays and players, last 30 days",
+      "impressionsChart": "Tile impressions, last 30 days",
+      "statusTitle": "Games by status"
+    },
+    "games": {
+      "title": "Games",
+      "intro": "Every released game, ordered by Brain Rank, with the 14-day numbers the discovery algorithm uses. Open a game for its full analysis.",
+      "search": "Find a game or studio",
+      "empty": "No released games yet",
+      "open": "Analysis",
+      "back": "All games",
+      "cols": {
+        "rank": "Rank",
+        "game": "Game",
+        "status": "Status",
+        "impressions": "Impressions",
+        "ctr": "Click rate",
+        "plays": "Plays",
+        "conversion": "1 min+",
+        "session": "Session",
+        "d1": "Day 1",
+        "likes": "Liked"
+      }
+    },
+    "database": {
+      "title": "Database",
+      "intro": "The size of the PostgreSQL database and where the space goes. For queries, backups and the full schema, connect pgAdmin.",
+      "refresh": "Refresh",
+      "engine": "Engine",
+      "size": "Size",
+      "ofLimit": "{pct}% of {limit}",
+      "tables": "Tables",
+      "table": "Table",
+      "rows": "Rows",
+      "share": "Share of the largest table",
+      "connections": "Connections",
+      "nearLimit": "The database is over 80% of the plan limit. Old events are the first thing to archive; see docs/DATABASE.md.",
+      "pgadminTitle": "Working in pgAdmin",
+      "pgadminBody": "The live database is plain PostgreSQL, so pgAdmin connects to it directly with the connection details from the database host. The guide lists the steps and the useful queries."
+    },
+    "notAllowedWho": "You are signed in as {email}.",
+    "notAllowedHowMock": "On this machine, add your e-mail to NEXT_PUBLIC_OWNER_EMAILS in the .env.local file, restart, and sign in again.",
+    "notAllowedHowLive": "Ask an existing admin to give your account the admin role under Moderation, Players."
   },
   "player": {
     "points": "{count, plural, one {# Brain Point} other {# Brain Points}}",
@@ -1388,5 +1483,16 @@
     "clipSaved": "Clip saved to your downloads.",
     "clipFailed": "This browser could not record a clip.",
     "clipShareText": "Watch my clip of {title}"
+  },
+  "portal": {
+    "developers": {
+      "name": "Developers",
+      "home": "Developer portal home"
+    },
+    "manage": {
+      "name": "Management",
+      "home": "Management portal home"
+    },
+    "playerSite": "Player site"
   }
 }

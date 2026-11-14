@@ -25,7 +25,35 @@ export type Topic =
   | 'devlogs'
   | 'saves';
 
+export const ALL_TOPICS: readonly Topic[] = [
+  'catalogue',
+  'ratings',
+  'favourites',
+  'history',
+  'profile',
+  'quests',
+  'points',
+  'friends',
+  'party',
+  'notifications',
+  'leaderboards',
+  'studio',
+  'dev-games',
+  'qa',
+  'admin',
+  'revenue',
+  'jams',
+  'devlogs',
+  'saves',
+];
+
 type Listener = () => void;
+
+let externalSignal: (() => void) | null = null;
+/** Called just before a signal from another tab is delivered (the mock database drops its cache). */
+export function onExternalSignal(fn: () => void): void {
+  externalSignal = fn;
+}
 
 const listeners = new Map<string, Set<Listener>>();
 let channel: BroadcastChannel | null | undefined;
@@ -39,7 +67,11 @@ function getChannel(): BroadcastChannel | null {
   channel = new BroadcastChannel('bg-bus');
   channel.onmessage = (event: MessageEvent<unknown>) => {
     const data = event.data as { topic?: unknown } | null;
-    if (data && typeof data.topic === 'string') notify(data.topic);
+    if (data && typeof data.topic === 'string') {
+      // Another tab changed something: whatever is cached about the shared store is suspect.
+      externalSignal?.();
+      notify(data.topic);
+    }
   };
   return channel;
 }

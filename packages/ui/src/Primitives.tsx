@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn';
 
-/** Surface container with the brand's 16px radius. */
+/** Surface container: one flat step above the page, with a crisp edge. */
 export function Card({
   className,
   interactive,

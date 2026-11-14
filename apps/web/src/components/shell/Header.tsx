@@ -15,10 +15,7 @@ export function Header() {
       <SidebarToggle />
       <Logo label={t('logoHome')} />
       {IS_MOCK ? (
-        <span
-          title={tc('mockModeHint')}
-          className="hidden rounded-full border border-warning/70 px-2 py-0.5 text-[0.68rem] font-extrabold tracking-wide text-warning uppercase xl:inline light:border-navy-950 light:text-navy-950"
-        >
+        <span title={tc('mockModeHint')} className="mock-badge hidden xl:inline">
           {tc('mockMode')}
         </span>
       ) : null}

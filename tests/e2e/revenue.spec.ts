@@ -1,17 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { addGame, deleteUpload, resetSite, signIn, uploadProbe } from './helpers';
-
-async function switchUser(page: Page, email: string, username: string, birthYear = '1990') {
-  // Wait until the header knows whether someone is signed in.
-  await expect(page.getByTestId('account-button').or(page.getByTestId('login-button'))).toBeVisible();
-  if (await page.getByTestId('account-button').isVisible()) {
-    await page.getByTestId('account-button').click();
-    await page.getByTestId('logout-button').click();
-  }
-  await page.getByTestId('login-button').click();
-  await signIn(page, email, username, birthYear);
-  await expect(page.locator('dialog[open]')).toHaveCount(0);
-}
+import { expect, test } from '@playwright/test';
+import { ADMIN, DEV, addGame, deleteUpload, resetSite, signIn, uploadProbe } from './helpers';
 
 /**
  * Phase 4: in-game ads through the SDK create impressions; the admin uploads a revenue CSV,
@@ -26,7 +14,7 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
     await resetSite(page);
 
     // A studio with a game in Rise Launch (ads on).
-    await page.goto('/dev/');
+    await page.goto(`${DEV}/`);
     await page.getByTestId('dev-login').click();
     await signIn(page, 'studio@example.test', 'studio_owner');
     await page.getByTestId('studio-name').fill('Probe Studio');
@@ -49,8 +37,10 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
     await page.goto('/');
 
     // The admin runs the month.
-    await switchUser(page, 'admin@example.test', 'finance_admin', '1980');
-    await page.goto('/admin/revenue/');
+    await page.goto(`${ADMIN}/revenue/`);
+    await page.getByTestId('login-button').click();
+    await signIn(page, 'admin@example.test', 'finance_admin', '1980');
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
     await page.getByLabel('Month').fill(new Date().toISOString().slice(0, 7));
     await page.getByTestId('revenue-csv').fill('country,gross,refunds,invalid_traffic\nALL,120.00,10.00,10.00');
     await page.getByTestId('revenue-preview').click();
@@ -63,8 +53,7 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
     await expect(page.getByText('Statements published to studios.')).toBeVisible();
 
     // The studio sees it, downloads the PDF and adds payout details.
-    await page.goto('/dev/payouts/');
-    await switchUser(page, 'studio@example.test', 'studio_owner');
+    await page.goto(`${DEV}/payouts/`);
     await expect(page.getByTestId('statement-row')).toContainText('Due $70.00');
     const download = page.waitForEvent('download');
     await page.getByTestId('statement-row').getByRole('button', { name: 'PDF' }).click();

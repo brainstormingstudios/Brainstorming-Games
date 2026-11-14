@@ -68,6 +68,8 @@ export interface GameStats {
   votes: number;
   likes: number;
   dislikes: number;
+  /** Brain Rank, 0 to 100: the discovery score (see lib/domain/ranking.ts). Absent on old snapshots. */
+  rank?: number;
 }
 
 /** Everything a tile, rail or search result needs. */
@@ -136,7 +138,7 @@ export interface StudioDetail extends StudioRef {
   createdAt: string;
 }
 
-export type SortOrder = 'popular' | 'trending' | 'new' | 'updated' | 'rating';
+export type SortOrder = 'recommended' | 'popular' | 'trending' | 'new' | 'updated' | 'rating';
 
 export interface GameQuery {
   category?: string;
@@ -177,6 +179,7 @@ export interface SiteConfig {
 }
 
 export type RailId =
+  | 'top-picks'
   | 'fresh'
   | 'trending'
   | 'new'
@@ -188,6 +191,7 @@ export type RailId =
   | 'top-rated';
 
 export const DEFAULT_RAIL_ORDER: RailId[] = [
+  'top-picks',
   'trending',
   'fresh',
   'new',

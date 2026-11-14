@@ -11,6 +11,7 @@ import {
   type MediaKind,
   type StudioDetail,
 } from '../types';
+import { rankOf } from './discovery';
 import {
   readSiteConfig,
   readTable,
@@ -63,6 +64,7 @@ export function statsFor(gameId: string, t: Pick<CatalogueTables, 'ratings' | 'g
     votes: likes + dislikes,
     likes,
     dislikes,
+    rank: rankOf(gameId),
   };
 }
 

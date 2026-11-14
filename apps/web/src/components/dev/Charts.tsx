@@ -32,7 +32,7 @@ export function TrendChart({
   format?: (v: number) => string;
   label: string;
 }) {
-  const colours = ['#00c0f0', '#4a72c8', '#22c55e', '#f59e0b'];
+  const colours = ['#ffd43b', '#6fe3ff', '#3ddc84', '#ff8a5c'];
   const fmt = (v: unknown) => (typeof v === 'number' && format ? format(v) : String(v ?? ''));
   const common = (
     <>

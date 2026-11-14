@@ -9,6 +9,7 @@ import { currentUserId, requireProfile, requireStaff, updateUser } from './auth'
 import { publicSummaries } from './catalogue';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable, takeToken, type MockTables } from './db';
 import { ownerOf, requireStudio } from './dev';
+import { addImpressions, databaseStats, discoveryAll, discoveryFor, siteStats } from './discovery';
 import { awardPoints } from './social';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,39}$/;
@@ -130,19 +131,45 @@ export const mockGrowth: GrowthRepo = {
   },
   async recordVariantHits(hits) {
     if (hits.length === 0 || !takeToken(`variants:${getAnonId()}`, 30, 60_000)) return;
+    const capped = hits.slice(0, 100).map((h) => ({
+      gameId: h.gameId,
+      variant: h.variant,
+      impressions: Math.min(Math.max(0, Math.round(h.impressions)), 5),
+      clicks: Math.min(Math.max(0, Math.round(h.clicks)), 2),
+    }));
+    // Every tile counts for discovery; covers in a thumbnail test are also counted per cover.
+    const known = new Set(readTable('games').map((g) => g.id));
+    addImpressions(capped.filter((h) => known.has(h.gameId)));
     const media = readTable('media');
+    const tested = capped.filter((h) => h.variant && media.some((m) => m.gameId === h.gameId && m.kind === 'cover_landscape' && m.isActive && m.variantLabel === h.variant));
+    if (tested.length === 0) return;
     mutateTable('variantStats', (rows) => {
-      for (const h of hits.slice(0, 100)) {
-        // Only covers that are really part of a running test are counted.
-        if (!media.some((m) => m.gameId === h.gameId && m.kind === 'cover_landscape' && m.isActive && m.variantLabel === h.variant)) continue;
+      for (const h of tested) {
         let row = rows.find((r) => r.gameId === h.gameId && r.label === h.variant);
         if (!row) rows.push((row = { gameId: h.gameId, label: h.variant, impressions: 0, clicks: 0, winner: false, decidedAt: null }));
         if (row.decidedAt) continue;
-        row.impressions += Math.min(Math.max(0, Math.round(h.impressions)), 5);
-        row.clicks += Math.min(Math.max(0, Math.round(h.clicks)), 2);
+        row.impressions += h.impressions;
+        row.clicks += h.clicks;
       }
     });
     pickAbWinners();
+  },
+  async discovery(gameId) {
+    const me = requireProfile();
+    if (ownerOf(gameId) !== me.id && me.role === 'player') fail('not_allowed');
+    return discoveryFor(gameId);
+  },
+  async discoveryAll() {
+    requireStaff();
+    return discoveryAll();
+  },
+  async siteStats() {
+    requireStaff();
+    return siteStats();
+  },
+  async databaseStats() {
+    requireStaff();
+    return databaseStats();
   },
   async variantStats(gameId) {
     const studio = requireStudio();
@@ -302,7 +329,9 @@ export const mockGrowth: GrowthRepo = {
   async setUser(userId, patch) {
     const staff = requireStaff();
     if (userId === staff.id) fail('not_allowed', 'You cannot moderate your own account.');
+    if (patch.role && staff.role !== 'admin') fail('not_allowed', 'Only an admin can change roles.');
     updateUser(userId, {
+      ...(patch.role ? { role: patch.role } : {}),
       ...(patch.banned != null ? { bannedAt: patch.banned ? nowIso() : null } : {}),
       ...(patch.resetUsername ? { username: `player_${userId.replace(/-/g, '').slice(0, 10)}`, displayName: '' } : {}),
     });
