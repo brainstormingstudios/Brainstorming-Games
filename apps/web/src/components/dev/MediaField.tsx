@@ -133,10 +133,12 @@ export interface MediaFieldProps {
   required?: boolean;
   variantLabel?: string | null;
   label?: string;
+  /** A released game: a new file waits for review and the reviewed one cannot just be removed. */
+  released?: boolean;
 }
 
 /** One cover or preview video: validate in the browser, crop if needed, make variants, upload. */
-export function MediaField({ gameId, kind, current, required, variantLabel = null, label }: MediaFieldProps) {
+export function MediaField({ gameId, kind, current, required, variantLabel = null, label, released = false }: MediaFieldProps) {
   const t = useTranslations('dev.media');
   const tc = useTranslations('common');
   const toast = useToast();
@@ -212,9 +214,14 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
     <div className="flex flex-col gap-2 rounded-card border border-border bg-surface-3 p-3" data-testid={`media-${kind}${variantLabel ? `-${variantLabel}` : ''}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-bold">{title}</span>
-        <Badge tone={required ? 'warning' : 'neutral'}>{required ? t('required') : t('optional')}</Badge>
+        {current?.pending ? (
+          <Badge tone="glow" data-testid={`media-pending-${kind}`}>{t('pendingReview')}</Badge>
+        ) : (
+          <Badge tone={required ? 'warning' : 'neutral'}>{required ? t('required') : t('optional')}</Badge>
+        )}
       </div>
       <p className="text-xs text-fg-muted">{isVideo ? t('videoSpec') : t('size', spec!)}</p>
+      {released ? <p className="text-xs text-fg-muted">{current?.pending ? t('pendingHint') : t('releasedHint')}</p> : null}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -267,7 +274,7 @@ export function MediaField({ gameId, kind, current, required, variantLabel = nul
         <Button size="sm" variant="secondary" onClick={() => input.current?.click()} loading={progress != null}>
           {current ? t('replace') : t('choose')}
         </Button>
-        {current ? (
+        {current && (!released || current.pending || variantLabel) ? (
           <Button
             size="sm"
             variant="ghost"

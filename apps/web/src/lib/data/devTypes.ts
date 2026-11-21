@@ -121,6 +121,29 @@ export interface DevVersion {
 export interface DevMedia extends MediaAsset {
   id: string;
   isActive: boolean;
+  /** A new file for a released game, waiting for review (players still see the old one). */
+  pending: boolean;
+}
+
+/** Changes to a released game's page that wait for review. */
+export interface PendingEdit {
+  /** The held fields (their new values are already in `DevGameDetail.game`). */
+  fields: (keyof GameEditable)[];
+  /** The values players see now, for the same fields. */
+  live: Partial<GameEditable>;
+  submittedAt: string;
+}
+
+/** A released game with changes waiting for staff (management portal). */
+export interface PendingChangeItem {
+  gameId: string;
+  title: string;
+  slug: string;
+  studioName: string;
+  submittedAt: string;
+  changes: Partial<GameEditable>;
+  live: Partial<GameEditable>;
+  media: { id: string; kind: MediaKind; url: string; variantLabel: string | null; liveUrl: string | null }[];
 }
 
 export interface LaunchRecord {
@@ -160,6 +183,8 @@ export interface DevGameDetail {
   media: DevMedia[];
   launches: LaunchRecord[];
   reviews: ReviewRecord[];
+  /** Held edits of a released game; `game` already shows their new values. */
+  pendingEdit: PendingEdit | null;
 }
 
 export interface UploadFile {

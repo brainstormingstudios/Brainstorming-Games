@@ -16,6 +16,7 @@ import { reviewDeadline } from '@/lib/domain/review';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
 import { GrowthPanel } from './GrowthPanel';
+import { LiveChangesNotice } from './LiveChanges';
 import { PreQaReportView } from './PreQaReportView';
 import { GameStatusBadge, QaBadge } from './StatusBadge';
 import { useDev } from './DevShell';
@@ -93,6 +94,8 @@ export function GameManage() {
           ) : null}
         </span>
       </div>
+
+      {d.pendingEdit || d.media.some((m) => m.pending) ? <LiveChangesNotice detail={d} /> : null}
 
       {game.status === 'spark' && game.sparkStartedAt ? (
         <Card className="p-4" data-testid="spark-status">
@@ -222,6 +225,16 @@ export function GameManage() {
                   </Button>
                 ) : null}
                 <PreviewLinkButton href={previewHref} versionId={v.id} />
+                {v.minorUpdate && v.qaStatus === 'pre_qa_passed' && ['rise', 'featured'].includes(game.status) ? (
+                  <Button
+                    size="sm"
+                    loading={busy === `mp-${v.id}`}
+                    onClick={() => void act(`mp-${v.id}`, async () => (await getRepo()).dev.publishMinorUpdate(v.id), t('minorPublished'))}
+                    data-testid="publish-minor"
+                  >
+                    {t('publishMinor')}
+                  </Button>
+                ) : null}
                 {v.qaStatus === 'approved' && !v.isCurrent ? (
                   <Button
                     size="sm"

@@ -6,7 +6,8 @@ import { Mail } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Button, Mascot, TextField } from '@brainstorming/ui';
 import { useLocale } from '@/i18n/navigation';
-import { AGE_GATE, MASCOT_NAME } from '@/lib/config';
+import { AGE_GATE, MASCOT_NAME, TURNSTILE_SITE_KEY } from '@/lib/config';
+import { Turnstile } from './Turnstile';
 import { getRepo, RepoError } from '@/lib/data';
 import type { SessionUser } from '@/lib/data/repo';
 
@@ -41,6 +42,10 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState<string | null>(null);
   const [consentSent, setConsentSent] = useState(false);
+  // Bot check before a sign-in e-mail is sent (only when Turnstile is configured).
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const needCaptcha = Boolean(TURNSTILE_SITE_KEY);
 
   const afterSignIn = async () => {
     const repo = await getRepo();
@@ -56,11 +61,15 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
       setError(t('invalidEmail'));
       return;
     }
+    if (needCaptcha && !captcha) {
+      setError(t('captchaNeeded'));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const repo = await getRepo();
-      const result = await repo.auth.signInWithEmail(email.trim(), next);
+      const result = await repo.auth.signInWithEmail(email.trim(), next, captcha);
       if (result.status === 'code_sent') {
         setDevCode(result.devCode ?? null);
         setCode('');
@@ -70,6 +79,8 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
       setError(errorText(err, tc('errorBody')));
     } finally {
       setBusy(false);
+      // A token works once.
+      if (needCaptcha) setCaptchaReset((n) => n + 1);
     }
   };
 
@@ -143,7 +154,8 @@ export function LoginForm({ onDone, next, initialUser }: LoginFormProps) {
               data-testid="login-email"
               required
             />
-            <Button type="submit" size="lg" loading={busy} icon={<Mail aria-hidden="true" className="size-5" />} data-testid="login-submit">
+            <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+            <Button type="submit" size="lg" loading={busy} disabled={needCaptcha && !captcha} icon={<Mail aria-hidden="true" className="size-5" />} data-testid="login-submit">
               {t('continueEmail')}
             </Button>
           </form>

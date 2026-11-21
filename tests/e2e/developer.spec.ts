@@ -137,4 +137,27 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await expect(page.getByTestId('dev-game-row').getByTestId('game-status')).toHaveText('Basic Launch');
   await page.getByRole('link', { name: 'KPIs' }).click();
   await expect(page.getByTestId('kpi-page').locator('[data-kpi="plays"] dd').first()).not.toHaveText('0');
+
+  // 8. No bait-and-switch: a live game's new title waits for review; players keep the old one.
+  await page.goto(`${DEV}/`);
+  await page.getByTestId('dev-game-row').getByRole('link', { name: 'Edit' }).first().click();
+  await expect(page.getByTestId('live-changes-info')).toBeVisible();
+  await page.getByTestId('wiz-title').fill('Totally Different Game');
+  await expect(page.getByTestId('save-state')).toHaveText('Draft saved', { timeout: 10_000 });
+  await page.reload();
+  await expect(page.getByTestId('live-changes')).toContainText('Title');
+  await expect(page.getByTestId('wiz-title')).toHaveValue('Totally Different Game');
+  await page.goto('/game/probe-quest/');
+  await expect(page.getByRole('heading', { level: 1, name: 'Probe Quest' })).toBeVisible();
+
+  // Staff see the change beside the live value and approve it.
+  await page.goto(`${ADMIN}/qa/`);
+  if (await page.getByTestId('owner-code').isVisible().catch(() => false)) await unlockOwner(page, 'admin@example.test');
+  const change = page.getByTestId('live-change');
+  await expect(change).toHaveCount(1);
+  await expect(change.getByTestId('live-change-new')).toHaveText('Totally Different Game');
+  await change.getByTestId('live-change-approve').click();
+  await expect(page.getByTestId('live-change')).toHaveCount(0);
+  await page.goto('/game/probe-quest/');
+  await expect(page.getByRole('heading', { level: 1, name: 'Totally Different Game' })).toBeVisible();
 });

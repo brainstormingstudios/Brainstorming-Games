@@ -435,7 +435,8 @@
     "codeOther": "Use a different e-mail",
     "codeWrong": "That code is not right, or it has expired.",
     "devCode": "E-mail is not set up on this computer yet, so here is your code:",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "captchaNeeded": "Please finish the quick robot check first."
   },
   "dev": {
     "metaTitle": "Developer portal",
@@ -630,7 +631,10 @@
       "abBody": "Not sure which cover gets more clicks? Upload one or two other versions of your landscape cover. Players see one of them at random, and after each has been shown 1,000 times the cover that more people clicked becomes your main cover automatically. Players just see a normal cover; they never know a test is running.",
       "variant": "Variant {label}",
       "addVariant": "Add variant",
-      "dropHere": "Drop a file here"
+      "dropHere": "Drop a file here",
+      "pendingReview": "Waiting for review",
+      "pendingHint": "Players still see the reviewed file. This one goes live when we approve it.",
+      "releasedHint": "Your game is live: a new file waits for our review before players see it."
     },
     "build": {
       "intro": "Drag a .zip of your web build here. It is unpacked and checked in your browser, then uploaded and tested automatically.",
@@ -692,7 +696,9 @@
       "trailerTitle": "Vertical trailer for Shorts and Reels",
       "trailerBody": "A free 9:16 video made from your preview video, with your game's title and your referral link (players who come through it earn you 85%).",
       "reviewBy": "We'll review it by {date}.",
-      "reviewPromise": "A person reviews every submission within 72 hours. If we take longer, your next Spotlight Boost is free."
+      "reviewPromise": "A person reviews every submission within 72 hours. If we take longer, your next Spotlight Boost is free.",
+      "publishMinor": "Publish update",
+      "minorPublished": "Update published"
     },
     "report": {
       "pass": "Pass",
@@ -969,6 +975,28 @@
         "freshness": "Freshness"
       },
       "chartTitle": "Impressions and clicks, last 30 days"
+    },
+    "liveChanges": {
+      "info": "Your game is live. Changes to its page (title, descriptions, tags, covers and videos) wait for our review before players see them.",
+      "title": "Changes waiting for review",
+      "body": "Players still see the reviewed page. We check changes to live games so a page can never be swapped for something else.",
+      "fields": "Page text: {fields}",
+      "media": "{count, plural, one {# new cover or video} other {# new covers or videos}}",
+      "withdraw": "Withdraw these changes",
+      "withdrawn": "Changes withdrawn",
+      "field": {
+        "title": "Title",
+        "shortDescription": "Short description",
+        "descriptionMd": "Description",
+        "howToPlayMd": "How to play",
+        "controls": "Controls",
+        "faq": "FAQ",
+        "featuresMd": "Features",
+        "tipsMd": "Tips",
+        "category": "Category",
+        "tags": "Tags",
+        "maxScorePerSec": "Highest score per second"
+      }
     }
   },
   "admin": {
@@ -1463,6 +1491,40 @@
       "reference": "Transfer reference",
       "recordPayout": "Record payout",
       "paid": "Payout recorded."
+    },
+    "liveChanges": {
+      "title": "Changes to live games",
+      "intro": "Released games whose page text, covers or videos changed. Nothing here is live until you approve it. Decline anything misleading, off-topic or different from the game players will get.",
+      "empty": "No changes waiting.",
+      "field": "Field",
+      "live": "Live now",
+      "proposed": "Proposed",
+      "note": "Note to the developer",
+      "noteHint": "Needed to decline (at least a sentence).",
+      "approve": "Approve and publish",
+      "decline": "Decline",
+      "approved": "Changes are live",
+      "declined": "Changes declined",
+      "fields": {
+        "title": "Title",
+        "shortDescription": "Short description",
+        "descriptionMd": "Description",
+        "howToPlayMd": "How to play",
+        "controls": "Controls",
+        "faq": "FAQ",
+        "featuresMd": "Features",
+        "tipsMd": "Tips",
+        "category": "Category",
+        "tags": "Tags",
+        "maxScorePerSec": "Highest score per second"
+      },
+      "kinds": {
+        "cover_landscape": "Landscape cover",
+        "cover_portrait": "Portrait cover",
+        "cover_square": "Square cover",
+        "preview_landscape": "Landscape video",
+        "preview_portrait": "Portrait video"
+      }
     }
   },
   "player": {

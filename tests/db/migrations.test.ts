@@ -194,7 +194,8 @@ describe('player functions', () => {
       `select plays, conversion_1min, ad_impressions, ad_impressions_by_country as by from public.daily_game_kpis where game_id = $1`,
       [gameId],
     );
-    expect(rows[0]).toMatchObject({ plays: 1, ad_impressions: 1, by: { IN: 1 } });
+    // A country the caller sends is ignored (only the platform's header counts): ZZ = unknown.
+    expect(rows[0]).toMatchObject({ plays: 1, ad_impressions: 1, by: { ZZ: 1 } });
     expect(Number(rows[0]!.conversion_1min)).toBe(1);
 
     // The signed-in player's streak and quests moved because of the play.

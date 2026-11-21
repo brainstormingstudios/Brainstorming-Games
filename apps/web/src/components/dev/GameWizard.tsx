@@ -28,6 +28,7 @@ import type { ControlRow, MediaKind, Platform } from '@/lib/data/types';
 import { Markdown, wordCount } from '@/lib/domain/markdown';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
+import { LiveChangesNotice } from './LiveChanges';
 import { MediaField } from './MediaField';
 import { PreQaReportView } from './PreQaReportView';
 
@@ -280,7 +281,11 @@ export function GameWizard() {
 
   if (gameId && detail.loading && !detail.data) return <Skeleton className="h-96 w-full" />;
   const d = detail.data ?? null;
-  const media = (kind: MediaKind, label: string | null = null) => d?.media.find((m) => m.kind === kind && m.variantLabel === label && m.isActive) ?? null;
+  // A file waiting for review is shown in place of the live one (the developer sees their latest).
+  const media = (kind: MediaKind, label: string | null = null) =>
+    d?.media.find((m) => m.kind === kind && m.variantLabel === label && m.pending) ??
+    d?.media.find((m) => m.kind === kind && m.variantLabel === label && m.isActive) ??
+    null;
   const latest = d?.versions[0] ?? null;
   const preQaOk = latest ? ['pre_qa_passed', 'pre_qa_warn', 'approved', 'in_review'].includes(latest.qaStatus) : false;
   // Why the build row is not ticked yet, in plain words.
@@ -483,7 +488,7 @@ export function GameWizard() {
         </details>
       </div>
     ),
-    media: () => <MediaStep gameId={gameId!} media={media} />,
+    media: () => <MediaStep gameId={gameId!} media={media} released={Boolean(d?.game.releasedAt)} />,
     build: () => (
       <div className="flex flex-col gap-6">
         <BuildUpload gameId={gameId!} suggestedVersion={nextVersion(d)} isLive={Boolean(d?.game.releasedAt)} onUploaded={() => detail.refresh()} />
@@ -550,6 +555,7 @@ export function GameWizard() {
           </span>
         ) : null}
       </div>
+      {d ? <LiveChangesNotice detail={d} /> : null}
       <ol className="mb-5 flex gap-1 overflow-x-auto" aria-label={t('titleNew')}>
         {STEPS.map((s, i) => (
           <li key={s}>
@@ -593,24 +599,40 @@ export function GameWizard() {
   );
 }
 
-function MediaStep({ gameId, media }: { gameId: string; media: (kind: MediaKind, label?: string | null) => DevGameDetail['media'][number] | null }) {
+function MediaStep({
+  gameId,
+  media,
+  released,
+}: {
+  gameId: string;
+  media: (kind: MediaKind, label?: string | null) => DevGameDetail['media'][number] | null;
+  released: boolean;
+}) {
   const t = useTranslations('dev.media');
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-fg-muted">{t('intro')}</p>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <MediaField gameId={gameId} kind="cover_landscape" current={media('cover_landscape')} required />
-        <MediaField gameId={gameId} kind="cover_portrait" current={media('cover_portrait')} required />
-        <MediaField gameId={gameId} kind="cover_square" current={media('cover_square')} required />
-        <MediaField gameId={gameId} kind="preview_landscape" current={media('preview_landscape')} required />
-        <MediaField gameId={gameId} kind="preview_portrait" current={media('preview_portrait')} />
+        <MediaField gameId={gameId} kind="cover_landscape" current={media('cover_landscape')} required released={released} />
+        <MediaField gameId={gameId} kind="cover_portrait" current={media('cover_portrait')} required released={released} />
+        <MediaField gameId={gameId} kind="cover_square" current={media('cover_square')} required released={released} />
+        <MediaField gameId={gameId} kind="preview_landscape" current={media('preview_landscape')} required released={released} />
+        <MediaField gameId={gameId} kind="preview_portrait" current={media('preview_portrait')} released={released} />
       </div>
       <section className="rounded-card border border-border p-4">
         <h3 className="text-lg font-semibold">{t('abTitle')}</h3>
         <p className="max-w-3xl text-sm text-fg-muted">{t('abBody')}</p>
         <div className="mt-3 grid gap-4 md:grid-cols-3">
           {['B', 'C'].map((label) => (
-            <MediaField key={label} gameId={gameId} kind="cover_landscape" variantLabel={label} label={t('variant', { label })} current={media('cover_landscape', label)} />
+            <MediaField
+              key={label}
+              gameId={gameId}
+              kind="cover_landscape"
+              variantLabel={label}
+              label={t('variant', { label })}
+              current={media('cover_landscape', label)}
+              released={released}
+            />
           ))}
         </div>
       </section>

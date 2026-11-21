@@ -36,6 +36,18 @@ if (cookieDomain && new URL(PLAY_ORIGIN).hostname.endsWith(cookieDomain)) {
   process.exit(1);
 }
 
+// A build for a real domain must never run in mock mode: mock mode keeps everyone's data in the
+// browser, signs anyone in without checks and shows test payments.
+const isLocalUrl = (u) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/.test(u);
+if (!isLocalUrl(SITE_URL) && !SUPABASE_URL && !process.env.BG_CATALOGUE_FIXTURE) {
+  console.error(`[postbuild] ${SITE_URL} is a live address but NEXT_PUBLIC_SUPABASE_URL is empty, so this build would run in mock (test) mode. Set the Supabase settings.`);
+  process.exit(1);
+}
+if (!isLocalUrl(SITE_URL) && process.env.NEXT_PUBLIC_INGAME_ADS === 'mock' && ADSENSE) {
+  console.error('[postbuild] NEXT_PUBLIC_INGAME_ADS=mock on a live build with AdSense on. Use adsense-h5 or none.');
+  process.exit(1);
+}
+
 if (!existsSync(OUT)) {
   console.error(`[postbuild] ${OUT} does not exist. Run the Next build first.`);
   process.exit(1);
@@ -107,6 +119,11 @@ if (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && SITE !== 'manage') {
   src.frame.push('https://api.razorpay.com', 'https://checkout.razorpay.com');
   src.connect.push('https://api.razorpay.com', 'https://lumberjack.razorpay.com');
   src.img.push('https://cdn.razorpay.com');
+}
+// Cloudflare Turnstile, the bot check on sign-in, only when its site key is configured.
+if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+  src.script.push('https://challenges.cloudflare.com');
+  src.frame.push('https://challenges.cloudflare.com');
 }
 if (CF_ANALYTICS) {
   src.script.push('https://static.cloudflareinsights.com');

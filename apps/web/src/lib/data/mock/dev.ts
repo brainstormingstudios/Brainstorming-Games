@@ -2,6 +2,7 @@ import { PRIMARY_CATEGORY_SLUGS, tagSlug } from '@/lib/catalogue/categories';
 import { normaliseSkills } from '@/lib/domain/brain';
 import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/config';
 import { computeDailyKpis, percentRank, summarise, type KpiEvent, type KpiRating, type KpiResult } from '@/lib/domain/kpis';
+import { HELD_FIELDS, splitLivePatch } from '@/lib/domain/liveEdits';
 import type { PreQaReport } from '@/lib/domain/preqa';
 import { runAutoReview } from '../../../../../../supabase/functions/_shared/autoReview';
 import { emitTopic } from '../bus';
@@ -133,7 +134,13 @@ export function mediaFor(gameId: string): DevMedia[] {
       placeholder: m.placeholder,
       variantLabel: m.variantLabel,
       isActive: m.isActive,
+      pending: Boolean(m.pending),
     }));
+}
+
+/** The held edit of a released game, as GameEditable fields. */
+export function pendingChangesFor(gameId: string): Partial<GameEditable> {
+  return (readTable('pendingEdits').find((e) => e.gameId === gameId)?.changes ?? {}) as Partial<GameEditable>;
 }
 
 function myStudioRow(): MockStudio | null {
@@ -244,12 +251,27 @@ export function publishVersion(versionId: string): void {
   });
 }
 
-/** Stores a pre-QA report (mirror of set_pre_qa_report). Minor updates of live games auto-publish. */
+/**
+ * A minor update skips human review only when it is close to the reviewed build (mirror of
+ * app.minor_update_ok): same entry file, half to one and a half times the size, a similar file
+ * count. Mock uploads have no open links, so there is no waiting time here.
+ */
+export function minorUpdateOk(v: MockVersion): boolean {
+  const g = readTable('games').find((x) => x.id === v.gameId);
+  const cur = readTable('versions').find((x) => x.id === g?.currentVersionId);
+  const report = v.preQaReport as PreQaReport | null;
+  return Boolean(
+    v.minorUpdate && g && (g.status === 'rise' || g.status === 'featured') && v.qaStatus === 'pre_qa_passed' && report?.status === 'pass' &&
+      cur && v.entryFile === cur.entryFile && v.totalBytes >= cur.totalBytes * 0.5 && v.totalBytes <= cur.totalBytes * 1.5 &&
+      Math.abs(v.fileCount - cur.fileCount) <= Math.max(10, Math.floor(cur.fileCount / 4)),
+  );
+}
+
+/** Stores a pre-QA report (mirror of set_pre_qa_report). Close minor updates of live games auto-publish. */
 export function applyPreQaReport(versionId: string, report: PreQaReport): QaStatus {
   const status: QaStatus = report.status === 'pass' ? 'pre_qa_passed' : report.status === 'warn' ? 'pre_qa_warn' : 'pre_qa_failed';
   const v = updateVersionRow(versionId, { preQaReport: report, qaStatus: status, usesSdk: report.usesSdk });
-  const g = readTable('games').find((x) => x.id === v.gameId);
-  if (report.status === 'pass' && v.minorUpdate && g && (g.status === 'rise' || g.status === 'featured')) {
+  if (minorUpdateOk(v) && takeToken(`minor-publish:${v.gameId}`, 3, 7 * 86_400_000)) {
     publishVersion(versionId);
     return 'approved';
   }
@@ -478,9 +500,24 @@ export const mockDev: DevRepo = {
       if (g.releasedAt) fail('invalid', 'The address of a released game cannot change.');
       if (readTable('games').some((x) => x.slug === fields.slug && x.id !== gameId)) fail('conflict', 'That address is taken.');
     }
-    updateGameRow(gameId, fields);
+    if (!g.releasedAt) {
+      updateGameRow(gameId, fields);
+      emitTopic('dev-games');
+      return;
+    }
+    // A released game: what players read waits for review (mirror of app.hold_live_edits).
+    const { now, held } = splitLivePatch(g as unknown as Partial<GameEditable>, fields as Partial<GameEditable>);
+    updateGameRow(gameId, now as Partial<MockGame>);
+    if (Object.keys(held).length > 0) {
+      const user = requireUser();
+      mutateTable('pendingEdits', (rows) => {
+        const row = rows.find((e) => e.gameId === gameId);
+        if (row) Object.assign(row, { changes: { ...row.changes, ...held }, submittedBy: user.id, submittedAt: nowIso() });
+        else rows.push({ gameId, changes: held, submittedBy: user.id, submittedAt: nowIso() });
+      });
+    }
     emitTopic('dev-games');
-    if (g.releasedAt) emitTopic('catalogue');
+    emitTopic('qa');
   },
   async deleteGame(gameId) {
     const g = requireOwnGame(gameId);
@@ -495,7 +532,9 @@ export const mockDev: DevRepo = {
     return SLUG.test(s) && !readTable('games').some((g) => g.slug === s && g.id !== exceptGameId);
   },
   async uploadMedia(gameId, media, onProgress) {
-    requireOwnGame(gameId);
+    const game = requireOwnGame(gameId);
+    // A new file for a released game waits for review; the live one stays (app.guard_media).
+    const held = Boolean(game.releasedAt);
     const id = newId();
     const isVideo = media.kind.startsWith('preview');
     const files = media.variants.map((v) => ({
@@ -515,27 +554,49 @@ export const mockDev: DevRepo = {
       placeholder: media.placeholder,
       variantLabel: media.variantLabel,
       phash: media.phash ?? null,
-      isActive: true,
+      isActive: !held,
+      pending: held,
       createdAt: nowIso(),
     };
     mutateTable('media', (rows) => {
-      // A new main cover replaces the old one; A/B variants sit beside it.
-      for (const m of rows) {
-        if (m.gameId === gameId && m.kind === media.kind && m.variantLabel === media.variantLabel) m.isActive = false;
-      }
-      const rest = rows.filter((m) => !(m.gameId === gameId && m.kind === media.kind && m.variantLabel === media.variantLabel));
+      // A new main cover replaces the old one; A/B variants sit beside it. For a released game
+      // only an earlier waiting file is replaced.
+      const same = (m: MockMedia) => m.gameId === gameId && m.kind === media.kind && m.variantLabel === media.variantLabel && (!held || m.pending);
+      const rest = rows.filter((m) => !same(m));
       rest.push(row);
       return rest;
     });
     updateGameRow(gameId, {});
     emitTopic('dev-games');
-    return { ...row };
+    if (held) emitTopic('qa');
+    return { ...row, pending: held };
   },
   async removeMedia(gameId, mediaId) {
-    requireOwnGame(gameId);
-    mutateTable('media', (rows) => rows.filter((m) => !(m.id === mediaId && m.gameId === gameId)));
+    const g = requireOwnGame(gameId);
+    const m = readTable('media').find((x) => x.id === mediaId && x.gameId === gameId);
+    if (m && g.releasedAt && !m.pending && m.variantLabel == null && m.isActive) {
+      fail('invalid', 'Upload a replacement instead: a released game always keeps its reviewed cover and video.');
+    }
+    mutateTable('media', (rows) => rows.filter((x) => !(x.id === mediaId && x.gameId === gameId)));
     updateGameRow(gameId, {});
     emitTopic('dev-games');
+  },
+  async discardPendingEdit(gameId) {
+    requireOwnGame(gameId);
+    mutateTable('pendingEdits', (rows) => rows.filter((e) => e.gameId !== gameId));
+    mutateTable('media', (rows) => rows.filter((m) => !(m.gameId === gameId && m.pending)));
+    emitTopic('dev-games');
+    emitTopic('qa');
+  },
+  async publishMinorUpdate(versionId) {
+    const v = readTable('versions').find((x) => x.id === versionId);
+    if (!v) fail('not_found');
+    requireOwnGame(v.gameId);
+    if (!minorUpdateOk(v)) fail('invalid', 'This update is too different from the reviewed build. Send it for review instead.');
+    if (!takeToken(`minor-publish:${v.gameId}`, 3, 7 * 86_400_000)) fail('rate_limited');
+    publishVersion(versionId);
+    emitTopic('dev-games');
+    emitTopic('catalogue');
   },
   async createVersion(input, onProgress) {
     const g = requireOwnGame(input.gameId);
@@ -739,8 +800,16 @@ export const mockDev: DevRepo = {
 };
 
 export function detailFor(g: MockGame): DevGameDetail {
+  const live = toDevGame(g);
+  const changes = pendingChangesFor(g.id);
+  const fields = HELD_FIELDS.filter((f) => f in changes);
+  const held = readTable('pendingEdits').find((e) => e.gameId === g.id);
   return {
-    game: toDevGame(g),
+    // The developer edits their latest text; players keep the reviewed text until it is approved.
+    game: { ...live, ...changes },
+    pendingEdit: held && fields.length > 0
+      ? { fields: [...fields], live: Object.fromEntries(fields.map((f) => [f, live[f]])), submittedAt: held.submittedAt }
+      : null,
     versions: readTable('versions')
       .filter((v) => v.gameId === g.id)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))

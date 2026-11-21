@@ -2,14 +2,14 @@
 // and by the daily job as a safety net). Sends queued e-mails from the official Gmail address
 // through a Google Apps Script web app (free; see scripts/mail/AppsScript.gs and docs/EMAIL.md).
 // Auth: the MAIL_OUTBOX_SECRET header, set on the database webhook.
-import { adminClient } from '../_shared/http.ts';
+import { adminClient, sameSecret } from '../_shared/http.ts';
 import { renderMail, type MailTemplate } from '../_shared/mailTemplates.ts';
 
 const env = (k: string) => (Deno.env.get(k) ?? '').trim();
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
-  if (!env('MAIL_OUTBOX_SECRET') || req.headers.get('x-outbox-secret') !== env('MAIL_OUTBOX_SECRET')) return new Response('forbidden', { status: 403 });
+  if (!sameSecret(req.headers.get('x-outbox-secret'), env('MAIL_OUTBOX_SECRET'))) return new Response('forbidden', { status: 403 });
   const db = adminClient();
   const { data: queued } = await db.from('email_outbox').select('*').eq('status', 'queued').lt('attempts', 5).order('created_at').limit(40);
   const ctx = {

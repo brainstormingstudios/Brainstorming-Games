@@ -8,6 +8,8 @@ export function toRepoError(error: { message: string; code?: string }): RepoErro
   if (text.includes('not_allowed') || error.code === '42501') return new RepoError('not_allowed');
   if (text.includes('not_found')) return new RepoError('not_found');
   if (text.includes('conflict') || error.code === '23505') return new RepoError('conflict');
+  // 0021: upload links last 5 minutes; nothing is approved or published while they could be used.
+  if (text.includes('uploads_open')) return new RepoError('invalid', 'The upload links for this build are still open. Try again in about 5 minutes.');
   // Brain Points swaps (0018): the reason travels in the message.
   for (const reason of ['insufficient_points', 'monthly_limit', 'other_plan']) if (text.includes(reason)) return new RepoError('invalid', reason);
   if (text.includes('invalid') || error.code === '23514' || error.code === '22023') {

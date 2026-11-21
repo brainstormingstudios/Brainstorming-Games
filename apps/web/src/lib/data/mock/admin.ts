@@ -4,13 +4,13 @@ import { reviewLate } from '@/lib/domain/review';
 import { creditDiscoverers } from './discover';
 import { summarise } from '@/lib/domain/kpis';
 import { emitTopic } from '../bus';
-import type { QaQueueItem, SparkRow } from '../devTypes';
+import type { PendingChangeItem, QaQueueItem, SparkRow } from '../devTypes';
 import type { AdminRepo } from '../repo';
 import { requireStaff } from './auth';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable, writeSiteConfig } from './db';
 import { pickAbWinners } from './growth';
 import { sendMail } from './mail';
-import { kpisFor, mediaFor, ownerOf, studioEmail, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
+import { kpisFor, mediaFor, ownerOf, pendingChangesFor, studioEmail, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -51,7 +51,7 @@ export const mockAdmin: AdminRepo = {
       game: toDevGame(g),
       studio: toDevStudio(s),
       version: toDevVersion(v, g.currentVersionId),
-      media: mediaFor(g.id),
+      media: mediaFor(g.id).filter((m) => !m.pending),
       previous: readTable('reviews')
         .filter((r) => r.gameId === g.id)
         .map((r) => ({ action: r.action, notes: r.notes, createdAt: r.createdAt, versionId: r.versionId })),
@@ -98,6 +98,65 @@ export const mockAdmin: AdminRepo = {
     if (action === 'approve') sendMail(to, 'review_approved', { game: g.title, gameId: g.id, notes: notes.trim(), update: Boolean(g.releasedAt) && g.status !== 'in_review' });
     else sendMail(to, action === 'changes' ? 'review_changes' : 'review_rejected', { game: g.title, gameId: g.id, notes });
     audit(staff.id, `qa_${action}`, 'game_version', versionId, { gameId: g.id, notes, schoolSafe });
+    emitTopic('qa');
+    emitTopic('dev-games');
+    emitTopic('catalogue');
+    emitTopic('notifications');
+  },
+  async pendingChanges() {
+    requireStaff();
+    const studios = new Map(readTable('studios').map((s) => [s.id, s.name]));
+    const edits = readTable('pendingEdits');
+    const media = readTable('media');
+    return readTable('games')
+      .filter((g) => edits.some((e) => e.gameId === g.id) || media.some((m) => m.gameId === g.id && m.pending))
+      .map((g): PendingChangeItem => {
+        const changes = pendingChangesFor(g.id);
+        const held = media.filter((m) => m.gameId === g.id && m.pending);
+        const since = [edits.find((e) => e.gameId === g.id)?.submittedAt, ...held.map((m) => m.createdAt)].filter(Boolean).sort()[0]!;
+        const live = toDevGame(g);
+        return {
+          gameId: g.id,
+          title: g.title,
+          slug: g.slug,
+          studioName: studios.get(g.studioId) ?? '',
+          submittedAt: since,
+          changes,
+          live: Object.fromEntries(Object.keys(changes).map((k) => [k, live[k as keyof typeof live]])),
+          media: held.map((m) => ({
+            id: m.id,
+            kind: m.kind,
+            url: m.url,
+            variantLabel: m.variantLabel,
+            liveUrl: media.find((l) => l.gameId === g.id && l.kind === m.kind && !l.pending && l.isActive && l.variantLabel === m.variantLabel)?.url ?? null,
+          })),
+        };
+      })
+      .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+  },
+  async decideChange(gameId, approve, note) {
+    const staff = requireStaff();
+    if (!approve && note.trim().length < 10) fail('invalid', 'Write at least a sentence for the developer.');
+    const g = readTable('games').find((x) => x.id === gameId);
+    if (!g) fail('not_found');
+    const changes = pendingChangesFor(gameId);
+    if (approve) {
+      updateGameRow(gameId, changes as Parameters<typeof updateGameRow>[1]);
+      mutateTable('media', (rows) => {
+        const held = rows.filter((m) => m.gameId === gameId && m.pending);
+        const replaced = (m: (typeof rows)[number]) =>
+          m.gameId === gameId && !m.pending && held.some((h) => h.kind === m.kind && h.variantLabel === m.variantLabel);
+        const rest = rows.filter((m) => !replaced(m));
+        for (const m of rest) if (m.gameId === gameId && m.pending) Object.assign(m, { pending: false, isActive: true });
+        return rest;
+      });
+      notify(ownerOf(gameId), 'qa', 'Changes approved', 'Your updated page is live.', `/dev/games/view/?id=${gameId}`);
+    } else {
+      mutateTable('media', (rows) => rows.filter((m) => !(m.gameId === gameId && m.pending)));
+      notify(ownerOf(gameId), 'qa', 'Changes declined', note, `/dev/games/view/?id=${gameId}`);
+    }
+    mutateTable('pendingEdits', (rows) => rows.filter((e) => e.gameId !== gameId));
+    audit(staff.id, approve ? 'change_approve' : 'change_decline', 'game', gameId, { changes, note });
     emitTopic('qa');
     emitTopic('dev-games');
     emitTopic('catalogue');

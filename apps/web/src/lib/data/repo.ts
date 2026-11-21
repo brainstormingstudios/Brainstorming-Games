@@ -30,6 +30,7 @@ import type {
   NewVersionInput,
   PreviewInfo,
   QaChecklistItem,
+  PendingChangeItem,
   QaQueueItem,
   QaReviewItem,
   ReferralStats,
@@ -181,7 +182,8 @@ export interface ProfilePatch {
 
 export interface AuthRepo {
   session(): Promise<SessionUser | null>;
-  signInWithEmail(email: string, next?: string): Promise<SignInResult>;
+  /** `captchaToken`: the Turnstile token, when the bot check is on. */
+  signInWithEmail(email: string, next?: string, captchaToken?: string | null): Promise<SignInResult>;
   /** Finishes an e-mail sign-in with the 6-digit code. Throws `invalid` for a wrong or expired code. */
   verifyEmailCode(email: string, code: string): Promise<void>;
   signInWithProvider(provider: OAuthProvider, next?: string): Promise<void>;
@@ -413,6 +415,10 @@ export interface DevRepo {
   slugAvailable(slug: string, exceptGameId?: string): Promise<boolean>;
   uploadMedia(gameId: string, media: MediaUpload, onProgress?: (fraction: number) => void): Promise<DevMedia>;
   removeMedia(gameId: string, mediaId: string): Promise<void>;
+  /** Withdraws a released game's held text edits and held media. */
+  discardPendingEdit(gameId: string): Promise<void>;
+  /** Publishes a clean minor update once its upload links have closed (a few minutes after upload). */
+  publishMinorUpdate(versionId: string): Promise<void>;
   createVersion(
     input: NewVersionInput,
     onProgress?: (fraction: number) => void,
@@ -443,6 +449,9 @@ export interface AdminRepo {
     checklist: Partial<Record<QaChecklistItem, boolean>>;
     schoolSafe: boolean;
   }): Promise<void>;
+  /** Released games whose page text or media changes wait for review. */
+  pendingChanges(): Promise<PendingChangeItem[]>;
+  decideChange(gameId: string, approve: boolean, note: string): Promise<void>;
   sparkGames(): Promise<SparkRow[]>;
   sparkDecide(gameId: string, promote: boolean, reason: string, kpis: Record<string, unknown>): Promise<void>;
   setGameStatus(gameId: string, status: GameStatus, reason: string): Promise<void>;

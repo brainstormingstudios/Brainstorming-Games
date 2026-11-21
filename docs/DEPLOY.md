@@ -62,6 +62,17 @@ git push -u origin main
    - `SITE_URL`, `PAGES_DEPLOY_HOOK_URL` (step 4 below)
    - `GITHUB_DISPATCH_TOKEN`, `GITHUB_REPO`, `PRE_QA_CALLBACK_SECRET` (the pre-QA bot)
    - `RESEND_API_KEY`, `MAIL_FROM` (parental-consent e-mails; without them minors cannot be approved)
+   - `BG_EDGE_KEY`: 32 random bytes, hex. The database must know the same key, so in the SQL
+     editor run `select app.set_secret('edge_key', '<the same value>');` (only a hash is stored).
+     Without it, player IPs seen through the Edge Functions all look like Supabase's server and
+     the per-IP caps on plays and ad views cannot tell people apart.
+8. Lock media to your own storage (covers and videos may only come from your project's "media"
+   bucket, which migration 0021 creates). In the SQL editor:
+
+   ```sql
+   insert into public.site_config (key, value) values ('media_host', '{"url": "https://<project-ref>.supabase.co"}')
+   on conflict (key) do update set value = excluded.value;
+   ```
 
 ## 3. Cloudflare R2 (game builds)
 
@@ -71,7 +82,9 @@ git push -u origin main
    accounts.
 3. Add a CORS rule that allows `PUT` from your site's origin (developers upload straight from
    the browser with presigned URLs) and `GET` from the player site and developer portal origins
-   (the vertical-trailer maker draws preview videos onto a canvas, which needs CORS).
+   (the vertical-trailer maker draws preview videos onto a canvas, which needs CORS). The `PUT`
+   rule must allow the request headers `content-type` and `if-none-match`: upload links are
+   signed for one file's exact type and size and are write-once.
 4. Create an R2 API token with read and write on that bucket and put its values in the
    Supabase secrets from step 2.
 
@@ -156,6 +169,19 @@ Without the keys, the site shows a clearly marked test checkout where no money m
 ## 11. E-mails
 
 See [EMAIL.md](EMAIL.md).
+
+### Bot check on sign-in (Cloudflare Turnstile, free)
+
+Without it, a script can ask for thousands of sign-in e-mails, flood strangers' inboxes from our
+address and use up the daily sending limit so real players cannot sign in.
+
+1. Cloudflare dashboard > Turnstile > Add widget, mode **Managed**, domains: the three sites.
+2. Put the **site key** in `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (GitHub variable for the build).
+3. Put the **secret key** in Supabase > Authentication > Attack Protection > Enable CAPTCHA
+   protection > Turnstile. Turn this on only after a build with the site key is live, or sign-in
+   stops working.
+4. In Supabase > Authentication > Rate Limits, keep e-mail sending low (for example 30 an hour)
+   and the OTP verification limit at its default.
 
 ## 12. Monthly routine
 

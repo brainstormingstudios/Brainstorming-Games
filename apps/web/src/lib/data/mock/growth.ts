@@ -63,7 +63,7 @@ export function pickAbWinners(): number {
     });
     mutateTable('media', (rows) => {
       for (const m of rows) {
-        if (m.gameId !== gameId || m.kind !== 'cover_landscape' || m.variantLabel == null) continue;
+        if (m.gameId !== gameId || m.kind !== 'cover_landscape' || m.variantLabel == null || m.pending) continue;
         m.isActive = m.variantLabel === winner;
         if (m.isActive) m.variantLabel = null;
       }

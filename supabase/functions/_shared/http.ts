@@ -28,8 +28,27 @@ export function preflight(req: Request): Response | null {
   return req.method === 'OPTIONS' ? new Response(null, { status: 204, headers: cors(req) }) : null;
 }
 
+/**
+ * The player's IP. Cloudflare's header first (it replaces any copy the client sends); the first
+ * X-Forwarded-For entry is written by the client and is never trusted.
+ */
 export function clientIp(req: Request): string {
-  return (req.headers.get('x-forwarded-for') ?? '').split(',')[0]!.trim();
+  const cf = req.headers.get('cf-connecting-ip')?.trim();
+  if (cf) return cf;
+  const real = req.headers.get('x-real-ip')?.trim();
+  if (real) return real;
+  const xff = (req.headers.get('x-forwarded-for') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return xff[xff.length - 1] ?? '';
+}
+
+/** Compares secrets in constant time, so response timing reveals nothing about them. */
+export function sameSecret(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const x = new TextEncoder().encode(a);
+  const y = new TextEncoder().encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
 }
 
 /** A client that acts as the caller (their JWT), so RLS and auth.uid() apply. */
@@ -39,6 +58,10 @@ export function userClient(req: Request): SupabaseClient {
       headers: {
         authorization: req.headers.get('authorization') ?? '',
         'x-forwarded-for': clientIp(req),
+        // The database trusts x-bg-client-ip (and a country the events function passes) only
+        // with this key: see app.client_ip() in 0020_security_fraud.sql.
+        'x-bg-client-ip': clientIp(req),
+        'x-bg-edge-key': Deno.env.get('BG_EDGE_KEY') ?? '',
       },
     },
     auth: { persistSession: false },

@@ -1,14 +1,14 @@
 // POST /functions/v1/pre-qa-report { versionId, report } with header x-pre-qa-secret.
 // Called by the pre-QA GitHub Actions run. Stores the report through set_pre_qa_report(), which
 // also auto-publishes clean minor updates of live games.
-import { adminClient, json } from '../_shared/http.ts';
+import { adminClient, json, sameSecret } from '../_shared/http.ts';
 
 const MAX_REPORT_BYTES = 600_000;
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(req, 405, { error: 'method' });
   const secret = Deno.env.get('PRE_QA_CALLBACK_SECRET');
-  if (!secret || req.headers.get('x-pre-qa-secret') !== secret) return json(req, 401, { error: 'unauthorised' });
+  if (!sameSecret(req.headers.get('x-pre-qa-secret'), secret)) return json(req, 401, { error: 'unauthorised' });
   const text = await req.text();
   if (text.length > MAX_REPORT_BYTES) return json(req, 413, { error: 'report too large' });
   const { versionId, report } = JSON.parse(text) as { versionId?: string; report?: { status?: string; checks?: unknown[] } };

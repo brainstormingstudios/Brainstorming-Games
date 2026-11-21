@@ -76,6 +76,8 @@ export const OWNER_EMAILS = (process.env.NEXT_PUBLIC_OWNER_EMAILS ?? '')
  * button is Google's own, and the same Google account always opens the same Brainstorming account.
  */
 export const GOOGLE_CLIENT_ID = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim();
+/** Cloudflare Turnstile site key: the bot check before a sign-in e-mail is sent. Empty = off. */
+export const TURNSTILE_SITE_KEY = (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
 
 /** Payments: Razorpay's public key id. Empty means the local test checkout (no money moves). */
 export const RAZORPAY_KEY_ID = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '').trim();

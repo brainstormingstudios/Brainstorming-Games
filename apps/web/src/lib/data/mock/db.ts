@@ -107,6 +107,8 @@ export interface MockMedia extends MediaAsset {
   phash?: string | null;
   gameId: string;
   isActive: boolean;
+  /** A new file for a released game, waiting for review. */
+  pending?: boolean;
   createdAt: string;
 }
 
@@ -334,6 +336,8 @@ export interface MockTables {
   creatorPayouts: CreatorPayoutRow[];
   boostCredits: { id: string; studioId: string; versionId: string; createdAt: string; usedAt: string | null; usedBoostId: string | null }[];
   creatorPayoutProfiles: { creatorId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
+  /** Held edits of released games (mirror of game_pending_edits). */
+  pendingEdits: { gameId: string; changes: Record<string, unknown>; submittedBy: string; submittedAt: string }[];
 }
 
 export type TableName = keyof MockTables;

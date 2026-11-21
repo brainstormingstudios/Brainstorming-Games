@@ -1,6 +1,7 @@
 import { SITE_URL } from '@/lib/config';
 import { normaliseSkills } from '@/lib/domain/brain';
 import { summarise, type DailyKpi, type KpiResult } from '@/lib/domain/kpis';
+import { HELD_COLUMNS, HELD_FIELDS } from '@/lib/domain/liveEdits';
 import { isSparkWindowOver } from '@/lib/domain/spark';
 import type { PreQaReport } from '@/lib/domain/preqa';
 import { emitTopic } from '../bus';
@@ -11,6 +12,7 @@ import type {
   DevStudio,
   DevVersion,
   GameEditable,
+  PendingChangeItem,
   PreviewInfo,
   QaQueueItem,
   QaStatus,
@@ -122,7 +124,15 @@ function toMedia(r: Row): DevMedia {
     placeholder: (r.placeholder as string | null) ?? null,
     variantLabel: (r.variant_label as string | null) ?? null,
     isActive: Boolean(r.is_active),
+    pending: Boolean(r.pending),
   };
+}
+
+/** Database changes (column names) to GameEditable fields. */
+function heldToFields(changes: Row): Partial<GameEditable> {
+  const out: Record<string, unknown> = {};
+  for (const f of HELD_FIELDS) if (HELD_COLUMNS[f] in changes) out[f] = changes[HELD_COLUMNS[f]];
+  return out as Partial<GameEditable>;
 }
 
 function editableToRow(p: Partial<GameEditable>): Row {
@@ -195,14 +205,23 @@ async function detail(gameId: string): Promise<DevGameDetail | null> {
   const db = getSupabase();
   const game = check(await db.from('games').select('*, game_stats(plays_total, rating10)').eq('id', gameId).maybeSingle<Row>());
   if (!game) return null;
-  const [versions, media, launches, reviews] = await Promise.all([
+  const [versions, media, launches, reviews, held] = await Promise.all([
     db.from('game_versions').select('*').eq('game_id', gameId).order('created_at', { ascending: false }),
     db.from('game_media').select('*').eq('game_id', gameId),
     db.from('game_launches').select('*').eq('game_id', gameId).order('started_at', { ascending: false }),
     db.from('qa_reviews').select('*').eq('game_id', gameId).order('created_at', { ascending: false }),
+    db.from('game_pending_edits').select('changes, submitted_at').eq('game_id', gameId).maybeSingle<Row>(),
   ]);
-  const g = toGame(game);
+  const live = toGame(game);
+  const heldRow = check(held);
+  const changes = heldRow ? heldToFields((heldRow.changes as Row) ?? {}) : {};
+  const fields = Object.keys(changes) as (keyof GameEditable)[];
+  // The developer edits their latest text; players keep the reviewed text until it is approved.
+  const g: DevGame = { ...live, ...changes };
   return {
+    pendingEdit: heldRow && fields.length > 0
+      ? { fields, live: Object.fromEntries(fields.map((f) => [f, live[f]])) as Partial<GameEditable>, submittedAt: String(heldRow.submitted_at) }
+      : null,
     game: g,
     versions: (check(versions) ?? []).map((v) => toVersion(v as Row, g.currentVersionId)),
     media: (check(media) ?? []).map((m) => toMedia(m as Row)),
@@ -223,9 +242,13 @@ async function detail(gameId: string): Promise<DevGameDetail | null> {
   };
 }
 
-async function putSigned(url: string, blob: Blob): Promise<void> {
-  const res = await fetch(url, { method: 'PUT', body: blob, headers: { 'content-type': blob.type || 'application/octet-stream' } });
-  if (!res.ok) throw new RepoError('unavailable', `Upload failed (${res.status})`);
+/**
+ * Uploads one build file. The link is signed for this exact type and size and is write-once
+ * (If-None-Match), so a 412 means the file is already stored from an earlier try.
+ */
+async function putSigned(url: string, blob: Blob, type: string): Promise<void> {
+  const res = await fetch(url, { method: 'PUT', body: blob, headers: { 'content-type': type, 'if-none-match': '*' } });
+  if (!res.ok && res.status !== 412) throw new RepoError('unavailable', `Upload failed (${res.status})`);
 }
 
 export const supabaseDev: DevRepo = {
@@ -321,9 +344,12 @@ export const supabaseDev: DevRepo = {
     const widths = isVideo ? [] : media.variants.map((v) => v.width).sort((a, b) => a - b);
     const mainPath = isVideo ? paths[0]! : `${gameId}/${id}-${Math.max(...widths)}.webp`;
     const url = db.storage.from('media').getPublicUrl(mainPath).data.publicUrl;
-    // A new main cover replaces the old one; A/B variants sit beside it.
+    // A new main cover replaces the old one; A/B variants sit beside it. For a released game the
+    // new file waits for review and the old one stays live, so only an earlier waiting file goes.
+    const released = Boolean(check(await db.from('games').select('released_at').eq('id', gameId).maybeSingle<Row>())?.released_at);
     let replace = db.from('game_media').delete().eq('game_id', gameId).eq('kind', media.kind);
     replace = media.variantLabel ? replace.eq('variant_label', media.variantLabel) : replace.is('variant_label', null);
+    if (released) replace = replace.eq('pending', true);
     check(await replace);
     const row = check(
       await db
@@ -350,6 +376,14 @@ export const supabaseDev: DevRepo = {
     check(await getSupabase().from('game_media').delete().eq('id', mediaId).eq('game_id', gameId));
     emitTopic('dev-games');
   },
+  async discardPendingEdit(gameId) {
+    check(await getSupabase().rpc('discard_pending_edit', { p_game_id: gameId }));
+    emitTopic('dev-games');
+  },
+  async publishMinorUpdate(versionId) {
+    check(await getSupabase().rpc('publish_minor_update', { p_version_id: versionId }));
+    emitTopic('dev-games');
+  },
   async createVersion(input, onProgress) {
     const created = check(
       await getSupabase().rpc('add_game_version', {
@@ -368,18 +402,27 @@ export const supabaseDev: DevRepo = {
     // Presigned R2 URLs, requested in batches so each Edge Function call stays small.
     const total = input.files.reduce((n, f) => n + f.data.size, 0) || 1;
     let sent = 0;
-    for (let i = 0; i < input.files.length; i += 100) {
-      const batch = input.files.slice(i, i + 100);
-      const { urls } = await callFunction<{ urls: Record<string, string> }>('presign-upload', {
+    // Links last 5 minutes and must be used (started) within that time, so each batch is small:
+    // at most 100 files and about 25 MB, signed just before it uploads.
+    const batches: (typeof input.files)[] = [];
+    for (const f of input.files) {
+      const last = batches[batches.length - 1];
+      const lastBytes = last?.reduce((n, x) => n + x.data.size, 0) ?? 0;
+      if (!last || last.length >= 100 || lastBytes + f.data.size > 25 * 1024 * 1024) batches.push([f]);
+      else last.push(f);
+    }
+    for (const batch of batches) {
+      const { urls, types } = await callFunction<{ urls: Record<string, string>; types: Record<string, string> }>('presign-upload', {
         versionId: created.version_id,
-        files: batch.map((f) => ({ path: f.path, size: f.data.size, type: f.data.type })),
+        files: batch.map((f) => ({ path: f.path, size: f.data.size })),
       });
       const queue = [...batch];
       const worker = async () => {
         for (let f = queue.shift(); f; f = queue.shift()) {
           const url = urls[f.path];
-          if (!url) throw new RepoError('unavailable', `No upload URL for ${f.path}`);
-          await putSigned(url, f.data);
+          const type = types[f.path];
+          if (!url || !type) throw new RepoError('unavailable', `No upload URL for ${f.path}`);
+          await putSigned(url, f.data, type);
           sent += f.data.size;
           onProgress?.(sent / total);
         }
@@ -526,10 +569,11 @@ export const supabaseAdmin: AdminRepo = {
     const studio = check(await db.from('studios').select('*').eq('id', d.game.studioId).single<Row>());
     if (!studio) return null;
     return {
-      game: d.game,
+      // The page players see; held edits are reviewed in Changes to live games.
+      game: { ...d.game, ...(d.pendingEdit?.live ?? {}) },
       studio: toStudio(studio),
       version: toVersion(version, d.game.currentVersionId),
-      media: d.media,
+      media: d.media.filter((m) => !m.pending),
       previous: d.reviews,
     };
   },
@@ -544,6 +588,30 @@ export const supabaseAdmin: AdminRepo = {
       }),
     );
     emitTopic('qa');
+  },
+  async pendingChanges() {
+    const data = check(await getSupabase().rpc('admin_pending_changes')) as Row[] | null;
+    return (data ?? []).map((r): PendingChangeItem => ({
+      gameId: String(r.game_id),
+      title: String(r.title),
+      slug: String(r.slug),
+      studioName: String(r.studio ?? ''),
+      submittedAt: String(r.submitted_at),
+      changes: heldToFields((r.changes as Row) ?? {}),
+      live: heldToFields((r.live as Row) ?? {}),
+      media: ((r.media as Row[]) ?? []).map((m) => ({
+        id: String(m.id),
+        kind: m.kind as PendingChangeItem['media'][number]['kind'],
+        url: String(m.url),
+        variantLabel: (m.variant_label as string | null) ?? null,
+        liveUrl: (m.live_url as string | null) ?? null,
+      })),
+    }));
+  },
+  async decideChange(gameId, approve, note) {
+    check(await getSupabase().rpc('admin_decide_change', { p_game_id: gameId, p_approve: approve, p_note: note }));
+    emitTopic('qa');
+    emitTopic('catalogue');
   },
   async sparkGames() {
     const db = getSupabase();

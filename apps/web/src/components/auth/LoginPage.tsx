@@ -10,12 +10,9 @@ import { getRepo, RepoError } from '@/lib/data';
 import type { ConsentStatus } from '@/lib/data/repo';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
+import { safeNext } from '@/lib/domain/safeNext';
 import { LoginForm } from './LoginForm';
 
-/** Only same-site paths are allowed as a post-login destination. */
-function safeNext(next: string | null): string {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
-}
 
 export function LoginPage() {
   const t = useTranslations('auth');

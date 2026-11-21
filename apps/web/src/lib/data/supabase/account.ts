@@ -77,9 +77,15 @@ export const supabaseAuth: AuthRepo = {
       createdAt: profile?.created_at ?? user.created_at,
     };
   },
-  async signInWithEmail(email, next) {
-    const { error } = await getSupabase().auth.signInWithOtp({ email, options: { emailRedirectTo: redirect(next) } });
-    if (error) throw new RepoError(error.status === 429 ? 'rate_limited' : 'invalid', error.message);
+  async signInWithEmail(email, next, captchaToken) {
+    const { error } = await getSupabase().auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirect(next), ...(captchaToken ? { captchaToken } : {}) },
+    });
+    if (error) {
+      if (/captcha/i.test(error.message)) throw new RepoError('invalid', 'The robot check did not go through. Please try again.');
+      throw new RepoError(error.status === 429 ? 'rate_limited' : 'invalid', error.message);
+    }
     // The e-mail carries a 6-digit code ({{ .Token }} in the Supabase e-mail template).
     return { status: 'code_sent' };
   },

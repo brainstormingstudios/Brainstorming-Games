@@ -2,7 +2,7 @@
 // Rebuilds the static site after the public catalogue changed, at most once every 30 minutes
 // (Cloudflare Pages Free allows 500 builds a month). A trigger on `games` records
 // site_config.deploy.lastRequestedAt; this function compares it with lastTriggeredAt.
-import { adminClient, json } from '../_shared/http.ts';
+import { adminClient, json, sameSecret } from '../_shared/http.ts';
 
 const DEBOUNCE_MS = 30 * 60 * 1000;
 
@@ -42,7 +42,7 @@ if (import.meta.main) {
     const secret = Deno.env.get('CRON_SECRET');
     const webhookSecret = Deno.env.get('DEPLOY_WEBHOOK_SECRET');
     const provided = req.headers.get('x-cron-secret') ?? req.headers.get('x-webhook-secret');
-    if (!provided || (provided !== secret && provided !== webhookSecret)) return json(req, 401, { error: 'unauthorised' });
+    if (!sameSecret(provided, secret) && !sameSecret(provided, webhookSecret)) return json(req, 401, { error: 'unauthorised' });
     return json(req, 200, await maybeDeploy());
   });
 }

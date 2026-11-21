@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
     return json(req, 400, { error: 'invalid json' });
   }
   if (!body.anon_id || !Array.isArray(body.events) || body.events.length > 50) return json(req, 400, { error: 'invalid' });
-  const country = req.headers.get('cf-ipcountry') ?? req.headers.get('x-country') ?? null;
+  // Only Cloudflare's header: a client-sent country would let anyone make cheap views look like
+  // expensive ones.
+  const country = req.headers.get('cf-ipcountry') ?? null;
   const { data, error } = await userClient(req).rpc('ingest_events', {
     p_anon_id: body.anon_id,
     p_device: body.device ?? null,

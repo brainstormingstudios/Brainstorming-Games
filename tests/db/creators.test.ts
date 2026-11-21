@@ -67,6 +67,8 @@ describe('creators', () => {
     const events = JSON.stringify([
       { type: 'play_click', game_id: gameId, session_id: '22222222-2222-4222-8222-222222222222' },
       { type: 'ad_started', game_id: gameId, session_id: '22222222-2222-4222-8222-222222222222' },
+      // Ad views only count in sessions with real play (at least 20 seconds).
+      { type: 'session_end', game_id: gameId, session_id: '22222222-2222-4222-8222-222222222222', payload: { t: 45 } },
     ]);
     await as(db, 'anon', null, (q) => q(`select public.ingest_events($1, 'mobile', null, $2::jsonb, 'IN', 'ReelMaker')`, [anon, events]));
     // An impression from the studio's own referral link stays the studio's.

@@ -20,6 +20,7 @@ import {
 } from '@brainstorming/ui';
 import { PreQaReportView } from '@/components/dev/PreQaReportView';
 import { AutoReviewView } from './AutoReviewView';
+import { LiveChangesQueue } from './LiveChangesQueue';
 import { OwnerCodeGate } from './OwnerCode';
 import { GameStatusBadge } from '@/components/dev/StatusBadge';
 import { GameFrame } from '@/components/game/GameFrame';
@@ -87,9 +88,10 @@ export function AdminOverview() {
   const t = useTranslations('admin.overview');
   const act = useAct();
   const queue = useRepoQuery((repo) => repo.admin.qaQueue(), [], { topics: ['qa'] });
+  const changes = useRepoQuery((repo) => repo.admin.pendingChanges(), [], { topics: ['qa'] });
   const spark = useRepoQuery((repo) => repo.admin.sparkGames(), [], { topics: ['qa', 'catalogue'] });
   const stats = [
-    { label: t('inQueue'), value: queue.data?.length ?? 0, href: '/admin/qa' },
+    { label: t('inQueue'), value: (queue.data?.length ?? 0) + (changes.data?.length ?? 0), href: '/admin/qa' },
     { label: t('spark'), value: spark.data?.length ?? 0, href: '/admin/spark' },
     { label: t('sparkDue'), value: (spark.data ?? []).filter((s) => s.windowOver).length, href: '/admin/spark' },
   ];
@@ -168,6 +170,7 @@ export function QaQueue() {
           </table>
         </div>
       )}
+      <LiveChangesQueue />
     </div>
   );
 }
