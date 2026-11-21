@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
 import { useCheckout } from './Checkout';
+import { PointsSwap } from './PointsSwap';
 
 const PERKS: Record<PremiumPlan, string[]> = {
   plus: ['fewerAds', 'shortBreaks', 'wallpapers', 'plusBadge'],
@@ -188,6 +189,7 @@ export function PremiumPage() {
           </ul>
         </section>
       ) : null}
+      <PointsSwap />
       {dialog}
     </div>
   );

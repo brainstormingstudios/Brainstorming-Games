@@ -71,7 +71,9 @@
     "more": "More",
     "jams": "Game jams",
     "premium": "Premium",
-    "brain": "Brain Profile"
+    "brain": "Brain Profile",
+    "discover": "Early Access",
+    "daily": "Daily challenge"
   },
   "categories": {
     "action": {
@@ -1889,7 +1891,36 @@
     "wallpapersTitle": "Member wallpapers",
     "wallpapersIntro": "Key art from the BS Originals.",
     "desktop": "Desktop",
-    "phone": "Phone"
+    "phone": "Phone",
+    "points": {
+      "title": "Swap Brain Points for Premium days",
+      "balance": "You have {points} Brain Points. {used} of {max} point days used this month.",
+      "signedOut": "Sign in to swap the Brain Points you earn from quests and playtests for Premium days.",
+      "cost": "{points} Brain Points",
+      "swap": "Swap",
+      "option": {
+        "plus_1d": "1 day of Plus",
+        "plus_7d": "7 days of Plus",
+        "max_1d": "1 day of Max"
+      },
+      "plan": {
+        "plus": "Plus",
+        "max": "Max"
+      },
+      "done": "Enjoy {plan} until {date}!",
+      "why": {
+        "points": "Not enough Brain Points yet.",
+        "monthly_limit": "You've used this month's {max} point days.",
+        "other_plan": "You already have another plan: points extend the plan you have.",
+        "unknown": "Not available."
+      },
+      "problem": {
+        "insufficient_points": "Not enough Brain Points.",
+        "monthly_limit": "You can get up to {max} Premium days a month with points.",
+        "other_plan": "Points extend the plan you already have."
+      },
+      "note": "Brain Points have no cash value. Up to {max} Premium days a month can come from points; the rest of Premium is a paid membership."
+    }
   },
   "boost": {
     "title": "Boost",
@@ -2116,5 +2147,42 @@
         "about": "Planning ahead and managing resources."
       }
     }
+  },
+  "discover": {
+    "metaTitle": "Early Access: discover games before they're famous",
+    "kicker": "Early Access",
+    "title": "Discover games before they're famous",
+    "intro": "New games start with a Basic Launch. Join the Early Access panel, play them first and say what you think. If a game you rated makes it to Full Launch, you get a \"Discovered it\" badge, +{points} Brain Points and your name on its page.",
+    "panelLabel": "I'm in the Early Access panel",
+    "panelHint": "After a few minutes in a new game you'll be asked three quick questions. +15 Brain Points each time.",
+    "panelSignIn": "Sign in to join the Early Access panel and earn \"Discovered it\" badges.",
+    "signIn": "Sign in",
+    "nowTitle": "In Early Access now",
+    "nowIntro": "These games are in their Basic Launch: new, ad-free and waiting for your opinion.",
+    "nowEmpty": "No games in Early Access right now. Check back soon!",
+    "risingTitle": "Rising this week",
+    "risingIntro": "What Early Access testers loved most in the last 30 days.",
+    "risingEmpty": "The chart fills up once games have at least {min} tester answers.",
+    "risingAnswers": "{count, plural, one {# tester} other {# testers}}",
+    "mineTitle": "Your discoveries",
+    "mineEmpty": "No discoveries yet. Rate a game in Early Access; if it reaches Full Launch, it shows here.",
+    "badge": "Discovered {title}",
+    "creditLabel": "Discovered in Early Access by",
+    "creditAnon": "our testers",
+    "creditOthers": "and {count, plural, one {# other} other {# others}}"
+  },
+  "daily": {
+    "metaTitle": "Daily challenge",
+    "kicker": "Challenge of {day}",
+    "title": "Today's challenge",
+    "intro": "One game a day, the same for everyone. Play it and climb today's leaderboard.",
+    "next": "Next challenge in {time}",
+    "play": "Play today's challenge",
+    "boardTitle": "Today's leaderboard",
+    "noBoard": "This game has no leaderboard: just enjoy it, everyone's playing it today.",
+    "boardEmpty": "No scores yet today. Be the first!",
+    "yourRank": "You are #{rank} today",
+    "signInToRank": "Sign in to put your score on the board.",
+    "none": "No challenge today yet."
   }
 }

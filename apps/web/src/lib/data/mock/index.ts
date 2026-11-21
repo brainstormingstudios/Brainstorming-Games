@@ -10,6 +10,7 @@ import { mockGrowth } from './growth';
 import { mockRevenue } from './revenue';
 import { mockCreators } from './creators';
 import { mockBrain } from './brain';
+import { mockDiscover } from './discover';
 import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
 import {
   afterEvents,
@@ -391,6 +392,7 @@ export function createMockRepo(): Repo {
     revenue: mockRevenue,
     creators: mockCreators,
     brain: mockBrain,
+    discover: mockDiscover,
     catalogue: mockCatalogue,
     player,
     events,

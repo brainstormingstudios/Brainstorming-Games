@@ -10,6 +10,7 @@
 import type { AvatarCosmetics } from '@brainstorming/ui';
 import type { BoostOrder, BoostPackage, CheckoutIntent, EmailRow, PaymentRow, PremiumPlan, PremiumStatus, Wallpaper } from './billingTypes';
 import type { PlayRow, Skill } from '@/lib/domain/brain';
+import type { PointsOptionId } from '@/lib/domain/discover';
 import type { AdminCreatorRow, Creator, CreatorApplyInput, CreatorMonthRow, CreatorPayoutRow, CreatorStats, CreatorStatus } from './creatorTypes';
 import type { PremiumState } from '@/lib/domain/premium';
 import type { KpiResult } from '@/lib/domain/kpis';
@@ -230,7 +231,7 @@ export interface ScoresRepo {
   top(
     gameId: string,
     board: string,
-    options: { limit: number; friends: boolean; period: 'week' | 'all' },
+    options: { limit: number; friends: boolean; period: 'day' | 'week' | 'all' },
   ): Promise<{ entries: LeaderboardRow[]; me: LeaderboardRow | null }>;
 }
 
@@ -638,9 +639,44 @@ export interface BrainRepo {
   setReport(on: boolean): Promise<void>;
 }
 
+export interface Discovery {
+  gameId: string;
+  slug: string;
+  title: string;
+  ratedAt: string;
+}
+
+export interface RisingRow {
+  gameId: string;
+  answers: number;
+  /** 0 to 1: how much Early Access testers loved it. */
+  score: number;
+}
+
+export interface DailyChallenge {
+  /** YYYY-MM-DD (UTC). */
+  day: string;
+  gameId: string;
+  /** The game's leaderboard for today's scores, or null when it has none. */
+  board: string | null;
+}
+
+export interface DiscoverRepo {
+  /** Games the player rated in Early Access that reached Full Launch. */
+  myDiscoveries(): Promise<Discovery[]>;
+  /** Credit on a Full Launch game's page: its Early Access testers. Null before Full Launch. */
+  discoverers(gameId: string): Promise<{ total: number; names: string[] } | null>;
+  rising(limit: number): Promise<RisingRow[]>;
+  daily(): Promise<DailyChallenge | null>;
+  pointDaysThisMonth(): Promise<number>;
+  /** Swaps Brain Points for Premium days. */
+  redeemPoints(option: PointsOptionId): Promise<{ plan: 'plus' | 'max'; until: string }>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
   brain: BrainRepo;
+  discover: DiscoverRepo;
   creators: CreatorRepo;
   billing: BillingRepo;
   growth: GrowthRepo;

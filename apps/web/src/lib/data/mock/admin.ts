@@ -1,4 +1,5 @@
 import { isSparkWindowOver } from '@/lib/domain/spark';
+import { creditDiscoverers } from './discover';
 import { summarise } from '@/lib/domain/kpis';
 import { emitTopic } from '../bus';
 import type { QaQueueItem, SparkRow } from '../devTypes';
@@ -130,6 +131,7 @@ export const mockAdmin: AdminRepo = {
       if (promote) rows.push({ id: newId(), gameId, tier: 'rise', startedAt: now, endedAt: null, decision: null, reason: null, kpiSnapshot: null, decidedBy: null });
     });
     if (promote) {
+      creditDiscoverers(gameId);
       updateGameRow(gameId, {
         status: 'rise',
         riseStartedAt: now,

@@ -32,6 +32,7 @@ import { supabaseGrowth } from './growth';
 import { supabaseRevenue } from './revenue';
 import { supabaseCreators } from './creators';
 import { supabaseBrain } from './brain';
+import { supabaseDiscover } from './discover';
 import {
   supabaseLeaderboards,
   supabaseLocker,
@@ -458,6 +459,7 @@ export function createSupabaseRepo(): Repo {
     revenue: supabaseRevenue,
     creators: supabaseCreators,
     brain: supabaseBrain,
+    discover: supabaseDiscover,
     catalogue,
     player,
     events,

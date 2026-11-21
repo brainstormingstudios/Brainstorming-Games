@@ -112,7 +112,7 @@ export const mockScores: ScoresRepo = {
     const me = currentMockUser();
     const boardRow = readTable('leaderboards').find((b) => b.gameId === gameId && b.key === board);
     if (!boardRow) return { entries: [], me: null };
-    const since = period === 'week' ? weekStart() : '';
+    const since = period === 'day' ? new Date().toISOString().slice(0, 10) : period === 'week' ? weekStart() : '';
     const friendIds = friends && me ? friendIdsOf(me.id) : null;
     const users = new Map(readTable('users').map((u) => [u.id, u]));
     const best = new Map<string, number>();

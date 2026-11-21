@@ -66,6 +66,23 @@ export interface GameViewProps {
   related: RelatedGames;
 }
 
+/** Credit for the Early Access testers who rated the game before its Full Launch. */
+function Discoverers({ gameId }: { gameId: string }) {
+  const t = useTranslations('discover');
+  const d = useRepoQuery((repo) => repo.discover.discoverers(gameId), [gameId]);
+  if (!d.data || d.data.total === 0) return null;
+  const others = d.data.total - d.data.names.length;
+  return (
+    <p className="mt-2 text-sm text-fg-muted" data-testid="game-discoverers">
+      <Link href="/discover" className="font-bold text-fg hover:underline">
+        {t('creditLabel')}
+      </Link>{' '}
+      {d.data.names.length > 0 ? d.data.names.map((n) => `@${n}`).join(', ') : t('creditAnon')}
+      {others > 0 ? ` ${t('creditOthers', { count: others })}` : ''}
+    </p>
+  );
+}
+
 export function GameView({ game, related }: GameViewProps) {
   const t = useTranslations('game');
   const tn = useTranslations('nav');
@@ -170,6 +187,7 @@ export function GameView({ game, related }: GameViewProps) {
 
             <h1 className="mt-5 text-3xl font-bold sm:text-4xl">{game.title}</h1>
             {game.shortDescription ? <p className="mt-1.5 text-fg-muted">{game.shortDescription}</p> : null}
+            <Discoverers gameId={game.id} />
             {game.skills?.length ? (
               <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm" data-testid="game-skills">
                 <span className="font-bold text-fg-muted">{tb('trains')}</span>

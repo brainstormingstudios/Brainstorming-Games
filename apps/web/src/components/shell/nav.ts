@@ -1,5 +1,6 @@
 import {
   Brain,
+  CalendarCheck,
   CalendarDays,
   CarFront,
   Castle,
@@ -25,6 +26,7 @@ import {
   Sparkles,
   Swords,
   Target,
+  Telescope,
   Trophy,
   Type,
   Users,
@@ -48,6 +50,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'updated', href: '/updated', icon: RefreshCw },
   { key: 'originals', href: '/originals', icon: Crown },
   { key: 'multiplayer', href: '/multiplayer', icon: Users },
+  { key: 'daily', href: '/daily', icon: CalendarCheck },
+  { key: 'discover', href: '/discover', icon: Telescope },
   { key: 'brain', href: '/brain', icon: Brain },
   { key: 'quests', href: '/quests', icon: Target },
   { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
