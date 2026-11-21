@@ -106,6 +106,17 @@ export const supabaseBilling: BillingRepo = {
   async orderBoost(gameId, pkg) {
     return callFunction<CheckoutIntent>('billing', { action: 'boost', gameId, pkg });
   },
+  async myBoostCredits() {
+    const { data, error } = await getSupabase().rpc('my_boost_credits');
+    if (error) throw toRepoError(error);
+    return Number(data ?? 0);
+  },
+  async redeemBoostCredit(gameId) {
+    const { error } = await getSupabase().rpc('redeem_boost_credit', { p_game_id: gameId });
+    if (error) throw toRepoError(error);
+    emitTopic('catalogue');
+    emitTopic('revenue');
+  },
   async myBoosts() {
     const rows = (check(await getSupabase().from('boosts').select(BOOST_SELECT).neq('status', 'pending_payment').order('created_at', { ascending: false })) ?? []) as Row[];
     return rows.map(toOrder);

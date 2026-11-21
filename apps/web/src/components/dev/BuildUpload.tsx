@@ -72,7 +72,8 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       if (index) {
         const html = await z.file(index.source)!.async('string');
         found = mentionsSdk(html);
-        missingSdk = LOCAL_SDK.test(html) && !result.files.some((f) => f.path === 'bg-sdk.js');
+        // Missing or an old copy: either way the build gets the latest official SDK file.
+        missingSdk = LOCAL_SDK.test(html);
         const abs = findAbsolutePaths(html);
         if (abs.length) warnings.push(`index.html loads files from absolute paths (${abs.slice(0, 3).join(', ')}). Use relative paths.`);
       }
@@ -109,7 +110,12 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       if (picked.addSdk) {
         // index.html loads bg-sdk.js from its own folder: ship the official copy with the build.
         const res = await fetch('/sdk/v1/bg-sdk.js');
-        if (res.ok) files.push({ path: 'bg-sdk.js', data: new Blob([await res.blob()], { type: 'text/javascript' }) });
+        if (res.ok) {
+          const official = new Blob([await res.blob()], { type: 'text/javascript' });
+          const at = files.findIndex((f) => f.path === 'bg-sdk.js');
+          if (at >= 0) files[at] = { path: 'bg-sdk.js', data: official };
+          else files.push({ path: 'bg-sdk.js', data: official });
+        }
       }
       const repo = await getRepo();
       const { versionId, previewToken } = await repo.dev.createVersion(

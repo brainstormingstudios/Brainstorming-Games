@@ -57,6 +57,9 @@ export function Dashboard() {
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
+          <a href="/downloads/starter-kit.zip" download className={buttonClass({ variant: 'outline', size: 'lg' })} data-testid="starter-kit">
+            {t('starterKit')}
+          </a>
           <Link href="/dev/docs/quick-start" className={buttonClass({ variant: 'outline', size: 'lg' })}>
             {t('sdkDocs')}
           </Link>

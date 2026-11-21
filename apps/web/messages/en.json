@@ -495,7 +495,8 @@
       "view": "Manage",
       "kpis": "KPIs",
       "sdkDocs": "SDK quick start",
-      "sdkRules": "SDK rules"
+      "sdkRules": "SDK rules",
+      "starterKit": "Starter kit"
     },
     "status": {
       "draft": "Draft",
@@ -649,7 +650,7 @@
       "more": "and {count} more",
       "dropNow": "Let go to read the zip",
       "dropHint": "Your zip must have index.html at the top level. Up to 250 MB.",
-      "sdkAdded": "Your index.html loads bg-sdk.js, but the zip doesn't include it. The official SDK file is added to your build for you."
+      "sdkAdded": "Your index.html loads bg-sdk.js from its own folder: your build gets the latest official SDK file automatically."
     },
     "game": {
       "back": "All games",
@@ -689,7 +690,9 @@
       "openPage": "Open game page",
       "noVersions": "No builds yet.",
       "trailerTitle": "Vertical trailer for Shorts and Reels",
-      "trailerBody": "A free 9:16 video made from your preview video, with your game's title and your referral link (players who come through it earn you 85%)."
+      "trailerBody": "A free 9:16 video made from your preview video, with your game's title and your referral link (players who come through it earn you 85%).",
+      "reviewBy": "We'll review it by {date}.",
+      "reviewPromise": "A person reviews every submission within 72 hours. If we take longer, your next Spotlight Boost is free."
     },
     "report": {
       "pass": "Pass",
@@ -1014,7 +1017,10 @@
         "pass": "Clear",
         "warn": "Check",
         "fail": "Problem"
-      }
+      },
+      "due": "Due",
+      "late": "Late: Boost credit given",
+      "hoursLeft": "{hours, plural, one {# hour left} other {# hours left}}"
     },
     "review": {
       "title": "Review {title} v{version}",
@@ -1165,7 +1171,13 @@
       "noEntries": "No entries yet.",
       "notPublic": "Game not public yet",
       "rank": "Rank",
-      "unranked": "No rank"
+      "unranked": "No rank",
+      "newMonthly": "Next month's jam",
+      "fieldSponsor": "Sponsor (optional)",
+      "fieldSponsorUrl": "Sponsor link (https)",
+      "fieldPrizes": "Prizes",
+      "prizePlace": "Prize for place {rank}",
+      "addPrize": "Add a prize"
     },
     "moderation": {
       "title": "Moderation",
@@ -1820,7 +1832,12 @@
     "clipLinkCopied": "Link copied.",
     "clipVerticalFailed": "The vertical version could not be made on this device, so here is the plain recording.",
     "clipDisabled": "This game has turned clips off on this screen.",
-    "clipNotPossible": "This game can't be clipped."
+    "clipNotPossible": "This game can't be clipped.",
+    "winnersTitle": "Winners",
+    "prizesTitle": "Prizes",
+    "place": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    "sponsorTitle": "Sponsored by",
+    "sponsorNote": "Prizes are provided by the sponsor. Winners are picked by players' ratings and our team."
   },
   "portal": {
     "developers": {
@@ -1952,7 +1969,11 @@
       "live": "Live",
       "done": "Finished",
       "cancelled": "Cancelled"
-    }
+    },
+    "creditTitle": "{count, plural, one {You have a free Spotlight Boost} other {You have # free Spotlight Boosts}}",
+    "creditBody": "A review of yours took longer than our 72-hour promise. Sorry! Use it on the game selected above: 3 days of sponsored placement.",
+    "creditUse": "Use a free Spotlight",
+    "creditUsed": "Your free Spotlight Boost is live."
   },
   "creators": {
     "metaTitle": "Creator program: earn by sharing games",

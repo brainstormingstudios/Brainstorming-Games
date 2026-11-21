@@ -1,4 +1,6 @@
 import { isSparkWindowOver } from '@/lib/domain/spark';
+import { grantReviewCredit } from './billing';
+import { reviewLate } from '@/lib/domain/review';
 import { creditDiscoverers } from './discover';
 import { summarise } from '@/lib/domain/kpis';
 import { emitTopic } from '../bus';
@@ -16,11 +18,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 export const mockAdmin: AdminRepo = {
   async qaQueue() {
     requireStaff();
+    // The daily job's part in mock mode: reviews already over 72 hours earn their credit now.
+    for (const v of readTable('versions')) if (v.qaStatus === 'in_review' && v.submittedAt && reviewLate(v.submittedAt)) grantReviewCredit(v.id);
     const games = new Map(readTable('games').map((g) => [g.id, g]));
     const studios = new Map(readTable('studios').map((s) => [s.id, s]));
     return readTable('versions')
       .filter((v) => v.qaStatus === 'in_review')
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .sort((a, b) => (a.submittedAt ?? a.createdAt).localeCompare(b.submittedAt ?? b.createdAt))
       .map((v): QaQueueItem => {
         const g = games.get(v.gameId);
         const report = v.preQaReport as { status?: 'pass' | 'warn' | 'fail' } | null;
@@ -30,7 +34,7 @@ export const mockAdmin: AdminRepo = {
           title: g?.title ?? '',
           studioName: studios.get(g?.studioId ?? '')?.name ?? '',
           version: v.version,
-          submittedAt: v.createdAt,
+          submittedAt: v.submittedAt ?? v.createdAt,
           preQaStatus: report?.status ?? null,
           autoReviewStatus: (v.autoReview as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null,
           isUpdate: Boolean(g?.releasedAt),
@@ -62,6 +66,8 @@ export const mockAdmin: AdminRepo = {
     mutateTable('reviews', (rows) => {
       rows.push({ id: newId(), versionId, gameId: g.id, reviewerId: staff.id, action, checklist: checklist as Record<string, boolean>, notes, createdAt: nowIso() });
     });
+    if (v.submittedAt && reviewLate(v.submittedAt)) grantReviewCredit(versionId);
+    updateVersionRow(versionId, { reviewedAt: nowIso() });
     const owner = ownerOf(g.id);
     const link = `/dev/games/view/?id=${g.id}`;
     if (action === 'approve') {

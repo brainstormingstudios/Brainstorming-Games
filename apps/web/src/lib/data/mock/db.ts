@@ -97,6 +97,8 @@ export interface MockVersion {
   qaNotes: string | null;
   previewToken: string;
   minorUpdate?: boolean;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
 }
 
@@ -318,7 +320,7 @@ export interface MockTables {
   guestPasses: { code: string; fromUserId: string; createdAt: string; redeemedBy: string | null; redeemedAt: string | null }[];
   /** Written by the local services process for every automated e-mail. */
   emails: EmailRow[];
-  jams: { id: string; slug: string; title: string; theme: string; descriptionMd: string; startsAt: string; endsAt: string; status: 'draft' | 'published' | 'closed'; createdAt: string }[];
+  jams: { id: string; slug: string; title: string; theme: string; descriptionMd: string; startsAt: string; endsAt: string; status: 'draft' | 'published' | 'closed'; createdAt: string; sponsorName?: string | null; sponsorUrl?: string | null; prizes?: { rank: number; prize: string }[] }[];
   jamEntries: { jamId: string; gameId: string; studioId: string; submittedAt: string; rank: number | null }[];
   variantStats: { gameId: string; label: string; impressions: number; clicks: number; winner: boolean; decidedAt: string | null }[];
   playtests: { gameId: string; userId: string; fun: number; clarity: number; playAgain: boolean; createdAt: string }[];
@@ -330,6 +332,7 @@ export interface MockTables {
   creatorVisits: { handle: string; anonId: string; at: string }[];
   creatorMonths: CreatorMonthRow[];
   creatorPayouts: CreatorPayoutRow[];
+  boostCredits: { id: string; studioId: string; versionId: string; createdAt: string; usedAt: string | null; usedBoostId: string | null }[];
   creatorPayoutProfiles: { creatorId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
 }
 

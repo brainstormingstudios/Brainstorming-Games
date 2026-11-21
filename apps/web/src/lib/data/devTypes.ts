@@ -112,6 +112,9 @@ export interface DevVersion {
   qaStatus: QaStatus;
   qaNotes: string | null;
   createdAt: string;
+  /** When it was sent for review, and when a person decided (the 72-hour promise). */
+  submittedAt: string | null;
+  reviewedAt: string | null;
   isCurrent: boolean;
 }
 

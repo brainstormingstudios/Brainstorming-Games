@@ -13,6 +13,12 @@ export function formatCount(n: number, locale = 'en'): string {
   return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 }
 
+/** Date and time in the viewer's own time zone, e.g. "24 Nov 2026, 3:15 pm" (deadlines). */
+export function formatDateTime(iso: string | null, locale = 'en'): string {
+  if (!iso) return '';
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+}
+
 export function formatDate(iso: string | null, locale = 'en'): string {
   if (!iso) return '';
   return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(

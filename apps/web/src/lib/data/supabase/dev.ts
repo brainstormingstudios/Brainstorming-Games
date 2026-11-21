@@ -105,6 +105,8 @@ function toVersion(r: Row, currentId: string | null): DevVersion {
     qaStatus: r.qa_status as QaStatus,
     qaNotes: (r.qa_notes as string | null) ?? null,
     createdAt: String(r.created_at),
+    submittedAt: (r.submitted_at as string | null) ?? null,
+    reviewedAt: (r.reviewed_at as string | null) ?? null,
     isCurrent: r.id === currentId,
   };
 }
@@ -495,9 +497,9 @@ export const supabaseAdmin: AdminRepo = {
     const data = check(
       await getSupabase()
         .from('game_versions')
-        .select('id, version, created_at, pre_qa_report, auto_review, game_id, games(title, released_at, studios(name))')
+        .select('id, version, created_at, submitted_at, pre_qa_report, auto_review, game_id, games(title, released_at, studios(name))')
         .eq('qa_status', 'in_review')
-        .order('created_at', { ascending: true }),
+        .order('submitted_at', { ascending: true, nullsFirst: false }),
     );
     return (data ?? []).map((x): QaQueueItem => {
       const r = x as Row;
@@ -508,7 +510,7 @@ export const supabaseAdmin: AdminRepo = {
         title: String(g.title ?? ''),
         studioName: String(g.studios?.name ?? ''),
         version: String(r.version),
-        submittedAt: String(r.created_at),
+        submittedAt: String(r.submitted_at ?? r.created_at),
         preQaStatus: ((r.pre_qa_report as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
         autoReviewStatus: ((r.auto_review as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
         isUpdate: Boolean(g.released_at),

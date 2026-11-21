@@ -11,7 +11,7 @@ import { NotFoundView } from '@/components/shell/NotFoundView';
 import { Link, useLocale } from '@/i18n/navigation';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import { getRepo } from '@/lib/data';
-import { jamIsOpen, jamPhase, type Jam, type ReportInput } from '@/lib/data/growthTypes';
+import { jamIsOpen, jamPhase, type Jam, type JamDetail, type ReportInput } from '@/lib/data/growthTypes';
 import type { GameSummary } from '@/lib/data/types';
 import { Markdown } from '@/lib/domain/markdown';
 import { formatDate, gameHref } from '@/lib/format';
@@ -252,6 +252,64 @@ function JamEntryForm({ jamId, entered }: { jamId: string; entered: Set<string> 
   );
 }
 
+/** Sponsor, prizes and, once the jam is closed, the winners with their prizes. */
+function JamPrizes({ jam }: { jam: JamDetail }) {
+  const t = useTranslations('growth');
+  const winners = jam.status === 'closed' ? jam.entryList.filter((e) => e.rank != null && e.rank <= 3 && e.game).sort((a, b) => a.rank! - b.rank!) : [];
+  if (!jam.sponsorName && jam.prizes.length === 0 && winners.length === 0) return null;
+  const prizeFor = (rank: number) => jam.prizes.find((p) => p.rank === rank)?.prize;
+  return (
+    <section className="mt-5 grid gap-4 md:grid-cols-2" data-testid="jam-prizes">
+      {winners.length > 0 ? (
+        <div className="rounded-card border border-primary bg-surface p-5 md:col-span-2" data-testid="jam-winners">
+          <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold">
+            <Trophy aria-hidden="true" className="size-5 text-primary" />
+            {t('winnersTitle')}
+          </h2>
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {winners.map((w) => (
+              <li key={w.gameId} className={cn('flex flex-col gap-1 rounded-control bg-surface-3 p-3', w.rank === 1 && 'ring-2 ring-primary')}>
+                <span className="text-sm font-extrabold text-glow">{t('rank', { rank: w.rank! })}</span>
+                <Link href={`/game/${w.game!.slug}`} className="font-bold hover:underline">
+                  {w.game!.title}
+                </Link>
+                <span className="text-xs text-fg-muted">{w.studioName}</span>
+                {prizeFor(w.rank!) ? <span className="text-sm font-bold">{prizeFor(w.rank!)}</span> : null}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+      {jam.prizes.length > 0 ? (
+        <div className="rounded-card border border-border bg-surface p-5">
+          <h2 className="mb-2 text-lg font-semibold">{t('prizesTitle')}</h2>
+          <ol className="flex flex-col gap-1 text-sm">
+            {jam.prizes.map((p) => (
+              <li key={p.rank} className="flex gap-2">
+                <span className="w-16 shrink-0 font-bold">{t('place', { rank: p.rank })}</span>
+                <span>{p.prize}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+      {jam.sponsorName ? (
+        <div className="rounded-card border border-border bg-surface p-5">
+          <h2 className="mb-1 text-lg font-semibold">{t('sponsorTitle')}</h2>
+          {jam.sponsorUrl ? (
+            <a href={jam.sponsorUrl} target="_blank" rel="noopener sponsored" className="font-bold text-primary hover:underline" data-testid="jam-sponsor-link">
+              {jam.sponsorName}
+            </a>
+          ) : (
+            <span className="font-bold">{jam.sponsorName}</span>
+          )}
+          <p className="mt-1 text-xs text-fg-muted">{t('sponsorNote')}</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function JamPage() {
   const t = useTranslations('growth');
   const slug = useSearchParams().get('slug') ?? '';
@@ -281,6 +339,7 @@ export function JamPage() {
           </div>
         ) : null}
       </header>
+      <JamPrizes jam={j} />
       {jamIsOpen(j) ? <JamEntryForm jamId={j.id} entered={new Set(j.entryList.map((e) => e.gameId))} /> : null}
       <section aria-labelledby="jam-entries" className="mt-7">
         <h2 id="jam-entries" className="mb-3 text-xl font-semibold sm:text-2xl">

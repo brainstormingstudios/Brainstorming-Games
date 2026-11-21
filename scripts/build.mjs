@@ -17,6 +17,7 @@ runTsx('brand assets', 'scripts/prepare-brand.ts');
 if (existsSync(join(ROOT, 'packages', 'sdk', 'build.mjs')) && existsSync(join(ROOT, 'packages', 'sdk', 'src', 'index.ts'))) {
   runNode('sdk bundle', ['build.mjs'], { cwd: join(ROOT, 'packages', 'sdk') });
 }
+runNode('starter kit', ['scripts/pack-starter-kit.mjs']);
 if (existsSync(join(ROOT, 'scripts', 'gen-sdk-docs.ts')) && existsSync(join(ROOT, 'packages', 'sdk', 'src', 'index.ts'))) {
   runTsx('sdk reference', 'scripts/gen-sdk-docs.ts');
 }

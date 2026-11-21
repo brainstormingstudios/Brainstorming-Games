@@ -42,6 +42,9 @@ const toJam = (j: MockTables['jams'][number], entries: MockTables['jamEntries'])
   endsAt: j.endsAt,
   status: j.status,
   entries: entries.filter((e) => e.jamId === j.id).length,
+  sponsorName: j.sponsorName ?? null,
+  sponsorUrl: j.sponsorUrl ?? null,
+  prizes: j.prizes ?? [],
 });
 
 /**
@@ -266,7 +269,10 @@ export const mockGrowth: GrowthRepo = {
     if (input.title.trim().length < 3) fail('invalid', 'Give the jam a title.');
     if (!(input.endsAt > input.startsAt)) fail('invalid', 'The jam must end after it starts.');
     if (readTable('jams').some((j) => j.slug === slug && j.id !== input.id)) fail('conflict', 'Another jam already uses this address.');
-    const row = { slug, title: input.title.trim(), theme: input.theme.trim(), descriptionMd: input.descriptionMd, startsAt: input.startsAt, endsAt: input.endsAt, status: input.status };
+    const sponsorUrl = input.sponsorUrl?.trim() || null;
+    if (sponsorUrl && !/^https:\/\/\S+$/.test(sponsorUrl)) fail('invalid', 'The sponsor link must start with https://.');
+    const prizes = (input.prizes ?? []).filter((p) => p.prize.trim()).slice(0, 10).map((p, i) => ({ rank: i + 1, prize: p.prize.trim().slice(0, 120) }));
+    const row = { slug, title: input.title.trim(), theme: input.theme.trim(), descriptionMd: input.descriptionMd, startsAt: input.startsAt, endsAt: input.endsAt, status: input.status, sponsorName: input.sponsorName?.trim() || null, sponsorUrl, prizes };
     const id = input.id ?? newId();
     mutateTable('jams', (rows) => {
       const existing = rows.find((j) => j.id === id);

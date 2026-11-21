@@ -90,6 +90,12 @@ export interface PlaytestSummary {
 
 export type JamStatus = 'draft' | 'published' | 'closed';
 
+/** A prize for a place in a jam, e.g. { rank: 1, prize: "₹10,000 and a Push Boost" }. */
+export interface JamPrize {
+  rank: number;
+  prize: string;
+}
+
 export interface Jam {
   id: string;
   slug: string;
@@ -100,6 +106,9 @@ export interface Jam {
   endsAt: string;
   status: JamStatus;
   entries: number;
+  sponsorName: string | null;
+  sponsorUrl: string | null;
+  prizes: JamPrize[];
 }
 
 export interface JamEntry {
@@ -124,6 +133,9 @@ export interface JamInput {
   startsAt: string;
   endsAt: string;
   status: JamStatus;
+  sponsorName: string | null;
+  sponsorUrl: string | null;
+  prizes: JamPrize[];
 }
 
 export const REPORT_KINDS = ['abuse', 'username', 'studio', 'devlog', 'game', 'score'] as const;

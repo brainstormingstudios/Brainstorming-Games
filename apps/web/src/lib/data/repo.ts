@@ -594,6 +594,10 @@ export interface BillingRepo {
   /** Developer: buy a Boost for one of their live games. */
   orderBoost(gameId: string, pkg: BoostPackage): Promise<CheckoutIntent>;
   myBoosts(): Promise<BoostOrder[]>;
+  /** Free Spotlight Boosts the studio earned from late reviews, not yet used. */
+  myBoostCredits(): Promise<number>;
+  /** Uses one credit: a free Spotlight Boost for one of the studio's live games. */
+  redeemBoostCredit(gameId: string): Promise<void>;
   // Staff
   boosts(): Promise<BoostOrder[]>;
   updateBoost(id: string, patch: { status?: BoostOrder['status']; shortUrls?: string[]; reelUrls?: string[]; notes?: string }): Promise<void>;

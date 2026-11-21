@@ -114,6 +114,8 @@ export function toDevVersion(v: MockVersion, currentId: string | null): DevVersi
     qaStatus: v.qaStatus as QaStatus,
     qaNotes: v.qaNotes,
     createdAt: v.createdAt,
+    submittedAt: v.submittedAt ?? null,
+    reviewedAt: v.reviewedAt ?? null,
     isCurrent: v.id === currentId,
   };
 }
@@ -612,7 +614,7 @@ export const mockDev: DevRepo = {
     const missing = submissionGaps(g, readTable('media').filter((m) => m.gameId === gameId && m.isActive));
     if (missing.length) fail('invalid', `Still needed: ${missing.join(', ')}.`);
     if (!declaration?.ownsRights || !declaration.noCopies) fail('invalid', 'Confirm that you own or have licensed everything in the game.');
-    updateVersionRow(latest.id, { qaStatus: 'in_review', declaration, autoReview: autoReviewFor(g, latest, declaration) });
+    updateVersionRow(latest.id, { qaStatus: 'in_review', submittedAt: nowIso(), reviewedAt: null, declaration, autoReview: autoReviewFor(g, latest, declaration) });
     if (['draft', 'changes_requested', 'paused'].includes(g.status)) updateGameRow(gameId, { status: 'in_review' });
     sendMail(studioEmail(g.studioId), 'submission_received', { game: g.title, version: latest.version, studio: readTable('studios').find((x) => x.id === g.studioId)?.name, gameId });
     emitTopic('dev-games');

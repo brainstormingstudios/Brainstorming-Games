@@ -131,7 +131,28 @@ const fromLocalInput = (value: string) => (value ? new Date(value).toISOString()
 
 const newJam = (): JamInput => {
   const start = new Date();
-  return { slug: '', title: '', theme: '', descriptionMd: '', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 14 * 86_400_000).toISOString(), status: 'draft' };
+  return { slug: '', title: '', theme: '', descriptionMd: '', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 14 * 86_400_000).toISOString(), status: 'draft', sponsorName: null, sponsorUrl: null, prizes: [] };
+};
+
+/** Next month's jam, filled in: the 1st to the 10th, open to every studio, with three prize places. */
+const monthlyJam = (locale: string): JamInput => {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 4, 30));
+  const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 10, 18, 29));
+  const month = start.toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return {
+    slug: `jam-${start.toISOString().slice(0, 7)}`,
+    title: `Brainstorming Jam: ${month}`,
+    theme: '',
+    descriptionMd:
+      'Our monthly game jam. Make an HTML5 game on the theme in 10 days, submit it, and players and our team pick the winners.\n\n- Open to every studio; Made in India entries get a spotlight on the home page.\n- Start from the starter kit to go live in a day.',
+    startsAt: start.toISOString(),
+    endsAt: end.toISOString(),
+    status: 'draft',
+    sponsorName: null,
+    sponsorUrl: null,
+    prizes: [{ rank: 1, prize: '' }, { rank: 2, prize: '' }, { rank: 3, prize: '' }],
+  };
 };
 
 function JamRanks({ jam }: { jam: Jam }) {
@@ -184,9 +205,14 @@ export function JamsAdmin() {
           <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-sm text-fg-muted">{t('intro')}</p>
         </div>
-        <Button icon={<Plus aria-hidden="true" className="size-4" />} onClick={() => setEditing(newJam())} data-testid="jam-new">
-          {t('new')}
-        </Button>
+        <span className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setEditing(monthlyJam(locale))} data-testid="jam-new-monthly">
+            {t('newMonthly')}
+          </Button>
+          <Button icon={<Plus aria-hidden="true" className="size-4" />} onClick={() => setEditing(newJam())} data-testid="jam-new">
+            {t('new')}
+          </Button>
+        </span>
       </div>
       {editing ? (
         <Card className="grid gap-3 p-4 sm:grid-cols-2" data-testid="jam-form">
@@ -203,6 +229,31 @@ export function JamsAdmin() {
           <TextField label={t('fieldStarts')} type="datetime-local" value={toLocalInput(editing.startsAt)} onChange={(e) => setEditing({ ...editing, startsAt: fromLocalInput(e.target.value) })} />
           <TextField label={t('fieldEnds')} type="datetime-local" value={toLocalInput(editing.endsAt)} onChange={(e) => setEditing({ ...editing, endsAt: fromLocalInput(e.target.value) })} />
           <TextAreaField className="sm:col-span-2" label={t('fieldDescription')} rows={5} value={editing.descriptionMd} onChange={(e) => setEditing({ ...editing, descriptionMd: e.target.value })} />
+          <TextField label={t('fieldSponsor')} value={editing.sponsorName ?? ''} maxLength={80} onChange={(e) => setEditing({ ...editing, sponsorName: e.target.value })} data-testid="jam-sponsor" />
+          <TextField label={t('fieldSponsorUrl')} placeholder="https://" value={editing.sponsorUrl ?? ''} onChange={(e) => setEditing({ ...editing, sponsorUrl: e.target.value })} />
+          <fieldset className="flex flex-col gap-2 sm:col-span-2" data-testid="jam-prizes">
+            <legend className="mb-1 text-sm font-bold">{t('fieldPrizes')}</legend>
+            {editing.prizes.map((p, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <TextField
+                  label={t('prizePlace', { rank: i + 1 })}
+                  className="flex-1"
+                  value={p.prize}
+                  maxLength={120}
+                  onChange={(e) => setEditing({ ...editing, prizes: editing.prizes.map((x, j) => (j === i ? { ...x, prize: e.target.value } : x)) })}
+                  data-testid="jam-prize"
+                />
+                <IconButton label={t('delete')} onClick={() => setEditing({ ...editing, prizes: editing.prizes.filter((_, j) => j !== i) })}>
+                  <Trash2 aria-hidden="true" className="size-4" />
+                </IconButton>
+              </div>
+            ))}
+            {editing.prizes.length < 10 ? (
+              <Button size="sm" variant="outline" className="self-start" icon={<Plus aria-hidden="true" className="size-4" />} onClick={() => setEditing({ ...editing, prizes: [...editing.prizes, { rank: editing.prizes.length + 1, prize: '' }] })}>
+                {t('addPrize')}
+              </Button>
+            ) : null}
+          </fieldset>
           <div className="flex gap-2 sm:col-span-2">
             <Button onClick={() => void save()} data-testid="jam-save">
               {t('save')}
@@ -224,7 +275,7 @@ export function JamsAdmin() {
               {formatDate(jam.startsAt, locale)} – {formatDate(jam.endsAt, locale)} · {t('entryCount', { count: jam.entries })}
             </span>
             <span className="ml-auto flex gap-1">
-              <Button size="sm" variant="outline" onClick={() => setEditing({ ...jam })}>
+              <Button size="sm" variant="outline" onClick={() => setEditing({ ...jam, prizes: jam.prizes ?? [] })}>
                 {t('edit')}
               </Button>
               <IconButton size="sm" label={t('delete')} onClick={() => void act(async () => (await getRepo()).growth.deleteJam(jam.id), t('deleted'))}>

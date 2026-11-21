@@ -1,11 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Camera, Check, Rocket, SquarePlay } from 'lucide-react';
+import { Camera, Check, Gift, Rocket, SquarePlay } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card, EmptyState, SelectField, Skeleton, cn, type BadgeTone } from '@brainstorming/ui';
+import { Badge, Button, Card, EmptyState, SelectField, Skeleton, cn, useToast, type BadgeTone } from '@brainstorming/ui';
 import { useLocale } from '@/i18n/navigation';
-import { getRepo } from '@/lib/data';
+import { getRepo, RepoError } from '@/lib/data';
 import type { BoostOrder } from '@/lib/data/billingTypes';
 import { PUBLIC_STATUSES } from '@/lib/data/types';
 import { BOOSTS, formatInr, type BoostPackage } from '@/lib/domain/premium';
@@ -52,6 +52,41 @@ export function BoostLinks({ order }: { order: BoostOrder }) {
  * game and post them on the official channels, plus a sponsored slot on the site. Sponsored
  * placement is always labelled, and it never changes the game's Brain Rank.
  */
+/** Free Spotlight Boosts earned when a review took longer than 72 hours. */
+function FreeBoostCredit({ gameId, onUsed }: { gameId: string; onUsed: () => void }) {
+  const t = useTranslations('boost');
+  const tc = useTranslations('common');
+  const toast = useToast();
+  const credits = useRepoQuery((repo) => repo.billing.myBoostCredits(), [], { topics: ['revenue', 'notifications'] });
+  const [busy, setBusy] = useState(false);
+  if (!credits.data) return null;
+  const use = async () => {
+    setBusy(true);
+    try {
+      await (await getRepo()).billing.redeemBoostCredit(gameId);
+      toast(t('creditUsed'), { tone: 'success' });
+      credits.refresh();
+      onUsed();
+    } catch (err) {
+      toast(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'), { tone: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card className="flex flex-wrap items-center gap-3 border-primary p-4" data-testid="boost-credit">
+      <Gift aria-hidden="true" className="size-6 text-primary" />
+      <p className="min-w-0 flex-1 text-sm">
+        <span className="block font-bold">{t('creditTitle', { count: credits.data })}</span>
+        {t('creditBody')}
+      </p>
+      <Button loading={busy} disabled={!gameId} onClick={() => void use()} data-testid="boost-credit-use">
+        {t('creditUse')}
+      </Button>
+    </Card>
+  );
+}
+
 export function BoostPage() {
   const t = useTranslations('boost');
   const locale = useLocale();
@@ -87,6 +122,7 @@ export function BoostPage() {
       ) : (
         <>
           <SelectField label={t('game')} className="max-w-sm" value={selected} onChange={(e) => setGameId(e.target.value)} options={live.map((g) => ({ value: g.id, label: g.title }))} data-testid="boost-game" />
+          <FreeBoostCredit gameId={selected} onUsed={() => orders.refresh()} />
           <div className="grid gap-4 lg:grid-cols-3">
             {(Object.keys(BOOSTS) as BoostPackage[]).map((pkg) => {
               const def = BOOSTS[pkg];

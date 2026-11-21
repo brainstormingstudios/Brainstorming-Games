@@ -89,6 +89,19 @@ function fulfil(intent: MockTables['intents'][number]): void {
   emitTopic('revenue');
 }
 
+/** Mock side of app.grant_review_credit (0019): one free Spotlight Boost per late review. */
+export function grantReviewCredit(versionId: string): void {
+  if (readTable('boostCredits').some((c) => c.versionId === versionId)) return;
+  const v = readTable('versions').find((x) => x.id === versionId);
+  const g = v && readTable('games').find((x) => x.id === v.gameId);
+  if (!g) return;
+  mutateTable('boostCredits', (rows) => {
+    rows.push({ id: newId(), studioId: g.studioId, versionId, createdAt: nowIso(), usedAt: null, usedBoostId: null });
+  });
+  notify(readTable('studios').find((s) => s.id === g.studioId)?.ownerId, 'boost', 'Your review took over 72 hours: a free Boost', `Sorry for the wait on ${g.title}. Your next Spotlight Boost is free: use it on the Boost page.`, '/dev/boost/');
+  emitTopic('notifications');
+}
+
 function newIntent(kind: 'premium' | 'boost', userId: string, ref: string, amount: number, description: string, pkg?: keyof typeof BOOSTS): CheckoutIntent {
   const id = newId();
   mutateTable('intents', (rows) => {
@@ -184,6 +197,30 @@ export const mockBilling: BillingRepo = {
       rows.push({ id, gameId, studioId: studio.id, package: pkg, amount: BOOSTS[pkg].price, status: 'pending_payment', shortUrls: [], reelUrls: [], startsAt: null, endsAt: null, heroUntil: null, notes: '', createdAt: nowIso() });
     });
     return newIntent('boost', user.id, id, BOOSTS[pkg].price, `Boost ${BOOST_NAME[pkg]}: ${game.title}`, pkg);
+  },
+  async myBoostCredits() {
+    const studio = requireStudio();
+    return readTable('boostCredits').filter((c) => c.studioId === studio.id && !c.usedAt).length;
+  },
+  async redeemBoostCredit(gameId) {
+    const studio = requireStudio();
+    const game = readTable('games').find((g) => g.id === gameId && g.studioId === studio.id);
+    if (!game) fail('not_allowed');
+    if (!PUBLIC_STATUSES.includes(game.status)) fail('invalid', 'Only a live game can be boosted.');
+    if (readTable('boosts').some((b) => b.gameId === gameId && (b.status === 'paid' || b.status === 'live') && (b.endsAt ?? '') > nowIso())) {
+      fail('conflict', 'This game already has a Boost running.');
+    }
+    const credit = readTable('boostCredits').find((c) => c.studioId === studio.id && !c.usedAt);
+    if (!credit) fail('not_found', 'No free Boost credit left.');
+    const id = newId();
+    const start = Date.now();
+    mutateTable('boosts', (rows) => {
+      rows.push({ id, gameId, studioId: studio.id, package: 'spotlight', amount: 0, status: 'paid', shortUrls: [], reelUrls: [], startsAt: new Date(start).toISOString(), endsAt: new Date(start + BOOSTS.spotlight.sponsoredDays * 86_400_000).toISOString(), heroUntil: null, notes: 'Free: late review credit', createdAt: nowIso() });
+    });
+    mutateTable('boostCredits', (rows) => rows.map((c) => (c.id === credit.id ? { ...c, usedAt: nowIso(), usedBoostId: id } : c)));
+    audit(currentMockUser()?.id ?? null, 'boost_credit_used', 'boost', id, { game: gameId });
+    emitTopic('catalogue');
+    emitTopic('revenue');
   },
   async myBoosts() {
     const studio = requireStudio();

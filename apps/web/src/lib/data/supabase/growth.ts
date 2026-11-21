@@ -34,6 +34,9 @@ const toJam = (r: Row): Jam => ({
   endsAt: String(r.ends_at),
   status: r.status as Jam['status'],
   entries: Number((r.jam_entries as { count?: number }[] | null)?.[0]?.count ?? 0),
+  sponsorName: (r.sponsor_name as string | null) ?? null,
+  sponsorUrl: (r.sponsor_url as string | null) ?? null,
+  prizes: (r.prizes as Jam['prizes'] | null) ?? [],
 });
 
 const isoDay = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -273,6 +276,9 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
         starts_at: input.startsAt,
         ends_at: input.endsAt,
         status: input.status,
+        sponsor_name: input.sponsorName?.trim() || null,
+        sponsor_url: input.sponsorUrl?.trim() || null,
+        prizes: (input.prizes ?? []).filter((p) => p.prize.trim()).slice(0, 10).map((p, i) => ({ rank: i + 1, prize: p.prize.trim().slice(0, 120) })),
       };
       const db = getSupabase();
       check(input.id ? await db.from('jams').update(row).eq('id', input.id) : await db.from('jams').insert(row));

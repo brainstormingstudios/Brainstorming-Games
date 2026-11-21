@@ -1,5 +1,6 @@
 'use client';
 
+import { reviewHoursLeft } from '@/lib/domain/review';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
@@ -129,7 +130,7 @@ export function QaQueue() {
           <table className="w-full text-sm">
             <thead className="bg-surface-3 text-left">
               <tr>
-                {['game', 'studio', 'version', 'submitted', 'preQa', 'autoReview'].map((h) => (
+                {['game', 'studio', 'version', 'submitted', 'due', 'preQa', 'autoReview'].map((h) => (
                   <th key={h} scope="col" className="px-3 py-2 font-display">
                     {t(h as 'game')}
                   </th>
@@ -148,6 +149,12 @@ export function QaQueue() {
                   <td className="px-3 py-2">{item.studioName}</td>
                   <td className="px-3 py-2">v{item.version}</td>
                   <td className="px-3 py-2">{formatDate(item.submittedAt, locale)}</td>
+                  <td className="px-3 py-2" data-testid="qa-due">
+                    {(() => {
+                      const left = reviewHoursLeft(item.submittedAt);
+                      return left < 0 ? <Badge tone="danger">{t('late')}</Badge> : <Badge tone={left < 12 ? 'warning' : 'neutral'}>{t('hoursLeft', { hours: left })}</Badge>;
+                    })()}
+                  </td>
                   <td className="px-3 py-2">{item.preQaStatus ? <Badge tone={PRE_QA_TONE[item.preQaStatus]}>{item.preQaStatus}</Badge> : '–'}</td>
                   <td className="px-3 py-2">{item.autoReviewStatus ? <Badge tone={item.autoReviewStatus === 'pass' ? 'success' : item.autoReviewStatus === 'warn' ? 'warning' : 'danger'}>{t(`auto.${item.autoReviewStatus}`)}</Badge> : '–'}</td>
                   <td className="px-3 py-2 text-right">

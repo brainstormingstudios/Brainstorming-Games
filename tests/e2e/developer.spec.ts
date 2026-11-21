@@ -98,6 +98,8 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await expect(page.getByTestId('wiz-check').and(page.locator('[data-ok="false"]'))).toHaveCount(0);
   await page.getByTestId('wiz-submit').click();
   await expect(page.getByTestId('game-status').first()).toHaveText('In review');
+  // The 72-hour review promise is shown with its deadline.
+  await expect(page.getByTestId('review-promise')).toContainText("We'll review it by");
 
   // 5. Admin approves to Spark.
   await page.goto(`${ADMIN}/qa/`);
@@ -105,6 +107,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await signIn(page, 'admin@example.test', 'qa_admin', '1985');
   await unlockOwner(page, 'admin@example.test');
   await expect(page.getByTestId('qa-row')).toHaveCount(1);
+  await expect(page.getByTestId('qa-due')).toContainText(/hours left/);
   await page.getByTestId('qa-review-link').click();
   // The automatic moderation ran first: an original game from a new studio is clear.
   await expect(page.getByTestId('auto-review')).toContainText('Rights declaration');

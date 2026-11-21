@@ -2,6 +2,12 @@
 
 The SDK connects an HTML5 game to Brainstorming Games: loading and gameplay signals (your KPIs), ads with the rules handled for you, player accounts, cloud saves, leaderboards, quests and party invites. It is under 6 KB gzipped and has no dependencies.
 
+## Fastest start: the starter kit
+
+Download **Star Catcher**, the starter kit, from your developer dashboard ("Starter kit" button). It is a small, complete canvas game that already makes every SDK call the right way and passes all the automatic checks. Change the art and rules, keep the calls marked `SDK:`, zip it and upload. See `README.txt` inside.
+
+If your `index.html` loads `bg-sdk.js` from its own folder (as the kit does), the uploader always puts the latest official SDK file in your build.
+
 ## Install
 
 Script tag (recommended):
