@@ -114,4 +114,30 @@ describe('revenue split', () => {
     expect(s.payoutDue).toBe(7000); // ₹70.00
     expect(s.belowThreshold).toBe(true); // under ₹2,000
   });
+  it('pays creators 10% of the net their players brought, without touching the developer share', () => {
+    const run = computeRevenue({
+      month: '2026-10',
+      currency: 'INR',
+      rows: [{ country: 'IN', gross: 10000, refunds: 0, invalidTraffic: 0 }],
+      games: [
+        game({ gameId: 'g1', studioId: 's1', impressionsByCountry: { IN: 100 }, creatorImpressions: { c1: 40, c2: 10 } }),
+        game({ gameId: 'g2', studioId: 's2', impressionsByCountry: { IN: 100 } }),
+      ],
+      countryWeights: {},
+      carry: {},
+      creatorCarry: { c3: 50_000 },
+    });
+    // g1 gets half the net: ₹5,000. c1 brought 40% of its impressions: 10% of 40% of ₹5,000 = ₹200.
+    const c1 = run.creatorStatements.find((c) => c.creatorId === 'c1')!;
+    expect(c1.earned).toBe(20_000);
+    // ₹200 is under the ₹2,000 payout threshold, so it rolls over like a studio balance.
+    expect(c1.belowThreshold).toBe(true);
+    const c2 = run.creatorStatements.find((c) => c.creatorId === 'c2')!;
+    expect(c2.earned).toBe(5_000);
+    expect(c2.belowThreshold).toBe(true);
+    // A creator with only a carried balance keeps it.
+    expect(run.creatorStatements.find((c) => c.creatorId === 'c3')!.payoutDue).toBe(50_000);
+    // The developer still earns 70% of the game's net.
+    expect(run.statements.find((s) => s.studioId === 's1')!.earned).toBe(350_000);
+  });
 });

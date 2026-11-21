@@ -17,6 +17,9 @@ import { BuildUpload } from './BuildUpload';
 import { GrowthPanel } from './GrowthPanel';
 import { PreQaReportView } from './PreQaReportView';
 import { GameStatusBadge, QaBadge } from './StatusBadge';
+import { useDev } from './DevShell';
+import { TrailerButton } from '@/components/creators/TrailerButton';
+import { SITE_URL } from '@/lib/config';
 
 export function GameManage() {
   const t = useTranslations('dev.game');
@@ -24,6 +27,7 @@ export function GameManage() {
   const tc = useTranslations('common');
   const toast = useToast();
   const locale = useLocale();
+  const { studio } = useDev();
   const id = useSearchParams().get('id') ?? '';
   const detail = useRepoQuery((repo) => repo.dev.game(id), [id], { topics: ['dev-games', 'catalogue'] });
   const [busy, setBusy] = useState<string | null>(null);
@@ -132,6 +136,18 @@ export function GameManage() {
           )}
         </div>
       </Card>
+
+      {(() => {
+        const preview = d.media.find((m) => m.kind === 'preview_landscape' && m.isActive && !m.variantLabel);
+        if (!preview) return null;
+        return (
+          <Card className="flex flex-col gap-2 p-4" data-testid="dev-trailer">
+            <h2 className="font-display text-lg font-semibold">{t('trailerTitle')}</h2>
+            <p className="text-sm text-fg-muted">{t('trailerBody')}</p>
+            <TrailerButton game={{ slug: game.slug, title: game.title, previewUrl: preview.url }} link={`${SITE_URL}/game/${game.slug}/?ref=${studio.slug}`} />
+          </Card>
+        );
+      })()}
 
       <section aria-labelledby="versions" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

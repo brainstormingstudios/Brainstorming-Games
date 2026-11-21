@@ -19,6 +19,8 @@ export type MailTemplate =
   | 'spark_ended'
   | 'statement_ready'
   | 'payout_sent'
+  | 'creator_approved'
+  | 'creator_declined'
   | 'premium_welcome'
   | 'premium_cancelled'
   | 'guest_pass_redeemed'
@@ -248,6 +250,32 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
             ['Payout due', s(data.due)],
           ],
           button: { label: 'Open payouts', url: dev('/payouts/') },
+        },
+        ctx,
+      );
+    case 'creator_approved':
+      return layout(
+        {
+          subject: 'You are a Brainstorming Games creator',
+          preview: 'Share games with your link and earn 10% of the ad revenue from players you bring.',
+          heading: `Welcome to the creator program, @${s(data.handle)}`,
+          paragraphs: [
+            'Your creator account is approved. Every game on Brainstorming Games now has a share link with your handle in it.',
+            'Players who arrive through your links are yours for 30 days: you earn 10% of the net ad revenue they bring, paid monthly once your balance reaches ₹2,000.',
+          ],
+          button: { label: 'Open your creator dashboard', url: `${ctx.siteUrl}/creators/dashboard/` },
+        },
+        ctx,
+      );
+    case 'creator_declined':
+      return layout(
+        {
+          subject: 'Your creator application',
+          preview: 'About your application to the Brainstorming Games creator program.',
+          heading: 'About your creator application',
+          paragraphs: ['Thank you for applying. We could not approve your creator account this time.'],
+          quote: s(data.note) || undefined,
+          button: { label: 'Apply again later', url: `${ctx.siteUrl}/creators/` },
         },
         ctx,
       );

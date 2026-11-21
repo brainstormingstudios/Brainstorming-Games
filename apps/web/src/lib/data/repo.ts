@@ -9,6 +9,7 @@
  */
 import type { AvatarCosmetics } from '@brainstorming/ui';
 import type { BoostOrder, BoostPackage, CheckoutIntent, EmailRow, PaymentRow, PremiumPlan, PremiumStatus, Wallpaper } from './billingTypes';
+import type { AdminCreatorRow, Creator, CreatorApplyInput, CreatorMonthRow, CreatorPayoutRow, CreatorStats, CreatorStatus } from './creatorTypes';
 import type { PremiumState } from '@/lib/domain/premium';
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
@@ -121,6 +122,8 @@ export interface EventContext {
   device: DeviceClass;
   /** Studio slug from a `?ref=` link, if this visitor arrived through one. */
   refStudio: string | null;
+  /** Creator handle from a `?cr=` link, if this visitor arrived through one. */
+  refCreator?: string | null;
 }
 
 export interface EventsRepo {
@@ -498,7 +501,7 @@ export interface PayoutProfileSummary {
 
 export interface RevenueRepo {
   /** Admin: impressions per game and country for a month, country weights and carried balances. */
-  inputs(month: string): Promise<{ games: GameImpressions[]; weights: Record<string, number>; carry: Record<string, number> }>;
+  inputs(month: string): Promise<{ games: GameImpressions[]; weights: Record<string, number>; carry: Record<string, number>; creatorCarry: Record<string, number> }>;
   /** Admin: stores a month's statements (replaces an earlier run of that month if none is paid). */
   finalise(run: RevenueRun, rows: RevenueRow[], fxInr: number | null): Promise<void>;
   /** Admin: every statement. */
@@ -596,8 +599,31 @@ export interface BillingRepo {
   emails(): Promise<EmailRow[]>;
 }
 
+export interface CreatorRepo {
+  /** The signed-in player's creator account, if any. */
+  mine(): Promise<Creator | null>;
+  /** Applies (or re-applies after a rejection). Adults only. */
+  apply(input: CreatorApplyInput): Promise<Creator>;
+  handleAvailable(handle: string): Promise<boolean>;
+  /** Approved creators: visitors, plays and ad impressions their links brought. */
+  stats(days: number): Promise<CreatorStats>;
+  myStatements(): Promise<CreatorMonthRow[]>;
+  myPayouts(): Promise<CreatorPayoutRow[]>;
+  payoutProfile(): Promise<PayoutProfileSummary | null>;
+  savePayoutProfile(input: PayoutProfileInput): Promise<void>;
+  /** Records a visit that arrived through a creator link. */
+  recordVisit(handle: string): Promise<void>;
+  // Staff
+  list(status: CreatorStatus | 'all'): Promise<AdminCreatorRow[]>;
+  decide(creatorId: string, decision: 'approve' | 'reject' | 'suspend', note: string): Promise<void>;
+  months(): Promise<CreatorMonthRow[]>;
+  recordPayout(creatorId: string, months: string[], method: PayoutMethod, reference: string): Promise<void>;
+  payouts(): Promise<CreatorPayoutRow[]>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
+  creators: CreatorRepo;
   billing: BillingRepo;
   growth: GrowthRepo;
   revenue: RevenueRepo;

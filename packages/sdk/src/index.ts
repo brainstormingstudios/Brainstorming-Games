@@ -37,6 +37,7 @@ import {
   type MethodName,
   type RewardedResult,
   type RoomInfo,
+  type ClipResult,
 } from './protocol';
 
 export type {
@@ -117,6 +118,9 @@ function onMessage(event: MessageEvent): void {
       authListeners.forEach((l) => l(currentUser));
     } else if (name === 'ad-state') {
       adStateListeners.forEach((l) => l(msg.data as { playing: boolean }));
+    } else if (name === 'clip-start') {
+      const { seconds, token } = msg.data as { seconds: number; token: number };
+      void recordClip(Math.max(3, Math.min(30, Number(seconds) || 15)), Number(token) || 1);
     }
   }
 }
@@ -210,6 +214,69 @@ function init(): Promise<void> {
   return initPromise;
 }
 
+/**
+ * Clip & share: records the game's largest visible canvas for `seconds` and sends the video to
+ * the platform, which turns it into a vertical clip for the player to save or share. Nothing is
+ * recorded unless the player presses the Clip button on the site. Games can opt out with
+ * `BG.game.setClipsEnabled(false)` (for example on screens that show other players' names).
+ */
+let clipsEnabled = true;
+let clipping = false;
+
+function largestCanvas(): HTMLCanvasElement | null {
+  let best: HTMLCanvasElement | null = null;
+  let bestArea = 0;
+  for (const c of Array.from(document.querySelectorAll('canvas'))) {
+    const r = c.getBoundingClientRect();
+    const area = r.width * r.height;
+    if (area > bestArea && r.width >= 120 && r.height >= 120) {
+      best = c;
+      bestArea = area;
+    }
+  }
+  return best;
+}
+
+async function recordClip(seconds: number, token: number): Promise<void> {
+  const reply = (r: Omit<ClipResult, 'token'>) => {
+    if (environment === 'brainstorming') void post('clip.result', { token, ...r }, 30_000).catch(() => {});
+  };
+  const none = (reason: string) => reply({ ok: false, mime: '', data: null, width: 0, height: 0, reason });
+  if (!clipsEnabled) return none('disabled');
+  if (clipping) return none('busy');
+  const canvas = largestCanvas();
+  if (!canvas) return none('no-canvas');
+  if (typeof MediaRecorder === 'undefined' || typeof canvas.captureStream !== 'function') return none('unsupported');
+  const types = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  const mime = types.find((t) => MediaRecorder.isTypeSupported(t));
+  if (!mime) return none('unsupported');
+  let stream: MediaStream;
+  try {
+    stream = canvas.captureStream(30);
+  } catch {
+    // A canvas that drew images from other sites without CORS cannot be recorded.
+    return none('tainted');
+  }
+  clipping = true;
+  try {
+    const chunks: Blob[] = [];
+    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5_000_000 });
+    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const done = new Promise<void>((resolve) => (recorder.onstop = () => resolve()));
+    recorder.start(1000);
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    recorder.stop();
+    await done;
+    stream.getTracks().forEach((t) => t.stop());
+    const data = await new Blob(chunks, { type: mime.split(';')[0] }).arrayBuffer();
+    reply({ ok: true, mime, data, width: canvas.width, height: canvas.height, reason: null });
+  } catch {
+    none('error');
+  } finally {
+    clipping = false;
+  }
+}
+
 const gameEvent = (name: GameEventName) => send('game.event', { name });
 
 /** The game module: loading and gameplay signals, celebrations, context and invites. */
@@ -258,6 +325,10 @@ const game = {
   },
   /** Tell the platform about a multiplayer room so friends can join from the site. */
   updateRoom: (room: RoomInfo) => send('game.room', room),
+  /** Allow or block the player's Clip button (on by default). */
+  setClipsEnabled(enabled: boolean): void {
+    clipsEnabled = Boolean(enabled);
+  },
 };
 
 /** The ad module. The platform enforces the ad rules; a refused call resolves quickly. */

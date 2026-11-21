@@ -24,6 +24,8 @@ export const mockRevenue: RevenueRepo = {
     const games = new Map(readTable('games').map((g) => [g.id, g]));
     const studios = new Map(readTable('studios').map((s) => [s.id, s]));
     const byGame = new Map<string, GameImpressions>();
+    // Only approved creators earn; their links are credited from the day they are approved.
+    const creatorsByHandle = new Map(readTable('creators').filter((c) => c.status === 'approved').map((c) => [c.handle, c]));
     for (const e of readTable('events')) {
       if (e.type !== 'ad_started' || !e.gameId || !e.ts.startsWith(month)) continue;
       const g = games.get(e.gameId);
@@ -40,17 +42,24 @@ export const mockRevenue: RevenueRepo = {
           refImpressions: 0,
           exclusiveUntil: g.exclusiveUntil,
           riseStartedAt: g.riseStartedAt,
+          creatorImpressions: {},
         };
         byGame.set(g.id, row);
       }
       const c = e.country ?? 'ZZ';
       row.impressionsByCountry[c] = (row.impressionsByCountry[c] ?? 0) + 1;
       if (e.refStudio && studios.get(g.studioId)?.slug === e.refStudio) row.refImpressions += 1;
+      else if (e.refCreator) {
+        const creator = creatorsByHandle.get(e.refCreator);
+        if (creator) row.creatorImpressions![creator.id] = (row.creatorImpressions![creator.id] ?? 0) + 1;
+      }
     }
     const prev = previousMonth(month);
     const carry: Record<string, number> = {};
     for (const r of readTable('revenueMonths')) if (r.month === prev && r.status === 'rolled_over') carry[r.studioId] = r.payoutDue;
-    return { games: [...byGame.values()], weights: COUNTRY_WEIGHTS, carry };
+    const creatorCarry: Record<string, number> = {};
+    for (const r of readTable('creatorMonths')) if (r.month === prev && r.status === 'rolled_over') creatorCarry[r.creatorId] = r.payoutDue;
+    return { games: [...byGame.values()], weights: COUNTRY_WEIGHTS, carry, creatorCarry };
   },
   async finalise(run, rows, fxInr) {
     const staff = requireStaff();
@@ -75,6 +84,22 @@ export const mockRevenue: RevenueRepo = {
         games: s.games,
       })),
     ]);
+    const creators = new Map(readTable('creators').map((c) => [c.id, c]));
+    mutateTable('creatorMonths', (list) => [
+      ...list.filter((r) => r.month !== run.month),
+      ...(run.creatorStatements ?? []).map((c) => ({
+        creatorId: c.creatorId,
+        handle: creators.get(c.creatorId)?.handle ?? '',
+        month: c.month,
+        currency: c.currency,
+        earned: c.earned,
+        carryIn: c.carryIn,
+        payoutDue: c.payoutDue,
+        status: c.belowThreshold ? ('rolled_over' as const) : ('finalised' as const),
+        games: c.games,
+      })),
+    ]);
+    for (const c of run.creatorStatements ?? []) notify(creators.get(c.creatorId)?.userId, 'revenue', `Your ${run.month} creator statement is ready`, '', '/creators/dashboard/');
     const owners = new Map(readTable('studios').map((s) => [s.id, s.ownerId]));
     for (const s of run.statements) {
       notify(owners.get(s.studioId), 'revenue', `Your ${run.month} statement is ready`, '', '/dev/payouts/');

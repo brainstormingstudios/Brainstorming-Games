@@ -8,6 +8,7 @@ import { mockBilling } from './billing';
 import { mockDev } from './dev';
 import { mockGrowth } from './growth';
 import { mockRevenue } from './revenue';
+import { mockCreators } from './creators';
 import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
 import {
   afterEvents,
@@ -23,6 +24,7 @@ import {
 import type { ControlRow, FaqItem, GameStatus, MediaAsset, MyRating, Orientation, Platform } from '../types';
 import { mockCatalogue, readCatalogueTables, statsFor } from './catalogue';
 import {
+  appendRows,
   dayKey,
   mutateTable,
   newId,
@@ -30,6 +32,7 @@ import {
   readTable,
   resetMockDb,
   takeToken,
+  type MockEvent,
   type MockGame,
   type MockStudio,
   type MockVersion,
@@ -127,7 +130,8 @@ const events: EventsRepo = {
     if (batch.length === 0) return;
     if (!takeToken(`events:${context.anonId}`, 120, 60_000)) throw new RepoError('rate_limited');
     const playsByGame = new Map<string, number>();
-    mutateTable('events', (rows) => {
+    const rows: MockEvent[] = [];
+    {
       for (const e of batch.slice(0, 50)) {
         rows.push({
           id: newId(),
@@ -142,12 +146,14 @@ const events: EventsRepo = {
           country: null,
           device: context.device,
           refStudio: context.refStudio,
+          refCreator: context.refCreator ?? null,
         });
         if (e.type === 'play_click' && e.gameId) {
           playsByGame.set(e.gameId, (playsByGame.get(e.gameId) ?? 0) + 1);
         }
       }
-    });
+    }
+    appendRows('events', rows);
     const uid = currentUserId();
     if (uid) afterEvents(uid, batch.map((e) => e.type));
     if (playsByGame.size > 0) {
@@ -379,6 +385,7 @@ export function createMockRepo(): Repo {
     billing: mockBilling,
     growth: mockGrowth,
     revenue: mockRevenue,
+    creators: mockCreators,
     catalogue: mockCatalogue,
     player,
     events,

@@ -162,6 +162,8 @@ export function GameView({ game, related }: GameViewProps) {
               onToggleFullscreen={() => frame.current?.toggleFullscreen()}
               getContext={() => frame.current?.context() ?? null}
               onStats={setStats}
+              requestClip={(seconds) => frame.current?.clip(seconds) ?? Promise.reject(new Error('no-sdk'))}
+              canClip={() => frame.current?.canClip() ?? false}
             />
             <PlaytestCard game={game} />
 

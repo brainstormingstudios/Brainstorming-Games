@@ -2,8 +2,9 @@
 //   { action: 'get' }                → the caller's masked payout summary
 //   { action: 'save', profile }      → encrypts and stores the caller's payout details
 //   { action: 'reveal', studioId }   → admin only: the decrypted details, to send a payout
+//   scope: 'creator'                 → the same for the caller's creator account (reveal: creatorId)
 // Details are encrypted with AES-GCM (key in the PAYOUT_ENCRYPTION_KEY secret) and stored in
-// studio_payout_profiles, a table with no client policies at all.
+// studio_payout_profiles or creator_payout_profiles, tables with no client policies at all.
 import { adminClient, hasOwnerCode, json, preflight, requireUser, userClient } from '../_shared/http.ts';
 
 const enc = new TextEncoder();
@@ -44,25 +45,31 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   const user = await requireUser(req);
   if (!user) return json(req, 401, { error: 'login_required' });
-  const body = (await req.json().catch(() => ({}))) as { action?: string; profile?: Profile; studioId?: string };
+  const body = (await req.json().catch(() => ({}))) as { action?: string; profile?: Profile; studioId?: string; creatorId?: string; scope?: 'studio' | 'creator' };
   const db = adminClient();
+  const creatorScope = body.scope === 'creator';
+  const table = creatorScope ? 'creator_payout_profiles' : 'studio_payout_profiles';
+  const keyColumn = creatorScope ? 'creator_id' : 'studio_id';
 
   if (body.action === 'reveal') {
     const { data: me } = await db.from('profiles').select('role').eq('id', user.id).single();
     if (me?.role !== 'admin' || !hasOwnerCode(req)) return json(req, 403, { error: 'not_allowed' });
-    const { data: row } = await db.from('studio_payout_profiles').select('*').eq('studio_id', body.studioId ?? '').maybeSingle();
+    const target = (creatorScope ? body.creatorId : body.studioId) ?? '';
+    const { data: row } = await db.from(table).select('*').eq(keyColumn, target).maybeSingle();
     if (!row) return json(req, 404, { error: 'not_found' });
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(row.iv) }, await key(), unb64(row.ciphertext));
-    await db.from('admin_audit_log').insert({ actor_id: user.id, action: 'payout_profile_reveal', target_type: 'studio', target_id: body.studioId, detail: {} });
+    await db.from('admin_audit_log').insert({ actor_id: user.id, action: 'payout_profile_reveal', target_type: creatorScope ? 'creator' : 'studio', target_id: target, detail: {} });
     return json(req, 200, { profile: JSON.parse(dec.decode(plain)) });
   }
 
-  // The caller's own studio (RLS: only their own row is visible).
-  const { data: studio } = await userClient(req).from('studios').select('id').eq('owner_id', user.id).maybeSingle();
-  if (!studio) return json(req, 403, { error: 'not_allowed' });
+  // The caller's own studio or approved creator account (RLS: only their own row is visible).
+  const owner = creatorScope
+    ? (await userClient(req).from('creators').select('id').eq('user_id', user.id).eq('status', 'approved').maybeSingle()).data
+    : (await userClient(req).from('studios').select('id').eq('owner_id', user.id).maybeSingle()).data;
+  if (!owner) return json(req, 403, { error: 'not_allowed' });
 
   if (body.action === 'get') {
-    const { data: row } = await db.from('studio_payout_profiles').select('method, currency, ciphertext, iv, updated_at').eq('studio_id', studio.id).maybeSingle();
+    const { data: row } = await db.from(table).select('method, currency, ciphertext, iv, updated_at').eq(keyColumn, owner.id).maybeSingle();
     if (!row) return json(req, 200, { profile: null });
     const plain = JSON.parse(dec.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(row.iv) }, await key(), unb64(row.ciphertext)))) as Profile;
     return json(req, 200, { profile: { method: row.method, currency: row.currency, summary: mask(plain), updatedAt: row.updated_at } });
@@ -73,8 +80,8 @@ Deno.serve(async (req) => {
     if (error) return json(req, 400, { error });
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await key(), enc.encode(JSON.stringify(body.profile))));
-    const { error: dbError } = await db.from('studio_payout_profiles').upsert({
-      studio_id: studio.id,
+    const { error: dbError } = await db.from(table).upsert({
+      [keyColumn]: owner.id,
       ciphertext: b64(cipher),
       iv: b64(iv),
       key_version: 1,

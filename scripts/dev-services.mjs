@@ -449,12 +449,13 @@ async function authApi(req, res, action) {
   res.setHeader('cache-control', 'no-store');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(res, 400, { error: 'invalid' });
   if (action === 'send-code') {
+    // Reserved test addresses (automated tests sign the same admin in many times) are not limited.
+    const testAddress = /@example\.(test|com)$/i.test(email) || /\.test$/i.test(email);
     const recent = (codeSends.get(email) ?? []).filter((t) => t > Date.now() - 600_000);
-    if (recent.length >= 5) return json(res, 429, { error: 'rate_limited' });
+    if (recent.length >= 5 && !testAddress) return json(res, 429, { error: 'rate_limited' });
     codeSends.set(email, [...recent, Date.now()]);
     const code = String(randomBytes(4).readUInt32BE(0) % 1_000_000).padStart(6, '0');
     signInCodes.set(email, { hash: hashCode(email, code), expires: Date.now() + 600_000, tries: 0 });
-    const testAddress = /@example\.(test|com)$/i.test(email) || /\.test$/i.test(email);
     if (GMAIL_PASS && !testAddress) {
       const row = await sendMailNow({ to: email, template: 'sign_in_code', data: { code } });
       if (row.status === 'sent') return json(res, 200, { sent: true });
@@ -665,6 +666,16 @@ const server = createServer(async (req, res) => {
         JSON.parse(text); // refuse anything that is not JSON
         setTable(name, text);
         return json(res, 200, { version: tables.get(name).version });
+      }
+      // Append-only tables (events, visits): several tabs and sites write at once, so rows are
+      // added here instead of each page writing back its own, possibly outdated, copy.
+      const appendTo = /^append\/([A-Za-z]{1,40})$/.exec(rest)?.[1];
+      if (appendTo && req.method === 'POST') {
+        const rows = JSON.parse(await readBody(req, 4 * 1024 * 1024));
+        if (!Array.isArray(rows)) return json(res, 400, { error: 'invalid' });
+        const cap = Number(url.searchParams.get('cap')) || 20000;
+        setTable(appendTo, [...getRows(appendTo), ...rows].slice(-cap));
+        return json(res, 200, { version: tables.get(appendTo).version });
       }
       return json(res, 404, { error: 'not_found' });
     }

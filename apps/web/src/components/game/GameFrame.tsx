@@ -13,7 +13,7 @@ import { track } from '@/lib/events/client';
 import { estimateLoadSeconds, formatBytes, playUrl } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
 import type * as HostModule from '@/lib/sdk-host/bridge';
-import type { HostBridge, HostLogEntry } from '@/lib/sdk-host/bridge';
+import type { ClipVideo, HostBridge, HostLogEntry } from '@/lib/sdk-host/bridge';
 import { useLocale } from '@/i18n/navigation';
 
 export interface GameFrameHandle {
@@ -21,6 +21,10 @@ export interface GameFrameHandle {
   isPlaying: () => boolean;
   /** The context the game set through the SDK, for bug reports. */
   context: () => Record<string, unknown> | null;
+  /** Whether the game's SDK is connected (Clip & share needs it). */
+  canClip: () => boolean;
+  /** Asks the game to record the next `seconds` of play. */
+  clip: (seconds: number) => Promise<ClipVideo>;
 }
 
 export interface GameFrameProps {
@@ -262,6 +266,8 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       toggleFullscreen,
       isPlaying: () => phase === 'playing',
       context: () => bridge.current?.context() ?? null,
+      canClip: () => phase === 'playing' && Boolean(bridge.current?.connected()),
+      clip: (seconds: number) => (bridge.current ? bridge.current.requestClip(seconds) : Promise.reject(new Error('no-sdk'))),
     }),
     [toggleFullscreen, phase],
   );

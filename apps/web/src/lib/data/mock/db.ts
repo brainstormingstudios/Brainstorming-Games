@@ -3,6 +3,7 @@
  * It starts with no games. Each read parses the stored JSON so a write from another tab is seen
  * straight away.
  */
+import type { Creator, CreatorMonthRow, CreatorPayoutRow } from '../creatorTypes';
 import { MOCK_DB_URL } from '@/lib/config';
 import type { BoostStatus } from '@/lib/domain/premium';
 import type { EmailRow, PaymentRow } from '../billingTypes';
@@ -127,6 +128,7 @@ export interface MockEvent {
   country: string | null;
   device: string;
   refStudio: string | null;
+  refCreator?: string | null;
 }
 
 export interface MockGameStats {
@@ -321,6 +323,11 @@ export interface MockTables {
   /** Admin edits to the built-in quest and cosmetic lists. */
   questOverrides: { code: string; target: number; reward: number; active: boolean }[];
   cosmeticOverrides: { id: string; cost: number; minLevel: number; active: boolean }[];
+  creators: Creator[];
+  creatorVisits: { handle: string; anonId: string; at: string }[];
+  creatorMonths: CreatorMonthRow[];
+  creatorPayouts: CreatorPayoutRow[];
+  creatorPayoutProfiles: { creatorId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
 }
 
 export type TableName = keyof MockTables;
@@ -334,6 +341,7 @@ const CAPS: Partial<Record<TableName, number>> = {
   scores: 2000,
   questEvents: 2000,
   referralVisits: 2000,
+  creatorVisits: 2000,
   reports: 500,
   playtests: 2000,
 };
@@ -523,6 +531,34 @@ export function mockDbStats(): MockDbStats {
 }
 
 /** Read-modify-write. The callback may mutate the array or return a new one. */
+/**
+ * Adds rows to an append-only table (events, visits). The local services process appends them,
+ * so a page with an outdated copy of the table can never overwrite rows other pages added.
+ */
+export function appendRows<K extends TableName>(name: K, rows: MockTables[K]): void {
+  if (rows.length === 0) return;
+  if (usingRemote()) {
+    const text = JSON.stringify(rows);
+    const path = `/append/${name}?cap=${CAPS[name] ?? 20000}`;
+    const reply = call('POST', path, text);
+    if (reply != null) {
+      versions[name] = Number((JSON.parse(reply) as { version?: number }).version ?? 0);
+    } else {
+      // A closing page cannot make synchronous requests: a beacon is delivered after it has gone.
+      try {
+        navigator.sendBeacon(`${REMOTE}${path}`, text);
+      } catch {
+        // nothing more can be done from a closing page
+      }
+    }
+    texts.delete(name);
+    return;
+  }
+  mutateTable(name, (list) => {
+    (list as unknown[]).push(...(rows as unknown[]));
+  });
+}
+
 export function mutateTable<K extends TableName>(
   name: K,
   fn: (rows: MockTables[K]) => MockTables[K] | void,

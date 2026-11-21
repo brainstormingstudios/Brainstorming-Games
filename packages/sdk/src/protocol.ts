@@ -116,6 +116,19 @@ export interface Methods {
   'lb.submit': { params: { board: string; score: number }; result: { accepted: boolean } };
   'lb.top': { params: { board: string; limit: number; friends: boolean }; result: LeaderboardTop };
   'quests.track': { params: { event: string; value: number }; result: null };
+  /** The recording the host asked for with the `clip-start` event. */
+  'clip.result': { params: ClipResult; result: null };
+}
+
+export interface ClipResult {
+  token: number;
+  ok: boolean;
+  mime: string;
+  data: ArrayBuffer | null;
+  width: number;
+  height: number;
+  /** Why there is no clip: no-canvas, tainted, unsupported, error. */
+  reason: string | null;
 }
 
 export type MethodName = keyof Methods;
@@ -126,6 +139,8 @@ export interface HostEvents {
   auth: BgUser | null;
   /** An ad started (pause and mute) or finished (resume). */
   'ad-state': { playing: boolean };
+  /** The player pressed "Clip": record the next `seconds` of the game canvas. */
+  'clip-start': { seconds: number; token: number };
 }
 
 export type HostEventName = keyof HostEvents;

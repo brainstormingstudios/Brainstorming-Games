@@ -24,6 +24,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { key: 'footer.about', href: '/about' },
       { key: 'footer.blog', href: '/blog' },
+      { key: 'footer.creators', href: '/creators' },
       { key: 'footer.parents', href: '/parents' },
       { key: 'footer.schoolSafe', href: '/school-safe' },
       { key: 'footer.contact', href: '/contact' },

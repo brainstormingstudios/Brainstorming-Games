@@ -60,6 +60,18 @@ export const paramSchemas: { [M in MethodName]: z.ZodType<Methods[M]['params']> 
     friends: z.boolean(),
   }),
   'quests.track': z.object({ event: z.string().regex(/^[a-z0-9_]{1,40}$/), value: z.number().int().min(0).max(1000) }),
+  'clip.result': z.object({
+    token: z.number().int().positive(),
+    ok: z.boolean(),
+    mime: z.string().max(80).regex(/^(video\/(webm|mp4)[a-z0-9;=.,\s"-]*)?$/i),
+    data: z
+      .instanceof(ArrayBuffer)
+      .refine((b) => b.byteLength <= 40 * 1048576, 'clip too large')
+      .nullable(),
+    width: z.number().int().min(0).max(8192),
+    height: z.number().int().min(0).max(8192),
+    reason: z.string().max(40).nullable(),
+  }),
 } as never;
 
 const requestSchema = z.object({

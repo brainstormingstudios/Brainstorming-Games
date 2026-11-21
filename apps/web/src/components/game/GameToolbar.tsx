@@ -44,6 +44,7 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { setPrefs, usePrefs } from '@/lib/prefs';
 import { useLocale } from '@/i18n/navigation';
 import { localizePath } from '@/i18n/config';
+import type { ClipVideo } from '@/lib/sdk-host/bridge';
 
 const ClipButton = dynamic(() => import('@/components/growth/ClipButton').then((m) => m.ClipButton), { ssr: false });
 
@@ -54,9 +55,12 @@ export interface GameToolbarProps {
   /** Latest SDK game context, attached to bug reports. */
   getContext?: () => Record<string, unknown> | null;
   onStats?: (stats: GameStats) => void;
+  /** Clip & share through the SDK, when the game uses it. */
+  requestClip?: (seconds: number) => Promise<ClipVideo>;
+  canClip?: () => boolean;
 }
 
-export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, onStats }: GameToolbarProps) {
+export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, onStats, requestClip, canClip }: GameToolbarProps) {
   const t = useTranslations('game');
   const tc = useTranslations('common');
   const toast = useToast();
@@ -165,7 +169,7 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
         <IconButton label={t('share')} data-testid="share-button" onClick={() => void share()}>
           <Share2 aria-hidden="true" className="size-5" />
         </IconButton>
-        {!schoolSafe ? <ClipButton title={game.title} /> : null}
+        {!schoolSafe ? <ClipButton title={game.title} slug={game.slug} requestClip={requestClip} canClip={canClip} /> : null}
         {!schoolSafe ? (
           <IconButton
             label={t('invite')}

@@ -5,6 +5,7 @@
  */
 export type Topic =
   | 'catalogue'
+  | 'creators'
   | 'ratings'
   | 'favourites'
   | 'history'

@@ -6,14 +6,17 @@
  *   per country  a country row's net is shared across games by their ad impressions in that
  *                country; an "ALL" row is shared by impressions × country weight
  *   share        85% of net for impressions from the studio's referral link, 80% during the
- *                60-day web-exclusive window after Full Launch, 70% otherwise
+ *                90-day web-exclusive window after Full Launch, 70% otherwise
+ *   creators     10% of net for impressions from players a creator's link brought (not counting
+ *                the studio's own referral players). It comes out of the platform's part; the
+ *                developer's share is unchanged.
  *   payout       monthly; amounts under ₹2,000 / $25 roll over to the next month
  *
  * Money is handled in integer minor units (paise / cents) and split with the largest-remainder
  * method, so the parts always add up exactly to the whole.
  */
 
-export const SHARES = { standard: 0.7, referral: 0.85, exclusive: 0.8 } as const;
+export const SHARES = { standard: 0.7, referral: 0.85, exclusive: 0.8, creator: 0.1 } as const;
 export const THRESHOLD_MINOR = { INR: 200_000, USD: 2_500 } as const;
 export type Currency = keyof typeof THRESHOLD_MINOR;
 
@@ -37,6 +40,26 @@ export interface GameImpressions {
   /** When the web-exclusive window ends (ISO), or null. */
   exclusiveUntil: string | null;
   riseStartedAt: string | null;
+  /** Impressions from players brought by creators' links, per creator id (studio referrals excluded). */
+  creatorImpressions?: Record<string, number>;
+}
+
+export interface CreatorGameLine {
+  gameId: string;
+  title: string;
+  impressions: number;
+  earned: number;
+}
+
+export interface CreatorStatement {
+  creatorId: string;
+  month: string;
+  currency: Currency;
+  earned: number;
+  carryIn: number;
+  payoutDue: number;
+  belowThreshold: boolean;
+  games: CreatorGameLine[];
 }
 
 export interface GameLine {
@@ -74,6 +97,7 @@ export interface RevenueRun {
   currency: Currency;
   totals: { gross: number; refunds: number; invalidTraffic: number; net: number; unattributed: number };
   statements: StudioStatement[];
+  creatorStatements: CreatorStatement[];
 }
 
 const toMinor = (v: number) => Math.round(v * 100);
@@ -125,10 +149,12 @@ export interface RevenueInput {
   countryWeights: Record<string, number>;
   /** Rolled-over balance per studio, minor units. */
   carry: Record<string, number>;
+  /** Rolled-over balance per creator, minor units. */
+  creatorCarry?: Record<string, number>;
 }
 
 export function computeRevenue(input: RevenueInput): RevenueRun {
-  const { month, currency, rows, games, countryWeights, carry } = input;
+  const { month, currency, rows, games, countryWeights, carry, creatorCarry = {} } = input;
   const grossByGame = new Map<string, number>();
   const netByGame = new Map<string, number>();
   let unattributed = 0;
@@ -209,7 +235,53 @@ export function computeRevenue(input: RevenueInput): RevenueRun {
       sharePct: s.net > 0 ? Math.round((s.earned / s.net) * 10_000) / 100 : 0,
     };
   });
-  return { month, currency, totals, statements: statements.sort((a, b) => b.payoutDue - a.payoutDue) };
+  return {
+    month,
+    currency,
+    totals,
+    statements: statements.sort((a, b) => b.payoutDue - a.payoutDue),
+    creatorStatements: creatorStatements(month, currency, games, netByGame, creatorCarry),
+  };
+}
+
+/** Each creator earns SHARES.creator of a game's net, in proportion to the impressions they brought. */
+function creatorStatements(
+  month: string,
+  currency: Currency,
+  games: GameImpressions[],
+  netByGame: Map<string, number>,
+  carry: Record<string, number>,
+): CreatorStatement[] {
+  const byCreator = new Map<string, CreatorStatement>();
+  const get = (creatorId: string) => {
+    let c = byCreator.get(creatorId);
+    if (!c) {
+      c = { creatorId, month, currency, earned: 0, carryIn: carry[creatorId] ?? 0, payoutDue: 0, belowThreshold: false, games: [] };
+      byCreator.set(creatorId, c);
+    }
+    return c;
+  };
+  for (const g of games) {
+    const total = Object.values(g.impressionsByCountry).reduce((a, b) => a + b, 0);
+    const net = netByGame.get(g.gameId) ?? 0;
+    if (total <= 0) continue;
+    for (const [creatorId, raw] of Object.entries(g.creatorImpressions ?? {})) {
+      const impressions = Math.max(0, Math.min(raw, total));
+      if (impressions <= 0) continue;
+      const earned = Math.floor((net * impressions * SHARES.creator) / total);
+      const c = get(creatorId);
+      c.earned += earned;
+      c.games.push({ gameId: g.gameId, title: g.title, impressions, earned });
+    }
+  }
+  // Creators with only a carried balance still get a statement, so the balance is not lost.
+  for (const creatorId of Object.keys(carry)) if (carry[creatorId]! > 0) get(creatorId);
+  return [...byCreator.values()]
+    .map((c) => {
+      const payoutDue = c.earned + c.carryIn;
+      return { ...c, payoutDue, belowThreshold: payoutDue < THRESHOLD_MINOR[currency] };
+    })
+    .sort((a, b) => b.payoutDue - a.payoutDue);
 }
 
 export interface CsvParseResult {

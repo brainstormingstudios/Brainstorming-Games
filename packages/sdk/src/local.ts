@@ -129,5 +129,7 @@ export function createLocalHandlers(log: (line: string) => void): LocalHandlers 
       return { entries, me: entries[0] ?? null };
     },
     'quests.track': async () => null,
+    // Clips are recorded only inside the Brainstorming Games player.
+    'clip.result': async () => null,
   };
 }

@@ -54,15 +54,18 @@ export const supabaseRevenue: RevenueRepo = {
       games: (Omit<GameImpressions, 'impressionsByCountry'> & { impressionsByCountry: Record<string, number | string> })[];
       weights: Record<string, number>;
       carry: Record<string, number>;
+      creatorCarry?: Record<string, number>;
     };
     return {
       games: (data.games ?? []).map((g) => ({
         ...g,
         refImpressions: Number(g.refImpressions ?? 0),
         impressionsByCountry: Object.fromEntries(Object.entries(g.impressionsByCountry ?? {}).map(([c, n]) => [c, Number(n)])),
+        creatorImpressions: Object.fromEntries(Object.entries(g.creatorImpressions ?? {}).map(([c, n]) => [c, Number(n)])),
       })),
       weights: data.weights ?? { default: 1 },
       carry: Object.fromEntries(Object.entries(data.carry ?? {}).map(([k, v]) => [k, minor(v)])),
+      creatorCarry: Object.fromEntries(Object.entries(data.creatorCarry ?? {}).map(([k, v]) => [k, minor(v)])),
     };
   },
   async finalise(run, rows, fxInr) {
@@ -82,7 +85,22 @@ export const supabaseRevenue: RevenueRepo = {
         })),
       }),
     );
+    check(
+      await getSupabase().rpc('admin_write_creator_revenue', {
+        p_month: run.month,
+        p_currency: run.currency,
+        p_statements: (run.creatorStatements ?? []).map((c) => ({
+          creatorId: c.creatorId,
+          earned: major(c.earned),
+          carryIn: major(c.carryIn),
+          payoutDue: major(c.payoutDue),
+          belowThreshold: c.belowThreshold,
+          games: c.games,
+        })),
+      }),
+    );
     emitTopic('revenue');
+    emitTopic('creators');
   },
   async months() {
     const data = check(await getSupabase().from('revenue_months').select('*, studios(name)').order('month', { ascending: false }));

@@ -1,7 +1,7 @@
 'use client';
 
 import { getRepo } from '@/lib/data';
-import { getAnonId, getDeviceClass, referral } from '@/lib/data/local';
+import { creatorRef, getAnonId, getDeviceClass, referral } from '@/lib/data/local';
 import type { EventContext } from '@/lib/data/repo';
 import type { EventInput, EventType } from '@/lib/data/types';
 
@@ -18,7 +18,7 @@ let timer: number | null = null;
 let installed = false;
 
 function context(): EventContext {
-  return { anonId: getAnonId(), device: getDeviceClass(), refStudio: referral.current() };
+  return { anonId: getAnonId(), device: getDeviceClass(), refStudio: referral.current(), refCreator: creatorRef.current() };
 }
 
 async function flush(): Promise<void> {

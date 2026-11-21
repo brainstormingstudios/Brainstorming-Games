@@ -81,6 +81,7 @@ const KEYS = {
   history: 'bg.history',
   ratings: 'bg.ratings',
   ref: 'bg.ref',
+  creator: 'bg.creator',
 } as const;
 
 /** A random id for this browser. It carries no personal data. */
@@ -157,6 +158,27 @@ export const referral = {
       return null;
     }
     return value.slug;
+  },
+};
+
+/** Creator attribution: `?cr=handle` is remembered for 30 days (a newer link replaces it). */
+export const creatorRef = {
+  capture(search: string): string | null {
+    const handle = new URLSearchParams(search).get('cr')?.toLowerCase() ?? null;
+    if (handle && /^[a-z0-9_]{3,24}$/.test(handle)) {
+      local.set(KEYS.creator, { handle, at: Date.now() });
+      return handle;
+    }
+    return null;
+  },
+  current(): string | null {
+    const value = local.get<{ handle: string; at: number } | null>(KEYS.creator, null);
+    if (!value) return null;
+    if (Date.now() - value.at > 30 * 86_400_000) {
+      local.remove(KEYS.creator);
+      return null;
+    }
+    return value.handle;
   },
 };
 

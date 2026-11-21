@@ -70,7 +70,8 @@ git push -u origin main
    different origin than the site; that separation is what keeps a game from touching player
    accounts.
 3. Add a CORS rule that allows `PUT` from your site's origin (developers upload straight from
-   the browser with presigned URLs).
+   the browser with presigned URLs) and `GET` from the player site and developer portal origins
+   (the vertical-trailer maker draws preview videos onto a canvas, which needs CORS).
 4. Create an R2 API token with read and write on that bucket and put its values in the
    Supabase secrets from step 2.
 

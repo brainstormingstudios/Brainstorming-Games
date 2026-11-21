@@ -152,7 +152,8 @@
     "legal": "Legal",
     "social": "Follow us",
     "rights": "© {year} Brainstorming Studios. All rights reserved.",
-    "tagline": "Free games. Zero downloads. Play in one tap."
+    "tagline": "Free games. Zero downloads. Play in one tap.",
+    "creators": "Creator program"
   },
   "home": {
     "metaTitle": "Brainstorming Games – Free online games, no download",
@@ -681,7 +682,9 @@
       "riseInvite": "You are invited to Full Launch",
       "declined": "Not promoted this time",
       "openPage": "Open game page",
-      "noVersions": "No builds yet."
+      "noVersions": "No builds yet.",
+      "trailerTitle": "Vertical trailer for Shorts and Reels",
+      "trailerBody": "A free 9:16 video made from your preview video, with your game's title and your referral link (players who come through it earn you 85%)."
     },
     "report": {
       "pass": "Pass",
@@ -977,7 +980,8 @@
       "database": "Database",
       "promotions": "Promotions",
       "payments": "Payments",
-      "emails": "E-mails"
+      "emails": "E-mails",
+      "creators": "Creators"
     },
     "notAllowedTitle": "This portal is for the site owners",
     "notAllowedBody": "Only admins of Brainstorming Games can open the management portal.",
@@ -1408,6 +1412,40 @@
         "content-words": "Content rules (text)",
         "art": "Art and licences"
       }
+    },
+    "creators": {
+      "title": "Creators",
+      "intro": "YouTubers, Reels makers and streamers who share games with their own link and earn 10% of the net ad revenue from the players they bring. Check their channels are real and suitable before approving.",
+      "tabPending": "Applications",
+      "tabApproved": "Approved",
+      "tabAll": "All",
+      "tabPayouts": "Payouts",
+      "empty": "No creators here.",
+      "status": {
+        "pending": "Waiting",
+        "approved": "Approved",
+        "rejected": "Not approved",
+        "suspended": "Suspended"
+      },
+      "kinds": {
+        "youtube": "YouTube",
+        "instagram": "Instagram",
+        "twitch": "Twitch",
+        "other": "Website"
+      },
+      "lastNote": "Last note: {note}",
+      "note": "Note to the creator (needed to reject or suspend)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "suspend": "Suspend",
+      "approved": "Creator approved.",
+      "rejected": "Application rejected.",
+      "suspended": "Creator suspended.",
+      "payoutsIntro": "Creator statements are made in the same monthly revenue run as studio statements. Pay the finalised months below, then record the transfer reference.",
+      "nothingDue": "No creator payouts due.",
+      "reference": "Transfer reference",
+      "recordPayout": "Record payout",
+      "paid": "Payout recorded."
     }
   },
   "player": {
@@ -1760,11 +1798,24 @@
     "no": "No",
     "playtestSend": "Send answers",
     "playtestThanks": "Thanks! +15 Brain Points.",
-    "clip": "Record a clip (up to 30 seconds)",
+    "clip": "Clip the last moments of play",
     "clipStop": "Stop recording",
     "clipSaved": "Clip saved to your downloads.",
     "clipFailed": "This browser could not record a clip.",
-    "clipShareText": "Watch my clip of {title}"
+    "clipShareText": "Watch my clip of {title}",
+    "clipRecording": "Recording {seconds} seconds of play. Keep playing!",
+    "clipRecordingLabel": "Recording: {seconds} seconds left",
+    "clipTitle": "Your clip",
+    "clipMaking": "Making your vertical clip…",
+    "clipCta": "Play free",
+    "clipHint": "Ready for YouTube Shorts, Instagram Reels and WhatsApp status. The game's link is on the video.",
+    "clipShare": "Share",
+    "clipDownload": "Save video",
+    "clipCopyLink": "Copy link",
+    "clipLinkCopied": "Link copied.",
+    "clipVerticalFailed": "The vertical version could not be made on this device, so here is the plain recording.",
+    "clipDisabled": "This game has turned clips off on this screen.",
+    "clipNotPossible": "This game can't be clipped."
   },
   "portal": {
     "developers": {
@@ -1867,6 +1918,133 @@
       "live": "Live",
       "done": "Finished",
       "cancelled": "Cancelled"
+    }
+  },
+  "creators": {
+    "metaTitle": "Creator program: earn by sharing games",
+    "kicker": "Creator program",
+    "title": "Share games you love. Earn {pct}% of what your players bring.",
+    "intro": "Made a Short, a Reel or a stream about a game on Brainstorming Games? Put your creator link in it. Every player who comes through it is yours for 30 days, and you earn a share of the ad revenue they bring, paid monthly.",
+    "step1": {
+      "title": "Get your link",
+      "body": "Apply once. When you are approved, every game has a share link with your handle in it."
+    },
+    "step2": {
+      "title": "Post clips",
+      "body": "Clip gameplay right from the game page, or make a free vertical trailer for any game, with your link on it."
+    },
+    "step3": {
+      "title": "Get paid",
+      "body": "Earn {pct}% of the net ad revenue from players you bring, paid monthly to your bank or UPI from ₹2,000."
+    },
+    "joinTitle": "Join the creator program",
+    "signInFirst": "Sign in first: your creator account is part of your player account.",
+    "signIn": "Sign in to apply",
+    "adultsOnly": "The creator program is for players aged 18 and over, because it pays money.",
+    "status": {
+      "pending": "Application received",
+      "approved": "You are a creator",
+      "rejected": "Not approved",
+      "suspended": "Suspended"
+    },
+    "statusBody": {
+      "pending": "Thanks! We check every channel by hand, usually within 3 working days. We will e-mail you.",
+      "approved": "Your links work now: share games as @{handle}.",
+      "rejected": "Your application was not approved.",
+      "suspended": "Your creator account is suspended. Write to us if you think this is a mistake."
+    },
+    "openDashboard": "Open your creator dashboard",
+    "appliedBody": "Thanks for applying! We check every channel by hand, usually within 3 working days, and e-mail you the answer.",
+    "rejectedBefore": "Last time: {note}. You can apply again.",
+    "faqTitle": "Questions",
+    "faq": {
+      "q1": {
+        "q": "Who can join?",
+        "a": "Anyone aged 18 or over who makes videos, Reels, posts or streams about games, on any platform, with a real audience of any size."
+      },
+      "q2": {
+        "q": "How much do I earn?",
+        "a": "{pct}% of the net ad revenue from players who arrived through your links in the last 30 days. Developers keep their full share: your part comes out of ours."
+      },
+      "q3": {
+        "q": "When am I paid?",
+        "a": "Every month, once your balance reaches ₹2,000 (or $25). Smaller balances roll over to the next month."
+      },
+      "q4": {
+        "q": "Can I make videos of any game?",
+        "a": "Yes, any game on Brainstorming Games. Clips and trailers made here already carry your link."
+      },
+      "q5": {
+        "q": "What is not allowed?",
+        "a": "Fake traffic, bots, paid clicks, misleading thumbnails, or asking people to click ads. Earnings from invalid traffic are removed."
+      }
+    },
+    "apply": {
+      "title": "Apply",
+      "handle": "Your creator handle",
+      "handleHint": "Your links will look like brainstorming.games/?cr={handle}",
+      "badHandle": "Handles are 3 to 24 letters, numbers or underscores.",
+      "handleTaken": "That handle is taken.",
+      "displayName": "Name shown on your clips",
+      "channels": "Your channels",
+      "channelKind": "Platform",
+      "channelUrl": "Channel link",
+      "kinds": {
+        "youtube": "YouTube",
+        "instagram": "Instagram",
+        "twitch": "Twitch",
+        "other": "Other / website"
+      },
+      "addChannel": "Add another channel",
+      "remove": "Remove",
+      "about": "About your channel",
+      "aboutHint": "Who watches you and what you make, in a sentence or two.",
+      "termsTitle": "Key terms of the Creator Agreement",
+      "terms": {
+        "t1": "You earn {pct}% of the net ad revenue from players who arrive through your links, for 30 days after their visit.",
+        "t2": "Payouts are monthly once your balance reaches ₹2,000 or $25; tax is deducted where the law requires.",
+        "t3": "No fake traffic, bots, paid clicks, or asking people to click ads. Earnings from invalid traffic are removed and the account may be closed.",
+        "t4": "Label paid or sponsored content as required by the ASCI guidelines, and follow each platform's rules.",
+        "t5": "You may use game footage, covers and names from Brainstorming Games to promote the games, not to suggest the developers endorse you.",
+        "t6": "Either side can end the agreement at any time; balances already earned are still paid."
+      },
+      "agree": "I am 18 or over and accept the Creator Agreement",
+      "submit": "Send application"
+    },
+    "dashboard": {
+      "metaTitle": "Creator dashboard",
+      "title": "@{handle}",
+      "titleNone": "Creator dashboard",
+      "notApproved": "Your creator account is not approved yet.",
+      "notCreator": "You are not in the creator program yet.",
+      "toProgram": "About the creator program",
+      "linksTitle": "Your links",
+      "linksIntro": "Put these in your videos, captions and bio. Players who arrive through them count for you for 30 days, and you earn {pct}% of the net ad revenue they bring.",
+      "homeLink": "Home page",
+      "pickGame": "A game",
+      "copy": "Copy",
+      "copied": "Link copied.",
+      "share": "Share",
+      "statsTitle": "Your players",
+      "period": "Period",
+      "lastDays": "Last {days} days",
+      "visitors": "Visitors",
+      "plays": "Plays",
+      "adImpressions": "Ad views",
+      "game": "Game",
+      "noStats": "No players through your links yet. Share a clip!",
+      "statsNote": "Earnings are calculated monthly from the ad revenue we actually receive, so they appear on your statement, not here.",
+      "noStatements": "No statements yet. They appear after the first month with ad revenue from your players."
+    },
+    "trailer": {
+      "title": "Vertical trailer (9:16)",
+      "hint": "Made from the game's preview video, with the title and your link on it. Takes as long as the video.",
+      "make": "Make vertical trailer",
+      "making": "Recording the trailer…",
+      "download": "Save trailer",
+      "cta": "Play free",
+      "noVideo": "This game has no preview video yet.",
+      "unsupported": "This browser cannot make videos. Try Chrome on a computer."
     }
   }
 }

@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
   if (req.method !== 'POST') return json(req, 405, { error: 'method' });
-  let body: { anon_id?: string; device?: string; ref_studio?: string | null; events?: unknown[] };
+  let body: { anon_id?: string; device?: string; ref_studio?: string | null; ref_creator?: string | null; events?: unknown[] };
   try {
     body = await req.json();
   } catch {
@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     p_anon_id: body.anon_id,
     p_device: body.device ?? null,
     p_ref_studio: body.ref_studio ?? null,
+    p_ref_creator: body.ref_creator ?? null,
     p_events: body.events,
     p_country: country,
   });

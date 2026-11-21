@@ -58,7 +58,17 @@ export interface HostContext {
   onRoom?: (room: RoomInfo) => void;
 }
 
+export interface ClipVideo {
+  blob: Blob;
+  width: number;
+  height: number;
+}
+
 export interface HostBridge {
+  /** Whether the game's SDK has connected (Clip & share needs it). */
+  connected(): boolean;
+  /** Asks the game to record the next `seconds` of play. Rejects with a reason code. */
+  requestClip(seconds: number): Promise<ClipVideo>;
   /** The last context the game set with `BG.game.setContext`, for bug reports. */
   context(): Record<string, unknown> | null;
   /** Whether the game reports gameplay itself (then playtime comes from the SDK). */
@@ -155,8 +165,22 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     if (!playing) layer.style.pointerEvents = 'none';
   };
 
+  let connected = false;
+  let clipToken = 0;
+  const clipWaiters = new Map<number, { resolve: (v: ClipVideo) => void; reject: (e: Error) => void; timer: number }>();
+
   const handlers: { [M in MethodName]: (params: Methods[M]['params']) => Promise<Methods[M]['result']> } = {
+    'clip.result': async ({ token, ok, mime, data, width, height, reason }) => {
+      const w = clipWaiters.get(token);
+      if (!w) return null;
+      clipWaiters.delete(token);
+      window.clearTimeout(w.timer);
+      if (ok && data) w.resolve({ blob: new Blob([data], { type: mime.split(';')[0] || 'video/webm' }), width, height });
+      else w.reject(new Error(reason ?? 'error'));
+      return null;
+    },
     hello: async () => {
+      connected = true;
       const result: HelloResult = {
         gameId: game.id,
         versionId: game.versionId,
@@ -354,6 +378,19 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
   window.addEventListener('storage', onStorage);
 
   return {
+    connected: () => connected,
+    requestClip(seconds) {
+      if (!connected) return Promise.reject(new Error('no-sdk'));
+      const token = ++clipToken;
+      return new Promise<ClipVideo>((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+          clipWaiters.delete(token);
+          reject(new Error('timeout'));
+        }, (seconds + 20) * 1000);
+        clipWaiters.set(token, { resolve, reject, timer });
+        emit('clip-start', { seconds, token });
+      });
+    },
     context: () => gameContext,
     usesGameplayEvents: () => rules.usedGameplayEvents,
     gameplaySeconds: () => rules.gameplayTime() / 1000,

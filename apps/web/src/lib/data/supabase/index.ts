@@ -29,6 +29,7 @@ import { supabaseAdmin, supabaseDev } from './dev';
 import { supabaseBilling } from './billing';
 import { supabaseGrowth } from './growth';
 import { supabaseRevenue } from './revenue';
+import { supabaseCreators } from './creators';
 import {
   supabaseLeaderboards,
   supabaseLocker,
@@ -383,6 +384,7 @@ function eventsBody(batch: EventInput[], context: EventContext) {
     anon_id: context.anonId,
     device: context.device,
     ref_studio: context.refStudio,
+    ref_creator: context.refCreator ?? null,
     events: batch.map((e) => ({
       type: e.type,
       ts: e.ts,
@@ -403,6 +405,7 @@ const events: EventsRepo = {
         p_anon_id: body.anon_id,
         p_device: body.device,
         p_ref_studio: body.ref_studio,
+        p_ref_creator: body.ref_creator,
         p_events: body.events,
       });
       if (error) throw toRepoError(error);
@@ -449,6 +452,7 @@ export function createSupabaseRepo(): Repo {
     billing: supabaseBilling,
     growth: supabaseGrowth((ids) => catalogue.byIds(ids)),
     revenue: supabaseRevenue,
+    creators: supabaseCreators,
     catalogue,
     player,
     events,

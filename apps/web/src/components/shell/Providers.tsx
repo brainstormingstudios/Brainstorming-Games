@@ -8,7 +8,7 @@ import { ConsentBanner } from '@/components/ads/ConsentBanner';
 import { LoginDialog } from '@/components/auth/AccountMenu';
 import { MASCOT_NAME } from '@/lib/config';
 import { getRepo } from '@/lib/data';
-import { referral } from '@/lib/data/local';
+import { creatorRef, referral } from '@/lib/data/local';
 import { track } from '@/lib/events/client';
 import { getPrefs, setPrefs } from '@/lib/prefs';
 
@@ -21,6 +21,10 @@ function AppEffects() {
     const after = referral.current();
     // A new referral visit is credited to the studio (85% share on its players' ad revenue).
     if (after && after !== before) void getRepo().then((repo) => repo.player.recordReferral(after)).catch(() => {});
+    // A creator link (`?cr=handle`) credits the creator for 30 days.
+    const creatorBefore = creatorRef.current();
+    const creator = creatorRef.capture(window.location.search);
+    if (creator && creator !== creatorBefore) void getRepo().then((repo) => repo.creators.recordVisit(creator)).catch(() => {});
     // Thumbnail-test clicks that the previous page could not deliver before it unloaded.
     try {
       if (window.sessionStorage.getItem('bg.ab.pending')) void import('@/lib/growth/abTracker');
