@@ -1,4 +1,5 @@
 import { EVENTS_TRANSPORT, SUPABASE_ANON_KEY } from '@/lib/config';
+import { normaliseSkills } from '@/lib/domain/brain';
 import { emitTopic } from '../bus';
 import { getAnonId, guestFavourites, guestHistory, guestRatings } from '../local';
 import {
@@ -30,6 +31,7 @@ import { supabaseBilling } from './billing';
 import { supabaseGrowth } from './growth';
 import { supabaseRevenue } from './revenue';
 import { supabaseCreators } from './creators';
+import { supabaseBrain } from './brain';
 import {
   supabaseLeaderboards,
   supabaseLocker,
@@ -92,6 +94,7 @@ interface GamePageRow extends GameCardRow {
   has_progress: boolean;
   exclusive_until: string | null;
   created_at: string;
+  skills: string[] | null;
 }
 
 const CARD_COLUMNS =
@@ -165,6 +168,7 @@ export function pageToDetail(row: GamePageRow): GameDetail {
     tipsMd: row.tips_md ?? '',
     engine: row.engine,
     hasProgress: row.has_progress,
+    skills: normaliseSkills(row.skills ?? []),
     exclusiveUntil: row.exclusive_until,
     createdAt: row.created_at,
     devlogs: [],
@@ -453,6 +457,7 @@ export function createSupabaseRepo(): Repo {
     growth: supabaseGrowth((ids) => catalogue.byIds(ids)),
     revenue: supabaseRevenue,
     creators: supabaseCreators,
+    brain: supabaseBrain,
     catalogue,
     player,
     events,

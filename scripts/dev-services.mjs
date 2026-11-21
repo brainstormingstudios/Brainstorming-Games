@@ -234,6 +234,7 @@ function seedOriginals() {
       engine: g.engine ?? null,
       isMultiplayer: Boolean(g.isMultiplayer),
       hasProgress: Boolean(g.hasProgress),
+      skills: g.skills ?? [],
       schoolSafe: g.schoolSafe !== false,
       sizeBytes: bytes,
       initialLoadBytes: g.initialLoadBytes ?? null,
@@ -279,6 +280,16 @@ function seedOriginals() {
     }
     added++;
   }
+  // Originals seeded before skills existed get the manifest's skills (once; later edits stay).
+  let tagged = 0;
+  for (const g of manifest.games) {
+    const row = games.find((x) => x.slug === g.slug && x.studioId === studio.id);
+    if (row && g.skills && !Array.isArray(row.skills)) {
+      row.skills = g.skills;
+      tagged++;
+    }
+  }
+  if (tagged && !added) setTable('games', games);
   if (added) {
     setTable('studios', studios);
     setTable('games', games);

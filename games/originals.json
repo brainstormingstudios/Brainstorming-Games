@@ -63,6 +63,10 @@
           "width": 1280,
           "height": 720
         }
+      ],
+      "skills": [
+        "strategy",
+        "focus"
       ]
     },
     {
@@ -109,6 +113,10 @@
           "width": 1280,
           "height": 720
         }
+      ],
+      "skills": [
+        "memory",
+        "focus"
       ]
     },
     {
@@ -155,6 +163,10 @@
           "width": 1280,
           "height": 720
         }
+      ],
+      "skills": [
+        "speed",
+        "focus"
       ]
     },
     {
@@ -202,6 +214,10 @@
           "width": 1280,
           "height": 720
         }
+      ],
+      "skills": [
+        "logic",
+        "speed"
       ]
     }
   ]

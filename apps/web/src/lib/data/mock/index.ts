@@ -9,6 +9,7 @@ import { mockDev } from './dev';
 import { mockGrowth } from './growth';
 import { mockRevenue } from './revenue';
 import { mockCreators } from './creators';
+import { mockBrain } from './brain';
 import { mergeGuestSaves, mockQuests, mockSaves, mockScores } from './play';
 import {
   afterEvents,
@@ -197,6 +198,8 @@ export interface MockGameInput {
   platforms?: Platform[];
   engine?: string | null;
   isMultiplayer?: boolean;
+  /** Skills the game trains (Brain Profile). */
+  skills?: string[];
   schoolSafe?: boolean;
   sizeBytes?: number;
   status?: GameStatus;
@@ -282,6 +285,7 @@ export const mockTools = {
       engine: input.engine ?? null,
       isMultiplayer: input.isMultiplayer ?? false,
       hasProgress: false,
+      skills: input.skills ?? [],
       schoolSafe: input.schoolSafe ?? false,
       sizeBytes: input.sizeBytes ?? 20_000,
       initialLoadBytes: null,
@@ -386,6 +390,7 @@ export function createMockRepo(): Repo {
     growth: mockGrowth,
     revenue: mockRevenue,
     creators: mockCreators,
+    brain: mockBrain,
     catalogue: mockCatalogue,
     player,
     events,

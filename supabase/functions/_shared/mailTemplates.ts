@@ -20,6 +20,7 @@ export type MailTemplate =
   | 'statement_ready'
   | 'payout_sent'
   | 'creator_approved'
+  | 'brain_report'
   | 'creator_declined'
   | 'premium_welcome'
   | 'premium_cancelled'
@@ -253,6 +254,31 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
         },
         ctx,
       );
+    case 'brain_report': {
+      const LABEL: Record<string, string> = { memory: 'Memory', logic: 'Logic', speed: 'Speed', focus: 'Focus', strategy: 'Strategy' };
+      const skills = (data.skills ?? {}) as Record<string, { week?: number; prev?: number }>;
+      const facts: [string, string][] = Object.entries(skills)
+        .filter(([, v]) => Number(v.week) > 0 || Number(v.prev) > 0)
+        .sort((a, b) => Number(b[1].week) - Number(a[1].week))
+        .map(([k, v]) => {
+          const week = Math.round(Number(v.week) || 0);
+          const prev = Math.round(Number(v.prev) || 0);
+          const change = prev > 0 ? Math.round(((week - prev) / prev) * 100) : null;
+          return [LABEL[k] ?? k, `${week} min${change == null ? '' : change >= 0 ? ` (up ${change}%)` : ` (down ${-change}%)`}`];
+        });
+      return layout(
+        {
+          subject: `Your brain this week: ${s(data.minutes)} minutes of practice`,
+          preview: 'Your weekly Brain Profile: which skills you trained and how they changed.',
+          heading: `Your week, ${name}`,
+          paragraphs: ['Here is what your games trained this week, compared with the week before.'],
+          facts,
+          button: { label: 'Open your Brain Profile', url: `${ctx.siteUrl}/brain/` },
+          quote: 'You can turn this e-mail off on your Brain Profile page.',
+        },
+        ctx,
+      );
+    }
     case 'creator_approved':
       return layout(
         {

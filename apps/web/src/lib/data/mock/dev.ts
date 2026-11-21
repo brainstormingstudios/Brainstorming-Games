@@ -1,4 +1,5 @@
 import { PRIMARY_CATEGORY_SLUGS, tagSlug } from '@/lib/catalogue/categories';
+import { normaliseSkills } from '@/lib/domain/brain';
 import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/config';
 import { computeDailyKpis, percentRank, summarise, type KpiEvent, type KpiRating, type KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
@@ -80,6 +81,7 @@ export function toDevGame(g: MockGame): DevGame {
     engine: g.engine,
     isMultiplayer: g.isMultiplayer,
     hasProgress: g.hasProgress,
+    skills: normaliseSkills(g.skills ?? []),
     maxScorePerSec: g.maxScorePerSec,
     wantsExclusive: Boolean(g.wantsExclusive),
     status: g.status,
@@ -277,6 +279,7 @@ function cleanEditable(input: Partial<GameEditable>): Partial<MockGame> {
   if (input.engine !== undefined) out.engine = input.engine;
   if (input.isMultiplayer != null) out.isMultiplayer = input.isMultiplayer;
   if (input.hasProgress != null) out.hasProgress = input.hasProgress;
+  if (input.skills != null) out.skills = normaliseSkills(input.skills);
   if (input.maxScorePerSec !== undefined) out.maxScorePerSec = input.maxScorePerSec;
   if (input.wantsExclusive != null) out.wantsExclusive = input.wantsExclusive;
   return out;

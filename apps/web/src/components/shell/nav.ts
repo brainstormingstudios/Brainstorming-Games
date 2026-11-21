@@ -1,4 +1,5 @@
 import {
+  Brain,
   CalendarDays,
   CarFront,
   Castle,
@@ -47,6 +48,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'updated', href: '/updated', icon: RefreshCw },
   { key: 'originals', href: '/originals', icon: Crown },
   { key: 'multiplayer', href: '/multiplayer', icon: Users },
+  { key: 'brain', href: '/brain', icon: Brain },
   { key: 'quests', href: '/quests', icon: Target },
   { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
   { key: 'jams', href: '/jams', icon: CalendarDays },

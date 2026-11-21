@@ -9,6 +9,7 @@
  */
 import type { AvatarCosmetics } from '@brainstorming/ui';
 import type { BoostOrder, BoostPackage, CheckoutIntent, EmailRow, PaymentRow, PremiumPlan, PremiumStatus, Wallpaper } from './billingTypes';
+import type { PlayRow, Skill } from '@/lib/domain/brain';
 import type { AdminCreatorRow, Creator, CreatorApplyInput, CreatorMonthRow, CreatorPayoutRow, CreatorStats, CreatorStatus } from './creatorTypes';
 import type { PremiumState } from '@/lib/domain/premium';
 import type { KpiResult } from '@/lib/domain/kpis';
@@ -621,8 +622,25 @@ export interface CreatorRepo {
   payouts(): Promise<CreatorPayoutRow[]>;
 }
 
+/** Play time per game and day plus each game's skills: the inputs of the Brain Profile. */
+export interface BrainData {
+  rows: PlayRow[];
+  skills: Record<string, Skill[]>;
+}
+
+export interface BrainRepo {
+  /** The signed-in player's play time (or this browser's, for a guest). */
+  mine(): Promise<BrainData>;
+  /** A public player's, for "challenge a friend". Null when private or unknown. */
+  of(username: string): Promise<(BrainData & { username: string; displayName: string }) | null>;
+  /** The weekly brain report e-mail (signed-in players). */
+  reportEnabled(): Promise<boolean>;
+  setReport(on: boolean): Promise<void>;
+}
+
 export interface Repo {
   readonly mode: 'mock' | 'supabase';
+  brain: BrainRepo;
   creators: CreatorRepo;
   billing: BillingRepo;
   growth: GrowthRepo;

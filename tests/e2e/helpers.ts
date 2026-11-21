@@ -66,6 +66,8 @@ export interface TestGame {
   tags?: string[];
   status?: 'spark' | 'rise' | 'featured';
   usesSdk?: boolean;
+  /** Skills the game trains (Brain Profile). */
+  skills?: string[];
   /** Covers and previews, e.g. two labelled landscape covers for a thumbnail test. */
   media?: Record<string, unknown>[];
 }
@@ -102,6 +104,7 @@ export async function addGame(page: Page, game: TestGame): Promise<string> {
         status: g.status ?? 'spark',
         storagePrefix: g.storagePrefix,
         usesSdk: g.usesSdk ?? false,
+        skills: g.skills ?? [],
         media: g.media,
         studio: { slug: 'probe-studio', name: 'Probe Studio', country: 'IN' },
       }),

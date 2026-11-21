@@ -1,4 +1,5 @@
 /** Types for the developer portal and the admin console. */
+import type { Skill } from '@/lib/domain/brain';
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
 import type { AutoReviewReport, Declaration } from '../../../../../supabase/functions/_shared/autoReview';
@@ -69,6 +70,8 @@ export interface GameEditable {
   hasProgress: boolean;
   maxScorePerSec: number | null;
   wantsExclusive: boolean;
+  /** Skills the game trains, at most three (Brain Profile). */
+  skills: Skill[];
 }
 
 export const EMPTY_GAME: GameEditable = {
@@ -90,6 +93,7 @@ export const EMPTY_GAME: GameEditable = {
   hasProgress: false,
   maxScorePerSec: null,
   wantsExclusive: false,
+  skills: [],
 };
 
 export interface DevVersion {

@@ -1,3 +1,4 @@
+import type { Skill } from '@/lib/domain/brain';
 import type { Promo } from '@/lib/domain/premium';
 /**
  * Domain types shared by the mock and Supabase data layers, the build snapshot and the UI.
@@ -130,6 +131,8 @@ export interface GameDetail extends GameSummary {
   exclusiveUntil: string | null;
   createdAt: string;
   devlogs: DevlogSummary[];
+  /** Skills the game trains (Brain Profile). */
+  skills: Skill[];
 }
 
 export interface StudioDetail extends StudioRef {

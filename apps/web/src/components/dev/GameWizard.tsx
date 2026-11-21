@@ -13,9 +13,11 @@ import {
   Switch,
   TextAreaField,
   TextField,
+  chipClass,
   cn,
   useToast,
 } from '@brainstorming/ui';
+import { MAX_SKILLS_PER_GAME, SKILLS } from '@/lib/domain/brain';
 import { localizePath } from '@/i18n/config';
 import { useLocale } from '@/i18n/navigation';
 import { PRIMARY_CATEGORY_SLUGS, tagLabel, tagSlug } from '@/lib/catalogue/categories';
@@ -188,6 +190,7 @@ export function GameWizard() {
   const tcat = useTranslations('categories');
   const tg = useTranslations('game');
   const tgame = useTranslations('dev.game');
+  const tb = useTranslations('brain');
   const toast = useToast();
   const router = useRouter();
   const locale = useLocale();
@@ -395,6 +398,31 @@ export function GameWizard() {
               {tg(`orientations.${o}`)}
             </label>
           ))}
+        </fieldset>
+        <fieldset className="flex flex-col gap-2 md:col-span-2" data-testid="wiz-skills">
+          <legend className="mb-1 text-sm font-bold">
+            <Need>{t('skills')}</Need>
+          </legend>
+          <p className="text-xs text-fg-muted">{t('skillsHint', { count: MAX_SKILLS_PER_GAME })}</p>
+          <div className="flex flex-wrap gap-2">
+            {SKILLS.map((skill) => {
+              const on = form.skills.includes(skill);
+              const full = !on && form.skills.length >= MAX_SKILLS_PER_GAME;
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={full}
+                  className={cn(chipClass(on), full && 'opacity-50')}
+                  onClick={() => update('skills', on ? form.skills.filter((x) => x !== skill) : [...form.skills, skill])}
+                  data-testid={`wiz-skill-${skill}`}
+                >
+                  {tb(`skills.${skill}.name`)}
+                </button>
+              );
+            })}
+          </div>
         </fieldset>
         <div className="flex flex-col gap-3 md:col-span-2">
           <Switch label={t('multiplayer')} checked={form.isMultiplayer} onChange={(e) => update('isMultiplayer', e.target.checked)} />

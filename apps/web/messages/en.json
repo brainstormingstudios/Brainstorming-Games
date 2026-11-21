@@ -70,7 +70,8 @@
     "allTags": "All tags",
     "more": "More",
     "jams": "Game jams",
-    "premium": "Premium"
+    "premium": "Premium",
+    "brain": "Brain Profile"
   },
   "categories": {
     "action": {
@@ -596,7 +597,9 @@
       "whyFailed": "The automatic checks found a problem. Fix the red items in the report above, then drop the new zip.",
       "whyRejected": "This build was rejected. Upload a new one.",
       "whyRights": "Tick both boxes under Rights and originality.",
-      "fixIt": "Go to {step}"
+      "fixIt": "Go to {step}",
+      "skills": "Skills this game trains",
+      "skillsHint": "Pick up to {count}. Players' Brain Profiles grow in these skills when they play your game, and your game shows up for players who want to train them."
     },
     "media": {
       "intro": "Covers show the game title only: no \"Play now\" or \"New\" badges, no borders, no store logos.",
@@ -2045,6 +2048,73 @@
       "cta": "Play free",
       "noVideo": "This game has no preview video yet.",
       "unsupported": "This browser cannot make videos. Try Chrome on a computer."
+    }
+  },
+  "brain": {
+    "metaTitle": "Your Brain Profile",
+    "compareMeta": "Compare Brain Profiles",
+    "title": "Your Brain Profile",
+    "intro": "Every game trains skills. As you play, your profile grows in memory, logic, speed, focus and strategy.",
+    "signInToKeep": "Sign in to keep it on every device",
+    "brainScore": "Brain score",
+    "you": "You",
+    "trains": "Trains:",
+    "emptyTitle": "Your Brain Profile starts with your first game",
+    "emptyBody": "Play any game that shows the skills it trains. Your profile fills in as you play.",
+    "emptyCta": "Try a BS Original",
+    "weekMinutes": "{minutes} min this week",
+    "newThisWeek": "New this week",
+    "up": "Up {pct}%",
+    "down": "Down {pct}%",
+    "learningTitle": "Learning time (for parents and teachers)",
+    "learningIntro": "{minutes} minutes of practice in the last 7 days, by skill.",
+    "learningChart": "Minutes of practice per day for the last 7 days, {minutes} minutes in total.",
+    "challengeTitle": "Challenge a friend",
+    "challengeIntro": "Send this link. Your friend sees your profile next to theirs and can try to beat you.",
+    "challengeSignIn": "Sign in and keep your profile public to get a challenge link.",
+    "compareWith": "Compare with a player",
+    "compare": "Compare",
+    "copy": "Copy",
+    "copied": "Link copied.",
+    "share": "Share",
+    "shareTitle": "Beat my Brain Profile",
+    "shareText": "Think you can beat my Brain Profile on Brainstorming Games?",
+    "reportLabel": "Weekly brain report e-mail",
+    "reportHint": "Every Monday: what you trained last week and how it changed.",
+    "howItWorks": "How it works: each game's developer tags the skills it trains. Your play time in a game counts for those skills. Scores grow quickly at first and slowly near 100, so a high score takes real practice. Only your own play counts; nothing is shared unless your profile is public.",
+    "compareTitle": "You vs {name}",
+    "compareSelf": "Your profile, as friends see it",
+    "compareIntro": "Each skill's score from 0 to 100. Play games that train a skill to raise it.",
+    "compareMissing": "This player's Brain Profile is private or does not exist.",
+    "compareScore": "You lead in {wins} of {total} skills",
+    "skill": "Skill",
+    "toMine": "Open my Brain Profile",
+    "skills": {
+      "memory": {
+        "name": "Memory",
+        "type": "Memory Keeper",
+        "about": "Remembering patterns, cards and sequences."
+      },
+      "logic": {
+        "name": "Logic",
+        "type": "Logician",
+        "about": "Puzzles, maths and working things out."
+      },
+      "speed": {
+        "name": "Speed",
+        "type": "Speedster",
+        "about": "Quick reactions and fast decisions."
+      },
+      "focus": {
+        "name": "Focus",
+        "type": "Focus Master",
+        "about": "Staying sharp and precise for longer."
+      },
+      "strategy": {
+        "name": "Strategy",
+        "type": "Strategist",
+        "about": "Planning ahead and managing resources."
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 import { applyQuery } from '@/lib/catalogue/listings';
+import { normaliseSkills } from '@/lib/domain/brain';
 import { searchGames } from '@/lib/catalogue/search';
 import { bayesianRating10, isVoteInWindow } from '@/lib/domain/rating';
 import type { CatalogueRepo } from '../repo';
@@ -159,6 +160,7 @@ export function toDetail(game: MockGame, t: CatalogueTables): GameDetail {
     tipsMd: game.tipsMd,
     engine: game.engine,
     hasProgress: game.hasProgress,
+    skills: normaliseSkills(game.skills ?? []),
     exclusiveUntil: game.exclusiveUntil,
     createdAt: game.createdAt,
     devlogs: [],

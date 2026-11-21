@@ -70,6 +70,7 @@ export function GameView({ game, related }: GameViewProps) {
   const t = useTranslations('game');
   const tn = useTranslations('nav');
   const tc = useTranslations('categories');
+  const tb = useTranslations('brain');
   const locale = useLocale();
   const { theatre, lowData } = usePrefs();
   const frame = useRef<GameFrameHandle>(null);
@@ -169,6 +170,16 @@ export function GameView({ game, related }: GameViewProps) {
 
             <h1 className="mt-5 text-3xl font-bold sm:text-4xl">{game.title}</h1>
             {game.shortDescription ? <p className="mt-1.5 text-fg-muted">{game.shortDescription}</p> : null}
+            {game.skills?.length ? (
+              <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm" data-testid="game-skills">
+                <span className="font-bold text-fg-muted">{tb('trains')}</span>
+                {game.skills.map((s) => (
+                  <Link key={s} href="/brain" className="rounded-full bg-surface-3 px-2.5 py-0.5 font-bold hover:bg-surface-2">
+                    {tb(`skills.${s}.name`)}
+                  </Link>
+                ))}
+              </p>
+            ) : null}
 
             <dl
               aria-label={t('info.label')}

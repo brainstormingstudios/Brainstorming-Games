@@ -1,4 +1,5 @@
 import { SITE_URL } from '@/lib/config';
+import { normaliseSkills } from '@/lib/domain/brain';
 import { summarise, type DailyKpi, type KpiResult } from '@/lib/domain/kpis';
 import { isSparkWindowOver } from '@/lib/domain/spark';
 import type { PreQaReport } from '@/lib/domain/preqa';
@@ -71,6 +72,7 @@ function toGame(r: Row): DevGame {
     engine: (r.engine as string | null) ?? null,
     isMultiplayer: Boolean(r.is_multiplayer),
     hasProgress: Boolean(r.has_progress),
+    skills: normaliseSkills((r.skills as string[] | null) ?? []),
     maxScorePerSec: (r.max_score_per_sec as number | null) ?? null,
     wantsExclusive: Boolean(r.wants_exclusive),
     status: r.status as DevGame['status'],
@@ -139,6 +141,7 @@ function editableToRow(p: Partial<GameEditable>): Row {
     engine: 'engine',
     isMultiplayer: 'is_multiplayer',
     hasProgress: 'has_progress',
+    skills: 'skills',
     maxScorePerSec: 'max_score_per_sec',
     wantsExclusive: 'wants_exclusive',
   };

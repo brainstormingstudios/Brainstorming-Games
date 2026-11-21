@@ -57,6 +57,8 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.getByTestId('wiz-tags').fill('probe,');
   await expect(page.getByTestId('wiz-tag')).toHaveCount(3);
   await page.getByTestId('wiz-made-in-india').check({ force: true });
+  await page.getByTestId('wiz-skill-logic').click();
+  await expect(page.getByTestId('wiz-skill-logic')).toHaveAttribute('aria-pressed', 'true');
   await page.getByTestId('wiz-create').click();
 
   // Step 2: the game page. Controls come from dropdowns.

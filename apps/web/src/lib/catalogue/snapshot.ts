@@ -32,6 +32,7 @@ export function toSummary(game: GameDetail): GameSummary {
     tipsMd: _t,
     engine: _e,
     hasProgress: _hp,
+    skills: _sk,
     exclusiveUntil: _x,
     createdAt: _ca,
     devlogs: _dl,

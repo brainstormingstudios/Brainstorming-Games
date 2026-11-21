@@ -64,6 +64,7 @@ export interface MockGame {
   engine: string | null;
   isMultiplayer: boolean;
   hasProgress: boolean;
+  skills?: string[];
   schoolSafe: boolean;
   sizeBytes: number;
   initialLoadBytes: number | null;
@@ -161,6 +162,8 @@ export interface MockUser {
   avatar: Record<string, string>;
   profilePublic: boolean;
   playtestOptIn: boolean;
+  /** Weekly brain report e-mail (default on). */
+  brainReport?: boolean;
   schoolSafe: boolean;
   lowData: boolean;
   locale: string;
