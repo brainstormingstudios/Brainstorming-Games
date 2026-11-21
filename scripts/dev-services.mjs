@@ -104,12 +104,33 @@ let saveTimer = null;
 /** @type {Map<string, string> | null} */
 let stashed = null;
 
+/** While automated tests run, the real local data waits here (on disk, so a restart keeps it). */
+const STASH_FILE = DB_FILE.replace(/\.json$/, '.stash.json');
+
 function loadDb() {
   try {
-    const saved = JSON.parse(readFileSync(DB_FILE, 'utf8'));
+    // A test run that never finished (services stopped mid-run): put the real data back first.
+    const file = existsSync(STASH_FILE) ? STASH_FILE : DB_FILE;
+    const saved = JSON.parse(readFileSync(file, 'utf8'));
     for (const [name, text] of Object.entries(saved.tables ?? {})) tables.set(name, { version: clock++, text: String(text) });
+    if (file === STASH_FILE) {
+      console.log('[dev-services] restored the local data saved before an unfinished test run');
+      saveDbNow();
+      rmSync(STASH_FILE, { force: true });
+    }
   } catch {
     // no saved database yet
+  }
+}
+
+function saveDbNow() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  try {
+    mkdirSync(dirname(DB_FILE), { recursive: true });
+    writeFileSync(DB_FILE, JSON.stringify({ tables: Object.fromEntries([...tables].map(([k, v]) => [k, v.text])) }));
+  } catch (err) {
+    console.error('[dev-services] could not save the local database:', String(err));
   }
 }
 
@@ -627,7 +648,12 @@ const server = createServer(async (req, res) => {
       }
       if (rest === 'stash' && req.method === 'POST') {
         // Automated tests empty the database. They stash it first and restore it afterwards.
-        stashed = new Map([...tables].map(([k, v]) => [k, v.text]));
+        // A second stash (nested runs) must not replace the real data with test data.
+        if (!stashed) {
+          stashed = new Map([...tables].map(([k, v]) => [k, v.text]));
+          mkdirSync(dirname(STASH_FILE), { recursive: true });
+          writeFileSync(STASH_FILE, JSON.stringify({ tables: Object.fromEntries(stashed) }));
+        }
         return json(res, 200, { ok: true, tables: stashed.size });
       }
       if (rest === 'restore' && req.method === 'POST') {
@@ -636,6 +662,8 @@ const server = createServer(async (req, res) => {
         for (const [name, text] of stashed) setTable(name, text);
         const restored = stashed.size;
         stashed = null;
+        saveDbNow();
+        rmSync(STASH_FILE, { force: true });
         return json(res, 200, { ok: true, restored });
       }
       if (rest === 'reset' && req.method === 'POST') {
