@@ -40,6 +40,8 @@ jobs:
       NEXT_PUBLIC_INGAME_ADS: ${{ vars.NEXT_PUBLIC_INGAME_ADS }}
       NEXT_PUBLIC_CONTACT_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}
       NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
+      # Public key the build publishes at /.well-known/bg-game-jwks.json (game user tokens).
+      GAME_JWT_PUBLIC_JWK: ${{ vars.GAME_JWT_PUBLIC_JWK }}
       # Read-only use at build time: the catalogue snapshot only selects public games.
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
