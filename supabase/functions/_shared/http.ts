@@ -77,12 +77,33 @@ export function adminClient(): SupabaseClient {
 }
 
 export async function requireUser(req: Request): Promise<{ id: string; email: string | null } | null> {
-  // The token must be passed explicitly: with no stored session, auth.getUser() does not read the
-  // client's authorization header and answers "session missing" for everyone.
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) return null;
-  const { data } = await userClient(req).auth.getUser(token);
-  return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
+  // Ask Supabase Auth first (the token must be passed explicitly: without a stored session,
+  // auth.getUser() does not read the client's authorization header).
+  const { data, error } = await userClient(req).auth.getUser(token);
+  if (data.user) return { id: data.user.id, email: data.user.email ?? null };
+  // Every function that calls this runs with verify_jwt on (supabase/config.toml), so the
+  // platform has already checked the token's signature and expiry before the request got here:
+  // its claims can be read. Only a signed-in user's token counts, never the anon key.
+  const claims = jwtClaims(token);
+  const now = Math.floor(Date.now() / 1000);
+  if (claims?.role === 'authenticated' && typeof claims.sub === 'string' && typeof claims.exp === 'number' && claims.exp > now) {
+    return { id: claims.sub, email: typeof claims.email === 'string' ? claims.email : null };
+  }
+  console.error('requireUser: not signed in', error?.message ?? 'no user', claims ? `role=${String(claims.role)}` : 'no claims');
+  return null;
+}
+
+/** The payload of a JWT, unverified (see requireUser for when that is safe). */
+function jwtClaims(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split('.')[1] ?? '';
+    const pad = part.length % 4 ? '='.repeat(4 - (part.length % 4)) : '';
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/') + pad)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
 /**
