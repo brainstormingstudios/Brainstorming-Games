@@ -77,7 +77,11 @@ export function adminClient(): SupabaseClient {
 }
 
 export async function requireUser(req: Request): Promise<{ id: string; email: string | null } | null> {
-  const { data } = await userClient(req).auth.getUser();
+  // The token must be passed explicitly: with no stored session, auth.getUser() does not read the
+  // client's authorization header and answers "session missing" for everyone.
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+  const { data } = await userClient(req).auth.getUser(token);
   return data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
 }
 
