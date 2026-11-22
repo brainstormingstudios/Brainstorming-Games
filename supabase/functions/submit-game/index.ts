@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   const { data: media } = await db.from('game_media').select('game_id, phash, is_active').not('phash', 'is', null);
   const { data: released } = await db
     .from('games')
-    .select('id, title, studio_id, short_description, description_md, game_versions(build_fingerprint)')
+    .select('id, title, studio_id, short_description, description_md, game_versions!game_versions_game_id_fkey(build_fingerprint)')
     .not('released_at', 'is', null)
     .neq('id', body.gameId);
   const { data: assets } = await db.rpc('asset_overlaps', { p_version: versionId });

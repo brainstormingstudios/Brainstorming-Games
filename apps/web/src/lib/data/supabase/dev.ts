@@ -547,7 +547,7 @@ export const supabaseAdmin: AdminRepo = {
     const data = check(
       await getSupabase()
         .from('game_versions')
-        .select('id, version, created_at, submitted_at, pre_qa_report, auto_review, game_id, games(title, released_at, studios(name))')
+        .select('id, version, created_at, submitted_at, pre_qa_report, auto_review, game_id, games!game_versions_game_id_fkey(title, released_at, studios(name))')
         .eq('qa_status', 'in_review')
         .order('submitted_at', { ascending: true, nullsFirst: false }),
     );

@@ -347,7 +347,7 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       emitTopic('admin');
     },
     async allGames(query) {
-      let req = getSupabase().from('games').select('id, slug, title, status, updated_at, studios(name), game_versions(auto_review, created_at)');
+      let req = getSupabase().from('games').select('id, slug, title, status, updated_at, studios(name), game_versions!game_versions_game_id_fkey(auto_review, created_at)');
       const q = query.trim().replace(/[%,()]/g, '');
       if (q) req = req.or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
       const rows = (check(await req.order('updated_at', { ascending: false }).limit(200)) ?? []) as Row[];
