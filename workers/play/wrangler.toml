@@ -12,11 +12,18 @@ compatibility_date = "2025-06-01"
 workers_dev = true
 # routes = [{ pattern = "*.bgplay.example/*", zone_name = "bgplay.example" }]
 
-[[r2_buckets]]
-binding = "BUILDS"
-bucket_name = "bg-play"
+# Game files: the private "builds" bucket in Supabase Storage (free, no card). Before the first
+# deploy, store the Worker's own Supabase secret key (Supabase > Project Settings > API Keys >
+# new secret key "games-server"); you paste it, it is never written into a file:
+#   npx wrangler secret put SUPABASE_STORAGE_KEY --config workers/play/wrangler.toml
+# To use Cloudflare R2 instead, uncomment this block; the Worker then reads R2 and ignores Supabase.
+# [[r2_buckets]]
+# binding = "BUILDS"
+# bucket_name = "bg-play"
 
 [vars]
+SUPABASE_URL = "https://zoqjrxgwtfxaqnhlraoz.supabase.co"
+STORAGE_BUCKET = "builds"
 SHARED_HOST = "bg-play.CHANGE-ME.workers.dev"
 GAMES_DOMAIN = ""
 # The sites allowed to frame games, separated by spaces.

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error plain JS Worker module
-import { handle } from '../../workers/play/index.mjs';
+import worker, { handle } from '../../workers/play/index.mjs';
 
 const ID = '3f2a9c1e-5b7d-4e8f-9a0b-1c2d3e4f5a6b';
 const LABEL = 'g-3f2a9c1e5b7d4e8f9a0b1c2d3e4f5a6b';
@@ -61,5 +61,45 @@ describe('game origins Worker', () => {
   it('answers repeat visits from the browser cache', async () => {
     const res = await get(`https://${LABEL}.bgplay.example/1/game.js`, { headers: { 'if-none-match': '"e1"' } });
     expect(res.status).toBe(304);
+  });
+
+  describe('reading Supabase Storage (free launch)', () => {
+    afterEach(() => vi.unstubAllGlobals());
+    const supa = {
+      GAMES_DOMAIN: '',
+      SHARED_HOST: 'bg-play.acct.workers.dev',
+      SITE_ORIGINS: 'https://brainstorming.example',
+      SUPABASE_URL: 'https://proj.supabase.co/',
+      SUPABASE_STORAGE_KEY: 'sb_secret_test',
+    };
+    const stubStorage = () => {
+      const calls: { url: string; headers: Record<string, string> }[] = [];
+      vi.stubGlobal('fetch', async (url: string, init: { headers: Record<string, string> }) => {
+        calls.push({ url, headers: init.headers });
+        const prefix = 'https://proj.supabase.co/storage/v1/object/authenticated/builds/';
+        const key = decodeURIComponent(url.slice(prefix.length));
+        if (!url.startsWith(prefix) || !(key in files)) return new Response('{"error":"not_found"}', { status: 400 });
+        return new Response(files[key], { status: 200, headers: { etag: '"s1"', 'content-length': String(files[key]!.length) } });
+      });
+      return calls;
+    };
+
+    it('serves a file from the private builds bucket with the secret key', async () => {
+      const calls = stubStorage();
+      const res = (await handle(new Request(`https://bg-play.acct.workers.dev/${ID}/1/game.js`), supa)) as Response;
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('console.log(1)');
+      expect(res.headers.get('etag')).toBe('"s1"');
+      expect(res.headers.get('content-type')).toContain('text/javascript');
+      expect(calls[0]!.url).toBe(`https://proj.supabase.co/storage/v1/object/authenticated/builds/${ID}/1/game.js`);
+      expect(calls[0]!.headers).toEqual({ apikey: 'sb_secret_test' });
+    });
+
+    it('answers 404 for a missing file and 500 when storage is not set up', async () => {
+      stubStorage();
+      expect(((await handle(new Request(`https://bg-play.acct.workers.dev/${ID}/1/missing.js`), supa)) as Response).status).toBe(404);
+      const res = (await worker.fetch(new Request(`https://bg-play.acct.workers.dev/${ID}/1/game.js`), { ...supa, SUPABASE_STORAGE_KEY: '' })) as Response;
+      expect(res.status).toBe(500);
+    });
   });
 });

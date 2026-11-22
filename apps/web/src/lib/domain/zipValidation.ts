@@ -1,11 +1,12 @@
 /**
  * Validation of an uploaded game build (a .zip unpacked in the browser with JSZip).
  *
- * Rules: at most 250 MB and 1,500 files; an index.html at the root (a single wrapping folder is
+ * Rules: at most 250 MB, 1,500 files and 50 MB a file; an index.html at the root (a single wrapping folder is
  * stripped); relative paths only; no path traversal, symlinks, executables or file types a web
  * game cannot use.
  */
-export const BUILD_LIMITS = { maxBytes: 250 * 1024 * 1024, maxFiles: 1500 } as const;
+// 50 MB a file is the Supabase Storage free-plan limit (the "builds" bucket, migration 0025).
+export const BUILD_LIMITS = { maxBytes: 250 * 1024 * 1024, maxFiles: 1500, maxFileBytes: 50 * 1024 * 1024 } as const;
 
 /** File types a web build may contain (mirrors the play origin's allow-list). */
 export const ALLOWED_EXTENSIONS = new Set([
@@ -89,7 +90,9 @@ export function validateBuild(entries: readonly ZipEntryInfo[]): BuildValidation
   if (normalised.length > BUILD_LIMITS.maxFiles) errors.push(`Too many files: ${normalised.length} (limit ${BUILD_LIMITS.maxFiles}).`);
   if (totalBytes > BUILD_LIMITS.maxBytes) errors.push(`The build is ${Math.round(totalBytes / 1048576)} MB (limit 250 MB).`);
   if (totalBytes > 50 * 1024 * 1024) warnings.push('Large builds load slowly on mobile data. Under 50 MB is a good target.');
-  const big = normalised.filter((f) => f.size > 25 * 1024 * 1024);
+  const tooBig = normalised.filter((f) => f.size > BUILD_LIMITS.maxFileBytes);
+  if (tooBig.length) errors.push(`Files over 50 MB cannot be stored: ${tooBig.map((f) => f.path).join(', ')}`);
+  const big = normalised.filter((f) => f.size > 25 * 1024 * 1024 && f.size <= BUILD_LIMITS.maxFileBytes);
   if (big.length) warnings.push(`Files over 25 MB may not work with every host: ${big.map((f) => f.path).join(', ')}`);
 
   return { ok: errors.length === 0, errors: [...new Set(errors)], warnings, files: normalised, totalBytes, mentionsSdk: false };

@@ -1,7 +1,7 @@
 # Going online for free (no domain names)
 
-Everything below costs ₹0. The sites get free Cloudflare addresses ending in `.pages.dev`, and
-the games get one free address ending in `.workers.dev`.
+Everything below costs ₹0 and needs no card. The sites get free Cloudflare addresses ending in
+`.pages.dev`, and the games get one free address ending in `.workers.dev`.
 
 **One limit of the free way:** all games share one address, so one game could read another
 game's saved progress. Fine for a quiet start. To fix it later, buy one domain for games and
@@ -40,14 +40,16 @@ Claude pushes the database changes 0020 to 0024 to your Supabase project and dep
 server functions. You then paste the generated secrets into Supabase > Edge Functions >
 Secrets (Claude prepares the list on your computer; you copy and paste).
 
-## Step 4: Game storage and the games server (you click, Claude guides)
+## Step 4: Game storage and the games server (you paste one key, Claude does the rest)
 
-1. Cloudflare > R2: switch R2 on (Cloudflare asks for a card on file; the free tier is not
-   charged), create a bucket named `bg-play`.
-2. Bucket > Settings > CORS: allow `PUT` from your developer portal address with the headers
-   `content-type` and `if-none-match`, and `GET` from all three addresses.
-3. R2 > Manage API tokens: create a token with read and write on `bg-play`, and paste its
-   values into the Supabase secrets.
+Game files live in Supabase Storage, in a private storage space called `builds` (free, no card).
+Migration 0025 creates it. Free limits: about 1 GB of files and about 5 GB of downloads a month;
+when a game gets popular, move to Cloudflare R2 (docs/DEPLOY.md, section 3).
+
+1. Claude pushes migration 0025 (after your OK).
+2. Supabase > Project Settings > API Keys: create a **secret key** named `games-server`.
+3. Claude gives you one command; you run it and paste that key when it asks. It goes straight
+   into the games server and is never written into a file.
 4. Claude deploys the games server (`workers/play`). Its address looks like
    `https://bg-play.<your-name>.workers.dev`. Claude then fills it into
    `workers/play/wrangler.toml` (`SHARED_HOST`, and the three site addresses in

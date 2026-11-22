@@ -1,12 +1,17 @@
 // Cloudflare Worker for the game origins: https://g-<game id>.<games domain>/<version>/<file>.
 //
 // Every game gets its own origin, so games cannot read each other's saves, cookies or storage,
-// and none of them shares an origin with the site. The Worker reads the game's files from the R2
-// bucket (binding BUILDS) and serves only that game's own folder, with headers that:
+// and none of them shares an origin with the site. The Worker reads the game's files from storage
+// and serves only that game's own folder, with headers that:
 // - let only our sites frame a game page (sitelock: nobody can put our games on their site);
 // - stop forms posting to other sites and switch off camera, microphone, location and payments;
 // - serve each file with the type of its extension (a ".js" can never act as a web page).
 // Builds are write-once (presign-upload), so files are cached for a long time.
+//
+// Storage, either:
+// - Supabase Storage (free launch): the private "builds" bucket, read with the secret key
+//   SUPABASE_STORAGE_KEY (`wrangler secret put`) from SUPABASE_URL (migration 0025);
+// - Cloudflare R2: the binding BUILDS, when wrangler.toml has an [[r2_buckets]] entry.
 //
 // Setup: docs/DEPLOY.md, "Game origins". Local twin: scripts/dev-services.mjs.
 import { gameHeaders, gameKey } from '../../scripts/lib/game-origin.mjs';
@@ -54,6 +59,34 @@ function keyFor(url, env) {
   return null;
 }
 
+const encodeKey = (key) => key.split('/').map((s) => encodeURIComponent(s)).join('/');
+
+/** One stored file as { body, size, etag }, or null when it does not exist. */
+async function readObject(env, key, html) {
+  if (env.BUILDS) {
+    const o = await env.BUILDS.get(key);
+    return o ? { body: o.body, size: o.size, etag: o.httpEtag ?? `"${o.etag ?? ''}"` } : null;
+  }
+  const base = String(env.SUPABASE_URL ?? '').replace(/\/+$/, '');
+  const secret = String(env.SUPABASE_STORAGE_KEY ?? '');
+  if (!base || !secret) throw new Error('storage is not configured');
+  const bucket = String(env.STORAGE_BUCKET || 'builds');
+  // New secret keys (sb_secret_...) go in `apikey` only; an older service-role JWT also as bearer.
+  const headers = { apikey: secret };
+  if (secret.startsWith('eyJ')) headers.authorization = `Bearer ${secret}`;
+  const ttl = html ? 3600 : 31536000;
+  const res = await fetch(`${base}/storage/v1/object/authenticated/${bucket}/${encodeKey(key)}`, {
+    headers,
+    // Keep copies at Cloudflare where it can, to spare the Supabase download allowance.
+    cf: { cacheEverything: true, cacheTtlByStatus: { '200-299': ttl, '300-599': 0 } },
+  });
+  // Supabase answers 400 (older) or 404 for a missing file.
+  if (res.status === 400 || res.status === 404) return null;
+  if (!res.ok) throw new Error(`storage answered ${res.status}`);
+  const length = res.headers.get('content-length');
+  return { body: res.body, size: length === null ? null : Number(length), etag: res.headers.get('etag') ?? '' };
+}
+
 /** Handles one request. Exported for tests. */
 export async function handle(request, env) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return text(405, 'Method not allowed', { allow: 'GET, HEAD' });
@@ -64,19 +97,20 @@ export async function handle(request, env) {
   const type = TYPES[ext];
   if (!type) return text(404, 'Not found');
 
-  const object = await env.BUILDS.get(key);
+  const object = await readObject(env, key, ext === 'html' || ext === 'htm');
   if (!object) return text(404, 'Not found');
-  const etag = object.httpEtag ?? `"${object.etag ?? ''}"`;
+  const etag = object.etag;
   const siteOrigins = String(env.SITE_ORIGINS ?? '').split(/\s+/).filter(Boolean);
   const headers = {
     'content-type': type,
-    etag,
+    ...(etag ? { etag } : {}),
     // Files never change after upload; the game page itself is re-checked every hour.
     'cache-control': ext === 'html' || ext === 'htm' ? 'public, max-age=3600' : 'public, max-age=31536000, immutable',
     ...gameHeaders(type, siteOrigins),
   };
-  if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
-  return new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers: { ...headers, 'content-length': String(object.size) } });
+  if (etag && request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
+  if (Number.isFinite(object.size)) headers['content-length'] = String(object.size);
+  return new Response(request.method === 'HEAD' ? null : object.body, { status: 200, headers });
 }
 
 export default {

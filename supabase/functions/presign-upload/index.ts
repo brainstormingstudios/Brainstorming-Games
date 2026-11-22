@@ -1,13 +1,10 @@
 // POST /functions/v1/presign-upload { versionId, files: [{ path, size }] }
-// Returns presigned PUT URLs (AWS SigV4) so the browser uploads a build straight to Cloudflare R2.
-// The caller must own the version, and every path must be a safe, relative path with an allowed
-// file type. Each link:
-// - lasts 5 minutes;
-// - is bound to the exact size (content-length) and to the content type we choose from the file
-//   extension, so a ".js" cannot be stored as a web page and a 1 KB slot cannot take 5 GB;
-// - is write-once (If-None-Match: *), so a file cannot be swapped after pre-QA has looked at it.
-// The database records every path and size first (register_upload) and approves nothing while
-// links may still be open.
+// Opens the upload of a build into the private "builds" bucket in Supabase Storage. The caller
+// must own the version, and every path must be a safe, relative path with an allowed file type.
+// The database records every path and size first (register_upload); then, for 5 minutes, the
+// developer's own sign-in may store exactly those files at exactly those sizes, once each
+// (storage rules in migration 0025). Nothing is approved while uploads may still be open.
+// The reply gives each file's storage key and the content type to send with it.
 import { json, preflight, userClient } from '../_shared/http.ts';
 
 const TYPES: Record<string, string> = {
@@ -23,56 +20,11 @@ const TYPES: Record<string, string> = {
   fnt: 'text/plain; charset=utf-8', glb: 'model/gltf-binary', gltf: 'model/gltf+json', ktx2: 'image/ktx2',
   basis: 'application/octet-stream', map: 'application/json',
 };
-const MAX_FILE = 100 * 1024 * 1024;
+// 50 MB a file: the Supabase Storage free-plan limit (the "builds" bucket refuses bigger files).
+const MAX_FILE = 50 * 1024 * 1024;
+// How long the uploads stay open after this call (app.uploads_open allows 6 minutes).
 const EXPIRES = 300;
-
-const enc = new TextEncoder();
-const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
-const sha256 = async (s: string) => hex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
-async function hmac(key: ArrayBuffer | Uint8Array, data: string): Promise<ArrayBuffer> {
-  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  return crypto.subtle.sign('HMAC', k, enc.encode(data));
-}
-const encodePath = (p: string) => p.split('/').map((s) => encodeURIComponent(s)).join('/');
-
-/** SigV4 query-string presign for an S3-compatible PUT (R2 uses region "auto"). */
-async function presignPut(key: string, size: number, type: string): Promise<string> {
-  const accountId = Deno.env.get('R2_ACCOUNT_ID')!;
-  const bucket = Deno.env.get('R2_BUCKET')!;
-  const accessKey = Deno.env.get('R2_ACCESS_KEY_ID')!;
-  const secret = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
-  const host = `${accountId}.r2.cloudflarestorage.com`;
-  const amzDate = new Date().toISOString().replace(/[-:]|\.\d{3}/g, '');
-  const day = amzDate.slice(0, 8);
-  const scope = `${day}/auto/s3/aws4_request`;
-  const path = `/${bucket}/${encodePath(key)}`;
-  // Canonical headers, lower-case and sorted. The browser must send exactly these values.
-  const headers: [string, string][] = [
-    ['content-length', String(size)],
-    ['content-type', type],
-    ['host', host],
-    ['if-none-match', '*'],
-  ];
-  const signedHeaders = headers.map(([k]) => k).join(';');
-  const query = new URLSearchParams({
-    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-    'X-Amz-Credential': `${accessKey}/${scope}`,
-    'X-Amz-Date': amzDate,
-    'X-Amz-Expires': String(EXPIRES),
-    'X-Amz-SignedHeaders': signedHeaders,
-  });
-  query.sort();
-  const canonicalQuery = query.toString().replace(/\+/g, '%20');
-  const canonicalHeaders = headers.map(([k, v]) => `${k}:${v}\n`).join('');
-  const canonical = ['PUT', path, canonicalQuery, canonicalHeaders, signedHeaders, 'UNSIGNED-PAYLOAD'].join('\n');
-  const toSign = ['AWS4-HMAC-SHA256', amzDate, scope, await sha256(canonical)].join('\n');
-  let k = await hmac(enc.encode(`AWS4${secret}`), day);
-  k = await hmac(k, 'auto');
-  k = await hmac(k, 's3');
-  k = await hmac(k, 'aws4_request');
-  const signature = hex(await hmac(k, toSign));
-  return `https://${host}${path}?${canonicalQuery}&X-Amz-Signature=${signature}`;
-}
+const BUCKET = 'builds';
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -104,11 +56,11 @@ Deno.serve(async (req) => {
     const limited = error.message.includes('rate_limited');
     return json(req, limited ? 429 : 400, { error: limited ? 'rate_limited' : 'invalid' });
   }
-  const urls: Record<string, string> = {};
+  const keys: Record<string, string> = {};
   const types: Record<string, string> = {};
   for (const f of files) {
-    urls[f.path] = await presignPut(`${version.storage_prefix}/${f.path}`, f.size, f.type);
+    keys[f.path] = `${version.storage_prefix}/${f.path}`;
     types[f.path] = f.type;
   }
-  return json(req, 200, { urls, types, expiresIn: EXPIRES });
+  return json(req, 200, { bucket: BUCKET, keys, types, expiresIn: EXPIRES });
 });

@@ -11,7 +11,7 @@ How the platform defends itself, phase by phase. Internal: not published on the 
 | Bait-and-switch: get a page approved, then change it to a scam | Text edits to a released game wait for review (`game_pending_edits`); new covers and videos wait for review; a released game's address never changes; staff review them in Review queue > Changes to live games | `0021_security_live_games.sql` |
 | Covers and videos pointing at other websites | Media URLs must be files in the game's own folder of our `media` bucket (`site_config.media_host`) | `app.media_url_ok()` |
 | Uploading anything to the media bucket, or overwriting another game's cover | Bucket accepts WebP, MP4 and WebM up to 50 MB; uploads only into a game you own; no overwrite or delete through the API; 120 files an hour | `0021`, storage policy `bg_media_insert` |
-| Swapping build files after pre-QA, or filling storage | Every file is registered first (path and exact size, within the declared totals); links last 5 minutes, are bound to the size and a type we choose, and are write-once (`If-None-Match: *`); nothing is approved while links may be open | `presign-upload`, `register_upload()`, `app.block_open_uploads()` |
+| Swapping build files after pre-QA, or filling storage | Every file is registered first (path and exact size, within the declared totals). Supabase Storage (free launch): the private `builds` bucket takes only registered files, at the registered size, from the owner, for 6 minutes after registering, 50 MB a file, never overwritten or deleted; only the games server reads it. R2 (later): links last 5 minutes, are bound to the size and a type we choose, and are write-once (`If-None-Match: *`). Either way nothing is approved while uploads may be open | `presign-upload`, `register_upload()`, `app.build_upload_ok()` and policy `bg_builds_insert` (`0025`), `app.block_open_uploads()` |
 | A "minor update" that is really a different game | Auto-publish only when the entry file matches, the size is within 0.5x to 1.5x and the file count is similar, at most 3 a week; anything else needs human review | `app.minor_update_ok()` |
 | Bots flooding sign-in e-mails (spam from our address, daily limit used up) | Cloudflare Turnstile before a code is sent; Supabase checks the token | `Turnstile.tsx`, DEPLOY.md section 11 |
 | Guessing secrets by timing | Constant-time comparison for every shared secret | `sameSecret()` |
@@ -29,7 +29,7 @@ to 127.0.0.1.
 1. Push migrations 0020 to 0022, deploy the changed Edge Functions.
 2. `BG_EDGE_KEY` secret, and `select app.set_secret('edge_key', '<same value>');`.
 3. `site_config.media_host` (DEPLOY.md section 2, step 8).
-4. R2 CORS allows `content-type` and `if-none-match` on PUT.
+4. Builds: migration 0025 (Supabase `builds` bucket) and the games server's `SUPABASE_STORAGE_KEY`; or, with R2, CORS allows `content-type` and `if-none-match` on PUT.
 5. Turnstile site key in the build, secret key in Supabase, then turn CAPTCHA on.
 
 ## Phase 2: isolation (done)

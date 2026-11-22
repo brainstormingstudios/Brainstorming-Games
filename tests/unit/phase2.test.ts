@@ -154,8 +154,12 @@ describe('build validation', () => {
     expect(validateBuild([f('index.html'), f('server.php')]).ok).toBe(false);
     expect(validateBuild([f('game.html')]).errors.join()).toContain('index.html');
   });
-  it('enforces 250 MB and 1,500 files', () => {
+  it('enforces 250 MB, 1,500 files and 50 MB a file', () => {
     expect(validateBuild([f('index.html', 251 * 1024 * 1024)]).ok).toBe(false);
+    const big = validateBuild([f('index.html'), f('Build/game.data', 51 * 1024 * 1024)]);
+    expect(big.ok).toBe(false);
+    expect(big.errors.join()).toContain('Build/game.data');
+    expect(validateBuild([f('index.html'), f('Build/game.data', 49 * 1024 * 1024)]).ok).toBe(true);
     expect(validateBuild([f('index.html'), ...Array.from({ length: 1500 }, (_, i) => f(`a/${i}.png`))]).ok).toBe(false);
   });
   it('finds the SDK and absolute paths in HTML', () => {

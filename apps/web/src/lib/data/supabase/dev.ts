@@ -243,12 +243,21 @@ async function detail(gameId: string): Promise<DevGameDetail | null> {
 }
 
 /**
- * Uploads one build file. The link is signed for this exact type and size and is write-once
- * (If-None-Match), so a 412 means the file is already stored from an earlier try.
+ * Uploads one build file into the private "builds" bucket with the developer's own sign-in. The
+ * storage rules (migration 0025) only take files registered by presign-upload, at that size,
+ * once: "already exists" means the file is stored from an earlier try.
  */
-async function putSigned(url: string, blob: Blob, type: string): Promise<void> {
-  const res = await fetch(url, { method: 'PUT', body: blob, headers: { 'content-type': type, 'if-none-match': '*' } });
-  if (!res.ok && res.status !== 412) throw new RepoError('unavailable', `Upload failed (${res.status})`);
+async function uploadBuildFile(bucket: string, key: string, blob: Blob, type: string): Promise<void> {
+  const { error } = await getSupabase().storage.from(bucket).upload(key, blob, {
+    contentType: type,
+    upsert: false,
+    cacheControl: '31536000',
+  });
+  if (!error) return;
+  const e = error as { message?: string; statusCode?: string | number; status?: number };
+  const code = String(e.statusCode ?? e.status ?? '');
+  if (code === '409' || /already exists|duplicate/i.test(e.message ?? '')) return;
+  throw new RepoError('unavailable', `Upload failed (${code || e.message || 'error'})`);
 }
 
 export const supabaseDev: DevRepo = {
@@ -402,11 +411,11 @@ export const supabaseDev: DevRepo = {
     if (input.assetHashes?.length) {
       check(await getSupabase().rpc('set_asset_hashes', { p_version: created.version_id, p_hashes: input.assetHashes.slice(0, 2000) }));
     }
-    // Presigned R2 URLs, requested in batches so each Edge Function call stays small.
+    // Uploads are opened in batches so each Edge Function call stays small.
     const total = input.files.reduce((n, f) => n + f.data.size, 0) || 1;
     let sent = 0;
-    // Links last 5 minutes and must be used (started) within that time, so each batch is small:
-    // at most 100 files and about 25 MB, signed just before it uploads.
+    // Each opening lasts about 5 minutes, so each batch is small: at most 100 files and about
+    // 25 MB, opened just before it uploads.
     const batches: (typeof input.files)[] = [];
     for (const f of input.files) {
       const last = batches[batches.length - 1];
@@ -415,17 +424,17 @@ export const supabaseDev: DevRepo = {
       else last.push(f);
     }
     for (const batch of batches) {
-      const { urls, types } = await callFunction<{ urls: Record<string, string>; types: Record<string, string> }>('presign-upload', {
+      const { bucket, keys, types } = await callFunction<{ bucket: string; keys: Record<string, string>; types: Record<string, string> }>('presign-upload', {
         versionId: created.version_id,
         files: batch.map((f) => ({ path: f.path, size: f.data.size })),
       });
       const queue = [...batch];
       const worker = async () => {
         for (let f = queue.shift(); f; f = queue.shift()) {
-          const url = urls[f.path];
+          const key = keys[f.path];
           const type = types[f.path];
-          if (!url || !type) throw new RepoError('unavailable', `No upload URL for ${f.path}`);
-          await putSigned(url, f.data, type);
+          if (!bucket || !key || !type) throw new RepoError('unavailable', `No upload slot for ${f.path}`);
+          await uploadBuildFile(bucket, key, f.data, type);
           sent += f.data.size;
           onProgress?.(sent / total);
         }

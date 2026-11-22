@@ -74,7 +74,21 @@ git push -u origin main
    on conflict (key) do update set value = excluded.value;
    ```
 
-## 3. Cloudflare R2 (game builds)
+## 3. Game builds: Supabase Storage or Cloudflare R2
+
+**Supabase Storage (the free launch, no card).** Migration 0025 creates the private `builds`
+bucket (50 MB a file, the free-plan limit) and its upload rule. Developers upload with their own
+sign-in; only the games server reads the bucket. Set it up:
+
+- Supabase > Project Settings > API Keys: create a secret key named `games-server`.
+- Store it in the Worker yourself (paste it at the prompt; it is never written into a file):
+  `npx wrangler secret put SUPABASE_STORAGE_KEY --config workers/play/wrangler.toml`.
+- `workers/play/wrangler.toml` has `SUPABASE_URL` and `STORAGE_BUCKET = "builds"`.
+- Limits of the free plan: about 1 GB of files in all and about 5 GB of downloads a month. Then
+  move to R2 (below): uncomment `[[r2_buckets]]` in `wrangler.toml`, copy the builds across and
+  switch `presign-upload` back to signed R2 links (git history before migration 0025).
+
+**Cloudflare R2 (later, more room, unlimited downloads).**
 
 1. Create an R2 bucket, for example `bg-play`.
 2. Give it a **custom domain** such as `play.<your-domain>`. Game builds must be served from a

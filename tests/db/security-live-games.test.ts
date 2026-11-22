@@ -147,6 +147,33 @@ describe('build uploads', () => {
     expect((await db.query<{ qa_status: string }>(`select qa_status from public.game_versions where id = $1`, [v])).rows[0]!.qa_status).toBe('approved');
   });
 
+  it('lets the owner store only registered files, at their size, while uploads are open', async () => {
+    const v = await addVersion(draftId, '1.2');
+    const prefix = `${draftId}/1.2`;
+    const ok = (user: string, name: string, size: number | null) =>
+      as(db, 'authenticated', user, async (q) => (await q<{ ok: boolean }>(`select app.build_upload_ok($1, $2) as ok`, [name, size]))[0]!.ok);
+    // Nothing registered yet.
+    expect(await ok(dev, `${prefix}/index.html`, null)).toBe(false);
+    await register(dev, v, [{ path: 'index.html', size: 1000 }, { path: 'js/game.js', size: 500 }]);
+    expect(await ok(dev, `${prefix}/index.html`, null)).toBe(true);
+    expect(await ok(dev, `${prefix}/index.html`, 1000)).toBe(true);
+    expect(await ok(dev, `${prefix}/js/game.js`, 500)).toBe(true);
+    // Wrong size, unregistered path, another developer, another version's folder.
+    expect(await ok(dev, `${prefix}/index.html`, 5000)).toBe(false);
+    expect(await ok(dev, `${prefix}/extra.js`, null)).toBe(false);
+    expect(await ok(other, `${prefix}/index.html`, null)).toBe(false);
+    expect(await ok(dev, `${draftId}/9.9/index.html`, null)).toBe(false);
+    expect(await ok(dev, `${prefix}/`, null)).toBe(false);
+    // Closed once the uploads window has passed, and once the version moves on.
+    await db.query(`update public.game_versions set last_presign_at = now() - interval '7 minutes' where id = $1`, [v]);
+    expect(await ok(dev, `${prefix}/index.html`, null)).toBe(false);
+    await register(dev, v, [{ path: 'index.html', size: 1000 }]);
+    await db.query(`update public.game_versions set qa_status = 'pre_qa_running' where id = $1`, [v]);
+    expect(await ok(dev, `${prefix}/index.html`, null)).toBe(false);
+    // Not callable without signing in.
+    await expect(as(db, 'anon', null, (q) => q(`select app.build_upload_ok($1, null)`, [`${prefix}/index.html`]))).rejects.toThrow();
+  });
+
   it('publishes a minor update by itself only when it is close to the reviewed build', async () => {
     const base = await addVersion(liveId, '2.0', 10, 100000);
     await db.query(`update public.game_versions set qa_status = 'approved' where id = $1`, [base]);
