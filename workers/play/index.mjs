@@ -28,16 +28,37 @@ const TYPES = {
 const text = (status, body, extra = {}) =>
   new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-content-type-options': 'nosniff', ...extra } });
 
+/**
+ * The storage key for a request, or null. Two modes:
+ * - games domain (GAMES_DOMAIN): g-<id>.<domain>/<path> → <id>/<path>, every game its own origin;
+ * - shared address (free launch, SHARED_HOST, e.g. bg-play.<account>.workers.dev):
+ *   /<game folder>/<path> → <game folder>/<path>, all games on one origin.
+ */
+function keyFor(url, env) {
+  const host = url.hostname.toLowerCase();
+  const domain = String(env.GAMES_DOMAIN ?? '').toLowerCase();
+  if (domain && host.endsWith(`.${domain}`)) {
+    const label = host.slice(0, -domain.length - 1);
+    return label.includes('.') ? null : gameKey(label, url.pathname);
+  }
+  const shared = String(env.SHARED_HOST ?? '').toLowerCase();
+  if (shared && host === shared) {
+    // The first folder must be a game folder (a game id, or originals/<slug>); map it to a label so
+    // the same path rules apply.
+    const m = /^\/(originals\/)?([a-z0-9-]{1,64})(\/.*)$/.exec(url.pathname);
+    if (!m) return null;
+    const id = m[2];
+    const label = m[1] ? `o-${id}` : `g-${/^[0-9a-f-]{36}$/.test(id) ? id.replace(/-/g, '') : id}`;
+    return gameKey(label, m[3]);
+  }
+  return null;
+}
+
 /** Handles one request. Exported for tests. */
 export async function handle(request, env) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return text(405, 'Method not allowed', { allow: 'GET, HEAD' });
   const url = new URL(request.url);
-  const domain = String(env.GAMES_DOMAIN ?? '').toLowerCase();
-  const host = url.hostname.toLowerCase();
-  if (!domain || !host.endsWith(`.${domain}`)) return text(404, 'Not found');
-  const label = host.slice(0, -domain.length - 1);
-  if (label.includes('.')) return text(404, 'Not found');
-  const key = gameKey(label, url.pathname);
+  const key = keyFor(url, env);
   if (!key) return text(404, 'Not found');
   const ext = key.slice(key.lastIndexOf('.') + 1).toLowerCase();
   const type = TYPES[ext];

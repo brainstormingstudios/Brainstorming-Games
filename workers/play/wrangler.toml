@@ -1,19 +1,23 @@
-# Game origins Worker (docs/DEPLOY.md, "Game origins"). Deploy with:
+# Game files Worker. Deploy with:
 #   npx wrangler deploy --config workers/play/wrangler.toml
-# Replace the example domains below with yours first.
+#
+# FREE LAUNCH (now): the Worker runs on its free address https://bg-play.<your-subdomain>.workers.dev
+# and all games share it. Set SHARED_HOST to that host after the first deploy (docs/GO-LIVE-FREE.md).
+#
+# LATER, with a games domain (every game sealed off on its own address): set workers_dev = false,
+# uncomment `routes`, fill GAMES_DOMAIN and empty SHARED_HOST (docs/DEPLOY.md, "Game origins").
 name = "bg-play"
 main = "index.mjs"
 compatibility_date = "2025-06-01"
-workers_dev = false
-
-# Every game subdomain of the games domain (a domain of its own, NOT the site's domain).
-routes = [{ pattern = "*.bgplay.example/*", zone_name = "bgplay.example" }]
+workers_dev = true
+# routes = [{ pattern = "*.bgplay.example/*", zone_name = "bgplay.example" }]
 
 [[r2_buckets]]
 binding = "BUILDS"
 bucket_name = "bg-play"
 
 [vars]
-GAMES_DOMAIN = "bgplay.example"
+SHARED_HOST = "bg-play.CHANGE-ME.workers.dev"
+GAMES_DOMAIN = ""
 # The sites allowed to frame games, separated by spaces.
-SITE_ORIGINS = "https://brainstorming.example https://developers.brainstorming.example https://manage.brainstorming.example"
+SITE_ORIGINS = "https://CHANGE-ME.pages.dev https://CHANGE-ME-developers.pages.dev https://CHANGE-ME-manage.pages.dev"

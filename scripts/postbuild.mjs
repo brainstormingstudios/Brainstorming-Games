@@ -47,9 +47,21 @@ if (!isLocalUrl(SITE_URL) && !SUPABASE_URL && !process.env.BG_CATALOGUE_FIXTURE)
 }
 // Each game on its own origin, on a domain that is not the site's (see lib/play/gameOrigin.ts).
 const GAME_PATTERN = gameOriginPattern();
-if (!isLocalUrl(SITE_URL)) {
+// Free launch (docs/GO-LIVE-FREE.md): all games on one free address, chosen on purpose with
+// BG_SHARED_GAME_ORIGIN=1 until a games domain is bought. Games are still apart from the sites.
+const SHARED_GAMES = !validPattern(GAME_PATTERN) && process.env.BG_SHARED_GAME_ORIGIN === '1';
+if (!isLocalUrl(SITE_URL) && SHARED_GAMES) {
+  const playHost = new URL(PLAY_ORIGIN).hostname;
+  const siteHosts = [SITE_URL, process.env.NEXT_PUBLIC_DEVELOPERS_URL, process.env.NEXT_PUBLIC_MANAGE_URL].filter(Boolean).map((u) => new URL(u).hostname);
+  if (!PLAY_ORIGIN.startsWith('https://') || siteHosts.includes(playHost) || isLocalUrl(PLAY_ORIGIN)) {
+    console.error(`[postbuild] NEXT_PUBLIC_PLAY_ORIGIN (${PLAY_ORIGIN}) must be the games Worker's own https address, not a site's.`);
+    process.exit(1);
+  }
+  console.warn('[postbuild] WARNING: games share one address (free launch). Buy a games domain and set NEXT_PUBLIC_GAME_ORIGIN_PATTERN to seal games off from each other.');
+}
+if (!isLocalUrl(SITE_URL) && !SHARED_GAMES) {
   if (!validPattern(GAME_PATTERN)) {
-    console.error('[postbuild] NEXT_PUBLIC_GAME_ORIGIN_PATTERN must be set for a live build, e.g. https://{game}.bgplay.net (docs/DEPLOY.md, "Game origins"). Without it every game would share one origin.');
+    console.error('[postbuild] NEXT_PUBLIC_GAME_ORIGIN_PATTERN must be set for a live build, e.g. https://{game}.bgplay.net (docs/DEPLOY.md, "Game origins"). Without it every game would share one origin. For a free launch on one shared address, set BG_SHARED_GAME_ORIGIN=1 instead.');
     process.exit(1);
   }
   // Same registrable domain = same site: cookies and some storage could cross. Compared on the

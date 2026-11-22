@@ -46,6 +46,18 @@ describe('game origins Worker', () => {
     expect((await get(`https://${LABEL}.bgplay.example/1/game.js`, { method: 'PUT', body: 'x' })).status).toBe(405);
   });
 
+  it('serves games on one shared address for the free launch, still folder by folder', async () => {
+    const shared = { ...env, GAMES_DOMAIN: '', SHARED_HOST: 'bg-play.acct.workers.dev' };
+    const ok = (await handle(new Request(`https://bg-play.acct.workers.dev/${ID}/1/game.js`), shared)) as Response;
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get('x-content-type-options')).toBe('nosniff');
+    for (const bad of [`/${ID}/1/%2e%2e/%2e%2e/x.js`, `/${ID}/1/a%5Cb.js`, '/media/x.webp', '/', '/package.json']) {
+      expect(((await handle(new Request(`https://bg-play.acct.workers.dev${bad}`), shared)) as Response).status, bad).toBe(404);
+    }
+    // Another host is refused.
+    expect(((await handle(new Request(`https://evil.example/${ID}/1/game.js`), shared)) as Response).status).toBe(404);
+  });
+
   it('answers repeat visits from the browser cache', async () => {
     const res = await get(`https://${LABEL}.bgplay.example/1/game.js`, { headers: { 'if-none-match': '"e1"' } });
     expect(res.status).toBe(304);
