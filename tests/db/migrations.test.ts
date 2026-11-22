@@ -114,7 +114,7 @@ describe('developer flow', () => {
       return row!.v.version_id;
     });
 
-    // Not submittable before pre-QA; the bot's report arrives with the service role.
+    // Not submittable yet (the preview video is missing); the bot's report arrives with the service role.
     const declaration = JSON.stringify({ ownsRights: true, noCopies: true, credits: '' });
     await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]))).rejects.toThrow(/invalid/);
     await as(db, 'service_role', null, (q) => q(`select public.set_pre_qa_report($1, '{"status":"pass","usesSdk":true}')`, [versionId]));

@@ -14,6 +14,7 @@ import type {
   GameEditable,
   PendingChangeItem,
   PreviewInfo,
+  AutoRejectedItem,
   QaQueueItem,
   QaStatus,
   SparkRow,
@@ -444,19 +445,13 @@ export const supabaseDev: DevRepo = {
     emitTopic('dev-games');
     return { versionId: created.version_id, previewToken: created.preview_token };
   },
-  async runPreQa(versionId) {
-    check(await getSupabase().rpc('mark_pre_qa_running', { p_version_id: versionId }));
-    await callFunction('pre-qa-dispatch', { versionId });
-    emitTopic('dev-games');
-    // The report arrives asynchronously from the GitHub Actions runner.
-    return null;
-  },
   async submitForReview(gameId, declaration) {
     // The Edge Function submits (the database checks the rules) and then runs the auto-review
     // with the service role, so a developer cannot write their own review.
-    await callFunction('submit-game', { gameId, declaration });
+    const res = await callFunction<{ rejected?: boolean; reason?: string | null }>('submit-game', { gameId, declaration });
     emitTopic('dev-games');
     emitTopic('qa');
+    return { rejected: res?.rejected === true, reason: res?.reason ?? null };
   },
   async rollback(gameId, versionId) {
     check(await getSupabase().rpc('rollback_version', { p_game_id: gameId, p_version_id: versionId }));
@@ -571,6 +566,36 @@ export const supabaseAdmin: AdminRepo = {
         isUpdate: Boolean(g.released_at),
       };
     });
+  },
+  async autoRejected() {
+    const data = check(
+      await getSupabase()
+        .from('qa_reviews')
+        .select('version_id, game_id, notes, created_at, games(title, studios(name)), game_versions(version)')
+        .eq('action', 'reject')
+        .contains('checklist', { automatic: true })
+        .order('created_at', { ascending: false })
+        .limit(100),
+    );
+    return (data ?? []).map((x): AutoRejectedItem => {
+      const r = x as Row;
+      const g = (r.games as { title?: string; studios?: { name?: string } } | null) ?? {};
+      return {
+        versionId: String(r.version_id),
+        gameId: String(r.game_id),
+        title: String(g.title ?? ''),
+        studioName: String(g.studios?.name ?? ''),
+        version: String((r.game_versions as { version?: string } | null)?.version ?? ''),
+        reason: String(r.notes ?? ''),
+        rejectedAt: String(r.created_at),
+      };
+    });
+  },
+  async rerunPreQa(versionId) {
+    // Staff only (the function checks); the report arrives later from the GitHub Actions runner.
+    await callFunction('pre-qa-dispatch', { versionId });
+    emitTopic('qa');
+    return null;
   },
   async qaItem(versionId) {
     const db = getSupabase();

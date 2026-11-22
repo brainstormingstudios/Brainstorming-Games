@@ -273,6 +273,17 @@ export interface QaQueueItem {
   isUpdate: boolean;
 }
 
+/** A submission the system rejected by itself (a clear copy or harmful code), for the moderators' record. */
+export interface AutoRejectedItem {
+  versionId: string;
+  gameId: string;
+  title: string;
+  studioName: string;
+  version: string;
+  reason: string;
+  rejectedAt: string;
+}
+
 export interface QaReviewItem {
   game: DevGame;
   studio: DevStudio;

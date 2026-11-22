@@ -83,13 +83,11 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.getByTestId('wiz-next').click();
   // Before a build: the checklist says why the row is not ticked.
   await expect(page.getByTestId('wiz-check-why').first()).toContainText('No build uploaded yet');
-  // Dropping a valid zip uploads it and starts pre-QA by itself (no extra button).
+  // Dropping a valid zip uploads it. No checks run on the developer side: they start on the
+  // server after submitting, and their reports go to the moderators.
   await page.getByTestId('zip-input').setInputFiles({ name: 'probe.zip', mimeType: 'application/zip', buffer: await probeZip() });
-  const report = page.getByTestId('pre-qa-report');
-  await expect(report).toBeVisible({ timeout: 120_000 });
-  await expect(report.locator('[data-check="sdk"]')).toHaveAttribute('data-check-status', 'pass');
-  await expect(report.locator('[data-check="gameplay-event"]')).toHaveAttribute('data-check-status', 'pass');
-  await expect(report.locator('[data-check="absolute-paths"]')).toHaveAttribute('data-check-status', 'pass');
+  await expect(page.getByTestId('build-status')).toHaveAttribute('data-qa', 'uploaded', { timeout: 120_000 });
+  await expect(page.getByTestId('pre-qa-report')).toHaveCount(0);
 
   // 4. Submit for review: only once the rights boxes are ticked.
   await expect(page.getByTestId('wiz-submit')).toBeDisabled();
@@ -97,7 +95,7 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.getByTestId('wiz-no-copies').check();
   await expect(page.getByTestId('wiz-check').and(page.locator('[data-ok="false"]'))).toHaveCount(0);
   await page.getByTestId('wiz-submit').click();
-  await expect(page.getByTestId('game-status').first()).toHaveText('In review');
+  await expect(page.getByTestId('game-status').first()).toHaveText('In review', { timeout: 120_000 });
   // The 72-hour review promise is shown with its deadline.
   await expect(page.getByTestId('review-promise')).toContainText("We'll review it by");
 
@@ -113,6 +111,12 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await expect(page.getByTestId('auto-review')).toContainText('Rights declaration');
   await expect(page.getByTestId('auto-check').and(page.locator('[data-status="fail"]'))).toHaveCount(0);
   await expect(page.getByTestId('auto-risk')).toContainText('Risk');
+  // The test-play report is here, for the moderator, and nothing was rejected automatically.
+  await expect(page.getByTestId('test-play')).toBeVisible();
+  const report = page.getByTestId('pre-qa-report');
+  await expect(report.locator('[data-check="sdk"]')).toHaveAttribute('data-check-status', 'pass');
+  await expect(report.locator('[data-check="gameplay-event"]')).toHaveAttribute('data-check-status', 'pass');
+  await expect(report.locator('[data-check="absolute-paths"]')).toHaveAttribute('data-check-status', 'pass');
   // Every detail for the manual decision: store page, build, rights declaration, studio record.
   const details = page.getByTestId('review-details');
   await expect(details).toContainText('Probe Quest');

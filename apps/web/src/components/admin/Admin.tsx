@@ -157,7 +157,7 @@ export function QaQueue() {
                       return left < 0 ? <Badge tone="danger">{t('late')}</Badge> : <Badge tone={left < 12 ? 'warning' : 'neutral'}>{t('hoursLeft', { hours: left })}</Badge>;
                     })()}
                   </td>
-                  <td className="px-3 py-2">{item.preQaStatus ? <Badge tone={PRE_QA_TONE[item.preQaStatus]}>{item.preQaStatus}</Badge> : '–'}</td>
+                  <td className="px-3 py-2">{item.preQaStatus ? <Badge tone={PRE_QA_TONE[item.preQaStatus]}>{item.preQaStatus}</Badge> : <Badge>{t('running')}</Badge>}</td>
                   <td className="px-3 py-2">{item.autoReviewStatus ? <Badge tone={item.autoReviewStatus === 'pass' ? 'success' : item.autoReviewStatus === 'warn' ? 'warning' : 'danger'}>{t(`auto.${item.autoReviewStatus}`)}</Badge> : '–'}</td>
                   <td className="px-3 py-2 text-right">
                     <Link href={`/admin/qa/review?v=${item.versionId}`} className={buttonClass({ size: 'sm' })} data-testid="qa-review-link">
@@ -170,8 +170,60 @@ export function QaQueue() {
           </table>
         </div>
       )}
+      <AutoRejectedList />
       <LiveChangesQueue />
     </div>
+  );
+}
+
+/** What the system rejected by itself (clear copies, harmful code), so the team keeps track. */
+function AutoRejectedList() {
+  const t = useTranslations('admin.qa');
+  const locale = useLocale();
+  const { data } = useRepoQuery((repo) => repo.admin.autoRejected(), [], { topics: ['qa'] });
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="auto-rejected" data-testid="auto-rejected">
+      <h2 id="auto-rejected" className="font-display text-xl font-bold">
+        {t('autoRejectedTitle')}
+      </h2>
+      <p className="text-sm text-fg-muted">{t('autoRejectedBody')}</p>
+      {(data ?? []).length === 0 ? (
+        <EmptyState title={t('autoRejectedEmpty')} size="sm" />
+      ) : (
+        <div className="overflow-x-auto rounded-card border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-3 text-left">
+              <tr>
+                {(['game', 'studio', 'version', 'rejectedAt', 'reason'] as const).map((h) => (
+                  <th key={h} scope="col" className="px-3 py-2 font-display">
+                    {t(h)}
+                  </th>
+                ))}
+                <th scope="col" className="px-3 py-2">
+                  <span className="sr-only">{t('open')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data ?? []).map((item) => (
+                <tr key={`${item.versionId}-${item.rejectedAt}`} className="border-t border-border align-top" data-testid="auto-rejected-row">
+                  <td className="px-3 py-2 font-bold">{item.title}</td>
+                  <td className="px-3 py-2">{item.studioName}</td>
+                  <td className="px-3 py-2">v{item.version}</td>
+                  <td className="px-3 py-2">{formatDate(item.rejectedAt, locale)}</td>
+                  <td className="max-w-xl px-3 py-2">{item.reason}</td>
+                  <td className="px-3 py-2 text-right">
+                    <Link href={`/admin/qa/review?v=${item.versionId}`} className={buttonClass({ size: 'sm', variant: 'outline' })}>
+                      {t('open')}
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -236,11 +288,18 @@ export function QaReview() {
             </Button>
           )}
           <AutoReviewView report={version.autoReview ?? null} />
-          {version.preQaReport ? (
-            <Card className="p-4">
-              <PreQaReportView report={version.preQaReport} />
-            </Card>
-          ) : null}
+          <Card className="flex flex-col gap-3 p-4" data-testid="test-play">
+            {version.preQaReport ? <PreQaReportView report={version.preQaReport} /> : <p className="text-sm font-bold">{t('testPlayRunning')}</p>}
+            <Button
+              size="sm"
+              variant="outline"
+              className="self-start"
+              onClick={() => void act(async () => (await getRepo()).admin.rerunPreQa(version.id), t('testPlayStarted'))}
+              data-testid="rerun-test-play"
+            >
+              {t('rerunTestPlay')}
+            </Button>
+          </Card>
           <ReviewDetails item={data} />
         </div>
         <Card className="flex h-fit flex-col gap-4 p-4 xl:sticky xl:top-20">

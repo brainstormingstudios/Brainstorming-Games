@@ -1,9 +1,12 @@
 // POST /functions/v1/submit-game  { gameId, declaration }
 // Submits the developer's latest build for review (the database enforces what a submission must
 // include and that the caller owns the game), then runs the auto-review with the service role and
-// stores it on the version, where only the moderators' view reads it.
+// stores it on the version, where only the moderators' view reads it. A clear copy (copied build,
+// cover, art or text, a protected name) is rejected at once, with the reason; otherwise the
+// test-play starts here, on the server, and its report goes to the moderators (migration 0026).
 import { adminClient, json, preflight, requireUser, userClient } from '../_shared/http.ts';
-import { runAutoReview, type AssetOverlap, type Declaration } from '../_shared/autoReview.ts';
+import { dispatchPreQa } from '../_shared/preQa.ts';
+import { autoRejectReason, runAutoReview, type AssetOverlap, type Declaration } from '../_shared/autoReview.ts';
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -25,7 +28,7 @@ Deno.serve(async (req) => {
     .select('id, title, short_description, description_md, how_to_play_md, controls, tags, studio_id, studios(created_at, verified)')
     .eq('id', body.gameId)
     .single();
-  const { data: version } = await db.from('game_versions').select('build_fingerprint, pre_qa_report').eq('id', versionId).single();
+  const { data: version } = await db.from('game_versions').select('id, storage_prefix, entry_file, build_fingerprint, pre_qa_report').eq('id', versionId).single();
   const { data: media } = await db.from('game_media').select('game_id, phash, is_active').not('phash', 'is', null);
   const { data: released } = await db
     .from('games')
@@ -69,6 +72,9 @@ Deno.serve(async (req) => {
     },
     studio: { createdAt: studio.created_at ?? new Date().toISOString(), rejections: rejections ?? 0, verified: Boolean(studio.verified) },
   });
-  await db.from('game_versions').update({ auto_review: report }).eq('id', versionId);
-  return json(req, 200, { ok: true, autoReview: report.status });
+  const reason = autoRejectReason(report);
+  const { data: outcome } = await db.rpc('apply_auto_review', { p_version: versionId, p_report: report, p_reject_reason: reason });
+  // Not a clear copy: test-play it now (harmful code found there is rejected when the report lands).
+  if (outcome !== 'rejected' && version && !version.pre_qa_report) await dispatchPreQa(version);
+  return json(req, 200, { ok: true, autoReview: report.status, rejected: outcome === 'rejected', reason: outcome === 'rejected' ? reason : null });
 });

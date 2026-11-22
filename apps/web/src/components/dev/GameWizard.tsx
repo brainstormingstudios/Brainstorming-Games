@@ -30,7 +30,6 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
 import { LiveChangesNotice } from './LiveChanges';
 import { MediaField } from './MediaField';
-import { PreQaReportView } from './PreQaReportView';
 
 /** Four quick steps. Everything marked required is needed to submit; the rest is optional. */
 const STEPS = ['details', 'page', 'media', 'build'] as const;
@@ -287,17 +286,15 @@ export function GameWizard() {
     d?.media.find((m) => m.kind === kind && m.variantLabel === label && m.isActive) ??
     null;
   const latest = d?.versions[0] ?? null;
-  const preQaOk = latest ? ['pre_qa_passed', 'pre_qa_warn', 'approved', 'in_review'].includes(latest.qaStatus) : false;
+  // An uploaded build is all the developer needs: the checks run on the server after submitting
+  // (migration 0026), and their results go to the moderators.
+  const preQaOk = latest ? latest.qaStatus !== 'rejected' && latest.qaStatus !== 'changes_requested' : false;
   // Why the build row is not ticked yet, in plain words.
   const preQaWhy = !latest
     ? 'whyNoBuild'
-    : latest.qaStatus === 'uploaded' || latest.qaStatus === 'pre_qa_running'
-      ? 'whyRunning'
-      : latest.qaStatus === 'pre_qa_failed'
-        ? 'whyFailed'
-        : latest.qaStatus === 'rejected'
-          ? 'whyRejected'
-          : null;
+    : latest.qaStatus === 'rejected' || latest.qaStatus === 'changes_requested'
+      ? 'whyRejected'
+      : null;
   const checklist: { key: string; ok: boolean; why?: string | null; step?: Step }[] = [
     { key: 'checkDetails', ok: Boolean(form.title.trim() && form.shortDescription.trim() && form.category && form.tags.length >= 3), step: 'details' },
     { key: 'checkPage', ok: Boolean(form.descriptionMd.trim() && form.controls.some((c) => c.action.trim())), step: 'page' },
@@ -314,8 +311,13 @@ export function GameWizard() {
     setBusy(true);
     setError(null);
     try {
-      await (await getRepo()).dev.submitForReview(gameId, { ownsRights, noCopies, credits: credits.trim() });
-      toast(tgame('submitted'), { tone: 'success' });
+      const result = await (await getRepo()).dev.submitForReview(gameId, { ownsRights, noCopies, credits: credits.trim() });
+      if (result.rejected) {
+        // A clear copy was rejected at once; the game page shows the reason too.
+        toast(result.reason ?? tgame('autoRejected'), { tone: 'error' });
+      } else {
+        toast(tgame('submitted'), { tone: 'success' });
+      }
       router.push(localizePath(`/dev/games/view?id=${gameId}`, locale));
     } catch (err) {
       setError(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'));
@@ -492,12 +494,11 @@ export function GameWizard() {
     build: () => (
       <div className="flex flex-col gap-6">
         <BuildUpload gameId={gameId!} suggestedVersion={nextVersion(d)} isLive={Boolean(d?.game.releasedAt)} onUploaded={() => detail.refresh()} />
-        {latest?.qaStatus === 'pre_qa_running' ? (
-          <p role="status" className="text-sm font-bold">
-            {tgame('preQaRunning')}
+        {latest && preQaOk ? (
+          <p role="status" className="text-sm font-bold" data-testid="build-status" data-qa={latest.qaStatus}>
+            {t('buildReceived')}
           </p>
         ) : null}
-        {latest?.preQaReport ? <PreQaReportView report={latest.preQaReport} /> : null}
 
         <section className="flex flex-col gap-3 rounded-card border border-border p-4" aria-labelledby="rights">
           <h2 id="rights" className="font-display text-lg font-bold">

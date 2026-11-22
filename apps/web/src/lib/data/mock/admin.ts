@@ -4,13 +4,13 @@ import { reviewLate } from '@/lib/domain/review';
 import { creditDiscoverers } from './discover';
 import { summarise } from '@/lib/domain/kpis';
 import { emitTopic } from '../bus';
-import type { PendingChangeItem, QaQueueItem, SparkRow } from '../devTypes';
+import type { AutoRejectedItem, PendingChangeItem, QaQueueItem, SparkRow } from '../devTypes';
 import type { AdminRepo } from '../repo';
 import { requireStaff } from './auth';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable, writeSiteConfig } from './db';
 import { pickAbWinners } from './growth';
 import { sendMail } from './mail';
-import { kpisFor, mediaFor, ownerOf, pendingChangesFor, studioEmail, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
+import { kpisFor, mediaFor, ownerOf, pendingChangesFor, runMockPreQa, studioEmail, publishVersion, toDevGame, toDevStudio, toDevVersion, updateGameRow, updateVersionRow } from './dev';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -40,6 +40,32 @@ export const mockAdmin: AdminRepo = {
           isUpdate: Boolean(g?.releasedAt),
         };
       });
+  },
+  async autoRejected() {
+    requireStaff();
+    const games = new Map(readTable('games').map((g) => [g.id, g]));
+    const studios = new Map(readTable('studios').map((s) => [s.id, s]));
+    const versions = new Map(readTable('versions').map((v) => [v.id, v]));
+    return readTable('reviews')
+      .filter((r) => r.action === 'reject' && r.checklist?.automatic === true)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 100)
+      .map((r): AutoRejectedItem => {
+        const g = games.get(r.gameId);
+        return {
+          versionId: r.versionId,
+          gameId: r.gameId,
+          title: g?.title ?? '',
+          studioName: studios.get(g?.studioId ?? '')?.name ?? '',
+          version: versions.get(r.versionId)?.version ?? '',
+          reason: r.notes,
+          rejectedAt: r.createdAt,
+        };
+      });
+  },
+  async rerunPreQa(versionId) {
+    requireStaff();
+    return runMockPreQa(versionId);
   },
   async qaItem(versionId) {
     requireStaff();

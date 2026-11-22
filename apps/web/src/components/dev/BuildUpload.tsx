@@ -127,9 +127,8 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       setZip(null);
       setCheck(null);
       setProgress(null);
+      // No checks run here: they start on the server once the developer submits.
       onUploaded(versionId, null);
-      const report = await repo.dev.runPreQa(versionId);
-      onUploaded(versionId, report);
     } catch (err) {
       setProgress(null);
       toast(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'), { tone: 'error' });

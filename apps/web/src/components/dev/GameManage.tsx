@@ -17,7 +17,6 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
 import { GrowthPanel } from './GrowthPanel';
 import { LiveChangesNotice } from './LiveChanges';
-import { PreQaReportView } from './PreQaReportView';
 import { GameStatusBadge, QaBadge } from './StatusBadge';
 import { useDev } from './DevShell';
 import { TrailerButton } from '@/components/creators/TrailerButton';
@@ -69,7 +68,7 @@ export function GameManage() {
   if (!d) return <EmptyState title={tc('errorTitle')} />;
   const { game, versions, launches, reviews } = d;
   const latest = versions[0];
-  const canSubmit = latest && ['pre_qa_passed', 'pre_qa_warn'].includes(latest.qaStatus) && ['draft', 'changes_requested', 'paused', 'spark', 'rise', 'featured'].includes(game.status);
+  const canSubmit = latest && ['uploaded', 'pre_qa_running', 'pre_qa_passed', 'pre_qa_warn', 'pre_qa_failed'].includes(latest.qaStatus) && ['draft', 'changes_requested', 'paused', 'spark', 'rise', 'featured'].includes(game.status);
   const plays = sparkKpis.data ? summarise(sparkKpis.data.days).plays : game.plays;
   const lastDecision = launches.find((l) => l.decision);
 
@@ -198,32 +197,12 @@ export function GameManage() {
                   {formatBytes(v.totalBytes)} · {formatDate(v.createdAt, locale)}
                 </span>
               </div>
-              {v.qaStatus === 'pre_qa_running' ? <p role="status" className="text-sm">{t('preQaRunning')}</p> : null}
-              {v.preQaReport ? (
-                <details open={!v.isCurrent && v.qaStatus !== 'approved'}>
-                  <summary className="cursor-pointer text-sm font-bold">{t('report')}</summary>
-                  <div className="mt-2">
-                    <PreQaReportView report={v.preQaReport} />
-                  </div>
-                </details>
+              {v.qaStatus === 'rejected' && v.qaNotes ? (
+                <p className="text-sm text-danger" data-testid="version-rejected">
+                  {v.qaNotes}
+                </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                {['uploaded', 'pre_qa_passed', 'pre_qa_warn', 'pre_qa_failed'].includes(v.qaStatus) ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    loading={busy === `qa-${v.id}`}
-                    onClick={() =>
-                      void act(`qa-${v.id}`, async () => {
-                        const report = await (await getRepo()).dev.runPreQa(v.id);
-                        if (!report) toast(t('preQaQueued'));
-                      })
-                    }
-                    data-testid="run-pre-qa"
-                  >
-                    {v.preQaReport ? t('rerunPreQa') : t('runPreQa')}
-                  </Button>
-                ) : null}
                 <PreviewLinkButton href={previewHref} versionId={v.id} />
                 {v.minorUpdate && v.qaStatus === 'pre_qa_passed' && ['rise', 'featured'].includes(game.status) ? (
                   <Button

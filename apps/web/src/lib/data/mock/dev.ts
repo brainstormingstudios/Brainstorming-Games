@@ -4,8 +4,8 @@ import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/co
 import { computeDailyKpis, percentRank, summarise, type KpiEvent, type KpiRating, type KpiResult } from '@/lib/domain/kpis';
 import { HELD_FIELDS, splitLivePatch } from '@/lib/domain/liveEdits';
 import { buildUrl } from '@/lib/format';
-import type { PreQaReport } from '@/lib/domain/preqa';
-import { runAutoReview } from '../../../../../../supabase/functions/_shared/autoReview';
+import { harmfulReason, type PreQaReport } from '@/lib/domain/preqa';
+import { autoRejectReason, runAutoReview } from '../../../../../../supabase/functions/_shared/autoReview';
 import { emitTopic } from '../bus';
 import { uuid } from '../local';
 import type {
@@ -295,10 +295,66 @@ export function minorUpdateOk(v: MockVersion): boolean {
   );
 }
 
-/** Stores a pre-QA report (mirror of set_pre_qa_report). Close minor updates of live games auto-publish. */
+const BEFORE_SUBMIT: QaStatus[] = ['uploaded', 'pre_qa_running', 'pre_qa_passed', 'pre_qa_warn', 'pre_qa_failed'];
+
+/**
+ * Rejects a version without a moderator (mirror of app.auto_reject): recorded like a review with
+ * no reviewer, and the developer is told why. Approved or already rejected versions are left alone.
+ */
+export function autoReject(versionId: string, notes: string): boolean {
+  const v = readTable('versions').find((x) => x.id === versionId);
+  const g = v && readTable('games').find((x) => x.id === v.gameId);
+  if (!v || !g || v.qaStatus === 'approved' || v.qaStatus === 'rejected') return false;
+  mutateTable('reviews', (rows) => {
+    rows.push({ id: newId(), versionId, gameId: g.id, reviewerId: '', action: 'reject', checklist: { automatic: true }, notes, createdAt: nowIso() });
+  });
+  updateVersionRow(versionId, { qaStatus: 'rejected', qaNotes: notes, reviewedAt: nowIso() });
+  if (g.status === 'in_review') updateGameRow(g.id, { status: 'draft' });
+  notify(ownerOf(g.id), 'qa', 'Submission rejected automatically', notes, `/dev/games/view/?id=${g.id}`);
+  sendMail(studioEmail(g.studioId), 'review_rejected', { game: g.title, gameId: g.id, notes });
+  emitTopic('qa');
+  return true;
+}
+
+/**
+ * Runs the test-play with the local bot (scripts/dev-services.mjs) and stores the report. The
+ * mock twin of submit-game starting the GitHub runner; never called from the developer side.
+ */
+export async function runMockPreQa(versionId: string): Promise<PreQaReport> {
+  const v = readTable('versions').find((x) => x.id === versionId);
+  if (!v) fail('not_found');
+  let report: PreQaReport & { reason?: string };
+  try {
+    const res = await fetch(`${PLAY_ORIGIN}/__mock/pre-qa`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: buildUrl(`${v.storagePrefix}/${v.entryFile}`) }),
+    });
+    report = (await res.json()) as PreQaReport & { reason?: string };
+  } catch {
+    fail('unavailable', 'The local pre-QA runner is not reachable. Start everything with `npm run dev`.');
+  }
+  if (!report || !Array.isArray(report.checks)) fail('unavailable', report?.reason ?? 'The pre-QA bot could not run.');
+  applyPreQaReport(versionId, report);
+  emitTopic('dev-games');
+  emitTopic('qa');
+  emitTopic('catalogue');
+  return report;
+}
+
+/**
+ * Stores a pre-QA report (mirror of set_pre_qa_report). Before submission it sets the pre-QA
+ * status; afterwards it only stores the report for the moderators. Harmful code is rejected at
+ * once, and close minor updates of live games auto-publish.
+ */
 export function applyPreQaReport(versionId: string, report: PreQaReport): QaStatus {
-  const status: QaStatus = report.status === 'pass' ? 'pre_qa_passed' : report.status === 'warn' ? 'pre_qa_warn' : 'pre_qa_failed';
+  const before = readTable('versions').find((x) => x.id === versionId);
+  const status: QaStatus = before && !(BEFORE_SUBMIT as string[]).includes(before.qaStatus)
+    ? (before.qaStatus as QaStatus)
+    : report.status === 'pass' ? 'pre_qa_passed' : report.status === 'warn' ? 'pre_qa_warn' : 'pre_qa_failed';
   const v = updateVersionRow(versionId, { preQaReport: report, qaStatus: status, usesSdk: report.usesSdk });
+  const harm = harmfulReason(report);
+  if (harm && autoReject(versionId, harm)) return 'rejected';
   if (minorUpdateOk(v) && takeToken(`minor-publish:${v.gameId}`, 3, 7 * 86_400_000)) {
     publishVersion(versionId);
     return 'approved';
@@ -662,35 +718,6 @@ export const mockDev: DevRepo = {
     emitTopic('dev-games');
     return { versionId: row.id, previewToken };
   },
-  async runPreQa(versionId) {
-    const v = readTable('versions').find((x) => x.id === versionId);
-    if (!v) fail('not_found');
-    requireOwnGame(v.gameId);
-    updateVersionRow(versionId, { qaStatus: 'pre_qa_running' });
-    emitTopic('dev-games');
-    let report: PreQaReport & { reason?: string };
-    try {
-      const res = await fetch(`${PLAY_ORIGIN}/__mock/pre-qa`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: buildUrl(`${v.storagePrefix}/${v.entryFile}`) }),
-      });
-      report = (await res.json()) as PreQaReport & { reason?: string };
-    } catch {
-      updateVersionRow(versionId, { qaStatus: 'uploaded' });
-      emitTopic('dev-games');
-      fail('unavailable', 'The local pre-QA runner is not reachable. Start everything with `npm run dev`.');
-    }
-    if (!report || !Array.isArray(report.checks)) {
-      updateVersionRow(versionId, { qaStatus: 'uploaded' });
-      emitTopic('dev-games');
-      fail('unavailable', report?.reason ?? 'The pre-QA bot could not run.');
-    }
-    applyPreQaReport(versionId, report);
-    emitTopic('dev-games');
-    emitTopic('catalogue');
-    return report;
-  },
   async submitForReview(gameId, declaration) {
     const g = requireOwnGame(gameId);
     const versions = readTable('versions')
@@ -698,17 +725,34 @@ export const mockDev: DevRepo = {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const latest = versions[0];
     if (!latest) fail('invalid', 'Upload a build first.');
-    if (latest.qaStatus !== 'pre_qa_passed' && latest.qaStatus !== 'pre_qa_warn') {
-      fail('invalid', 'The latest build needs a pre-QA report without failures.');
+    if (!['uploaded', 'pre_qa_running', 'pre_qa_passed', 'pre_qa_warn', 'pre_qa_failed'].includes(latest.qaStatus)) {
+      fail('invalid', 'Upload a build first.');
     }
     const missing = submissionGaps(g, readTable('media').filter((m) => m.gameId === gameId && m.isActive));
     if (missing.length) fail('invalid', `Still needed: ${missing.join(', ')}.`);
     if (!declaration?.ownsRights || !declaration.noCopies) fail('invalid', 'Confirm that you own or have licensed everything in the game.');
-    updateVersionRow(latest.id, { qaStatus: 'in_review', submittedAt: nowIso(), reviewedAt: null, declaration, autoReview: autoReviewFor(g, latest, declaration) });
+    const review = autoReviewFor(g, latest, declaration);
+    updateVersionRow(latest.id, { qaStatus: 'in_review', submittedAt: nowIso(), reviewedAt: null, declaration, autoReview: review });
     if (['draft', 'changes_requested', 'paused'].includes(g.status)) updateGameRow(gameId, { status: 'in_review' });
+    const reason = autoRejectReason(review);
+    if (reason && autoReject(latest.id, reason)) {
+      emitTopic('dev-games');
+      return { rejected: true, reason };
+    }
     sendMail(studioEmail(g.studioId), 'submission_received', { game: g.title, version: latest.version, studio: readTable('studios').find((x) => x.id === g.studioId)?.name, gameId });
+    // The server's part: test-play the build now. Mock mode waits for the local bot so the report
+    // is in place when the page moves on; harmful code is rejected here too.
+    if (!latest.preQaReport) {
+      const report = await runMockPreQa(latest.id).catch(() => null);
+      const harm = report ? harmfulReason(report) : null;
+      if (harm && readTable('versions').find((x) => x.id === latest.id)?.qaStatus === 'rejected') {
+        emitTopic('dev-games');
+        return { rejected: true, reason: harm };
+      }
+    }
     emitTopic('dev-games');
     emitTopic('qa');
+    return { rejected: false, reason: null };
   },
   async rollback(gameId, versionId) {
     requireOwnGame(gameId);

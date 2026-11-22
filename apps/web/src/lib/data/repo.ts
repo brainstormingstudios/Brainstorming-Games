@@ -31,6 +31,7 @@ import type {
   PreviewInfo,
   QaChecklistItem,
   PendingChangeItem,
+  AutoRejectedItem,
   QaQueueItem,
   QaReviewItem,
   ReferralStats,
@@ -432,10 +433,12 @@ export interface DevRepo {
     input: NewVersionInput,
     onProgress?: (fraction: number) => void,
   ): Promise<{ versionId: string; previewToken: string }>;
-  /** Starts the pre-QA bot. Mock mode runs it locally and resolves with the report. */
-  runPreQa(versionId: string): Promise<PreQaReport | null>;
-  /** Needs the rights declaration. Runs the auto-review, then queues the game for a moderator. */
-  submitForReview(gameId: string, declaration: Declaration): Promise<void>;
+  /**
+   * Submits the latest build (needs the rights declaration). The checks run afterwards on the
+   * server: a clear copy or harmful code is rejected at once (`rejected` with the reason), the
+   * rest waits for a moderator.
+   */
+  submitForReview(gameId: string, declaration: Declaration): Promise<{ rejected: boolean; reason: string | null }>;
   rollback(gameId: string, versionId: string): Promise<void>;
   setStatus(gameId: string, status: 'paused' | 'removed'): Promise<void>;
   kpis(gameId: string, from: string, to: string): Promise<KpiResult>;
@@ -450,6 +453,10 @@ export interface DevRepo {
 
 export interface AdminRepo {
   qaQueue(): Promise<QaQueueItem[]>;
+  /** The latest submissions the system rejected by itself, newest first. */
+  autoRejected(): Promise<AutoRejectedItem[]>;
+  /** Runs the test-play (pre-QA bot) again. Mock mode runs it locally and resolves with the report. */
+  rerunPreQa(versionId: string): Promise<PreQaReport | null>;
   qaItem(versionId: string): Promise<QaReviewItem | null>;
   qaDecide(input: {
     versionId: string;

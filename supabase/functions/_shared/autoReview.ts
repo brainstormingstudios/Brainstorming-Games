@@ -337,3 +337,17 @@ export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoR
   const risk = Math.min(100, checks.reduce((n, c) => n + RISK_POINTS[c.status], 0));
   return { status, checks, ranAt: now.toISOString(), risk };
 }
+
+/**
+ * Checks whose "fail" means a clear copy or missing rights: the submission is rejected at once,
+ * without a moderator (the moderator still sees it in the history). Borderline findings ("warn":
+ * a similar title, a name one letter off) always go to a person.
+ */
+export const AUTO_REJECT_CHECKS = ['copied-build', 'copied-cover', 'copied-assets', 'copied-text', 'protected-names', 'rights'] as const;
+
+/** The reason shown to the developer when the report means an automatic rejection, or null. */
+export function autoRejectReason(report: AutoReviewReport): string | null {
+  const hits = report.checks.filter((c) => c.status === 'fail' && (AUTO_REJECT_CHECKS as readonly string[]).includes(c.id));
+  if (!hits.length) return null;
+  return `Rejected automatically: ${hits.map((c) => c.detail).join(' ')} Only upload games you made or have the rights to.`;
+}

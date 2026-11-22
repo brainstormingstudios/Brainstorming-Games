@@ -32,10 +32,8 @@ test('uploading a real build adds the SDK, and the preview shows the requirement
   await page.goto(page.url().replace('step=page', 'step=build'));
 
   await page.getByTestId('zip-input').setInputFiles({ name: 'homecoming.zip', mimeType: 'application/zip', buffer });
-  const report = page.getByTestId('pre-qa-report');
-  await expect(report).toBeVisible({ timeout: 200_000 });
-  await expect(report.locator('[data-check="sdk"]')).toHaveAttribute('data-check-status', 'pass');
-  // The build row of the checklist ticks once pre-QA has passed (warnings are fine).
+  // The build row of the checklist ticks as soon as the build is uploaded (no checks run here).
+  await expect(page.getByTestId('build-status')).toHaveAttribute('data-qa', 'uploaded', { timeout: 200_000 });
   await expect(page.getByTestId('wiz-check').nth(4)).toHaveAttribute('data-ok', 'true');
 
   // The private preview, opened from the game page.

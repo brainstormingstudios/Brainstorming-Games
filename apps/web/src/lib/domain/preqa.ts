@@ -226,3 +226,17 @@ export function scorePreQa(url: string, runs: { desktop: PreQaRun | null; mobile
   const status: CheckStatus = checks.some((c) => c.status === 'fail') ? 'fail' : checks.some((c) => c.status === 'warn') ? 'warn' : 'pass';
   return { status, ranAt: new Date().toISOString(), url, usesSdk: sawSdk, checks, desktop: runs.desktop, mobile: runs.mobile };
 }
+
+/**
+ * Test-play findings that mean harmful code: the build is rejected at once, without a moderator.
+ * Everything else (slow loading, a missing SDK event, console errors) is shown to the moderator.
+ * Mirror of the list in set_pre_qa_report (migration 0026).
+ */
+export const HARMFUL_PRE_QA_CHECKS = ['no-mining', 'no-credentials', 'external-ads'] as const;
+
+/** The reason shown to the developer when the test-play found harmful code, or null. */
+export function harmfulReason(report: Pick<PreQaReport, 'checks'>): string | null {
+  const hits = report.checks.filter((c) => c.status === 'fail' && (HARMFUL_PRE_QA_CHECKS as readonly string[]).includes(c.id));
+  if (!hits.length) return null;
+  return `Rejected automatically: the test-play found ${hits.map((c) => `${c.label.toLowerCase().replace(/^no /, '')} (${c.detail})`).join('; ')}.`;
+}

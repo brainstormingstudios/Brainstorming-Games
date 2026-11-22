@@ -589,17 +589,17 @@
       "checkPage": "Description and at least one control",
       "checkCovers": "All 3 covers (landscape, portrait, square)",
       "checkVideo": "Landscape preview video (15 to 30 seconds)",
-      "checkPreQa": "A build that passed the automatic checks",
+      "checkPreQa": "A build uploaded",
       "checkRights": "Both rights boxes ticked",
-      "afterSubmit": "After you submit, an automatic check looks for copied builds, copied covers, protected names and outside ad code. Then a person on our team plays the game and approves it, usually within 3 working days.",
+      "afterSubmit": "After you submit, we test-play the game and check it for copied builds, covers, art and text, protected names and harmful code. Clear copies and harmful builds are rejected straight away, with the reason. Then a person on our team plays the game and approves it, usually within 3 working days.",
+      "buildReceived": "Build uploaded. After you submit, we test-play it and check it on our side.",
       "alreadyInReview": "In review",
       "needTitle": "Give the game a title.",
       "needShort": "Add a short description.",
       "needCategory": "Pick a category.",
       "needTags": "Add at least 3 tags.",
       "whyNoBuild": "No build uploaded yet. Drop your .zip in the box above; it uploads and gets checked by itself.",
-      "whyRunning": "The automatic checks are running (about a minute). This ticks by itself when they finish.",
-      "whyFailed": "The automatic checks found a problem. Fix the red items in the report above, then drop the new zip.",
+      "whyRunning": "The build is still starting its test-play. This ticks by itself in a few seconds.",
       "whyRejected": "This build was rejected. Upload a new one.",
       "whyRights": "Tick both boxes under Rights and originality.",
       "fixIt": "Go to {step}",
@@ -676,6 +676,7 @@
       "rolledBack": "Version restored.",
       "submit": "Submit for review",
       "submitted": "Submitted. Our QA team reviews new games within a few working days.",
+      "autoRejected": "Rejected automatically: it looks copied from another game. Only upload games you made or have the rights to.",
       "submitHint": "Needs a passing pre-QA report, a landscape cover, a short description, a description and 3 FAQ entries.",
       "checklist": "Before you submit",
       "checkPreQa": "Pre-QA passed on the latest build",
@@ -1051,7 +1052,14 @@
       },
       "due": "Due",
       "late": "Late: Boost credit given",
-      "hoursLeft": "{hours, plural, one {# hour left} other {# hours left}}"
+      "hoursLeft": "{hours, plural, one {# hour left} other {# hours left}}",
+      "running": "Test-play running",
+      "autoRejectedTitle": "Rejected automatically",
+      "autoRejectedBody": "Clear copies and harmful builds the system rejected by itself, with the reason the developer was given. Open one to see both reports.",
+      "autoRejectedEmpty": "Nothing rejected automatically yet.",
+      "rejectedAt": "Rejected",
+      "reason": "Reason",
+      "open": "Open"
     },
     "review": {
       "title": "Review {title} v{version}",
@@ -1154,7 +1162,10 @@
         "reviews": "Earlier reviews",
         "reviewCounts": "{approved} approved · {changes} changes asked · {rejected} rejected",
         "otherGames": "Other games"
-      }
+      },
+      "testPlayRunning": "The test-play is still running. Its report appears here when it finishes (usually 2 to 5 minutes).",
+      "rerunTestPlay": "Run the test-play again",
+      "testPlayStarted": "Test-play started. The report appears here in a few minutes."
     },
     "spark": {
       "title": "Basic Launch decisions",
