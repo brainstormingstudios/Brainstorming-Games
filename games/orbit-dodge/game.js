@@ -135,10 +135,15 @@
   last = performance.now();
   requestAnimationFrame(frame);
 
+  // A click anywhere on the title panel starts the game too, not only on the button.
+  panel.addEventListener('click', function (e) {
+    if (e.target !== el('start')) el('start').click();
+  });
+
   if (!BG) return;
-  BG.game.loadingStart();
+  // The SDK only listens after init, so loading is reported from there.
   BG.init()
-    .then(function () { return BG.data.get('best'); })
+    .then(function () { BG.game.loadingStart(); return BG.data.get('best'); })
     .then(function (saved) {
       if (typeof saved === 'number') { best = saved; el('best').textContent = saved; }
     })
