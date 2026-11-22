@@ -24,7 +24,7 @@ workers_dev = true
 [vars]
 SUPABASE_URL = "https://zoqjrxgwtfxaqnhlraoz.supabase.co"
 STORAGE_BUCKET = "builds"
-SHARED_HOST = "bg-play.CHANGE-ME.workers.dev"
+SHARED_HOST = "bg-play.brainstorming-games.workers.dev"
 GAMES_DOMAIN = ""
 # The sites allowed to frame games, separated by spaces.
-SITE_ORIGINS = "https://CHANGE-ME.pages.dev https://CHANGE-ME-developers.pages.dev https://CHANGE-ME-manage.pages.dev"
+SITE_ORIGINS = "https://brainstorming-games.pages.dev https://brainstorming-games-dev.pages.dev https://bgm-areuctw3.pages.dev"
