@@ -13,6 +13,8 @@ import { PLANS, activePlan, formatInr, type PremiumPlan } from '@/lib/domain/pre
 import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
+import { useCountry } from '@/lib/hooks/useCountry';
+import { canBuyIn } from '@/lib/domain/market';
 import { useCheckout } from './Checkout';
 import { PointsSwap } from './PointsSwap';
 
@@ -67,6 +69,9 @@ export function PremiumPage() {
   const wallpapers = useRepoQuery((repo) => (plan ? repo.billing.wallpapers() : Promise.resolve([])), [plan]);
   const [buying, setBuying] = useState<PremiumPlan | null>(null);
   const pass = useSearchParams().get('pass');
+  // Memberships are sold in India only for now (lib/domain/market.ts).
+  const { country } = useCountry();
+  const sellsHere = canBuyIn(country);
   const redeemed = useRef(false);
 
   // A guest-pass link: redeem it once the visitor is signed in.
@@ -131,10 +136,15 @@ export function PremiumPage() {
       ) : (
         <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
           {(['plus', 'max'] as const).map((p) => (
-            <PlanCard key={p} plan={p} current={plan} busy={buying === p} canBuy={!user?.username || Boolean(s?.canBuy)} onBuy={() => void buy(p)} />
+            <PlanCard key={p} plan={p} current={plan} busy={buying === p} canBuy={sellsHere && (!user?.username || Boolean(s?.canBuy))} onBuy={() => void buy(p)} />
           ))}
         </div>
       )}
+      {!sellsHere ? (
+        <p className="mx-auto mt-4 max-w-4xl text-center text-sm font-bold" data-testid="india-only">
+          {t('indiaOnly')}
+        </p>
+      ) : null}
       {user?.username && s && !s.canBuy ? <p className="mx-auto mt-4 max-w-4xl text-center text-sm text-fg-muted">{t('adultsOnly')}</p> : null}
       <p className="mx-auto mt-4 max-w-4xl text-center text-xs text-fg-muted">{t('fineprint')}</p>
 

@@ -47,6 +47,10 @@ export const mockAdmin: AdminRepo = {
     const g = v && readTable('games').find((x) => x.id === v.gameId);
     const s = g && readTable('studios').find((x) => x.id === g.studioId);
     if (!v || !g || !s) return null;
+    const studioGames = readTable('games').filter((x) => x.studioId === s.id && x.id !== g.id);
+    const studioGameIds = new Set([g.id, ...studioGames.map((x) => x.id)]);
+    const studioReviews = readTable('reviews').filter((r) => studioGameIds.has(r.gameId));
+    const d = v.declaration as { ownsRights?: boolean; noCopies?: boolean; credits?: string } | null | undefined;
     return {
       game: toDevGame(g),
       studio: toDevStudio(s),
@@ -55,6 +59,13 @@ export const mockAdmin: AdminRepo = {
       previous: readTable('reviews')
         .filter((r) => r.gameId === g.id)
         .map((r) => ({ action: r.action, notes: r.notes, createdAt: r.createdAt, versionId: r.versionId })),
+      declaration: d ? { ownsRights: Boolean(d.ownsRights), noCopies: Boolean(d.noCopies), credits: String(d.credits ?? '') } : null,
+      studioRecord: {
+        games: studioGames.map((x) => ({ title: x.title, status: x.status })),
+        approvals: studioReviews.filter((r) => r.action === 'approve').length,
+        rejections: studioReviews.filter((r) => r.action === 'reject').length,
+        changesRequested: studioReviews.filter((r) => r.action === 'changes').length,
+      },
     };
   },
   async qaDecide({ versionId, action, notes, checklist, schoolSafe }) {
@@ -102,6 +113,53 @@ export const mockAdmin: AdminRepo = {
     emitTopic('dev-games');
     emitTopic('catalogue');
     emitTopic('notifications');
+  },
+  async securityAlerts(openOnly = true) {
+    requireStaff();
+    return readTable('securityAlerts')
+      .filter((a) => !openOnly || !a.resolvedAt)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 300);
+  },
+  async resolveAlert(id) {
+    const staff = requireStaff();
+    mutateTable('securityAlerts', (rows) => rows.map((a) => (a.id === id && !a.resolvedAt ? { ...a, resolvedAt: nowIso() } : a)));
+    audit(staff.id, 'alert_resolve', 'security_alert', id);
+    emitTopic('admin');
+  },
+  async fraudOverview(days) {
+    requireStaff();
+    const since = new Date(Date.now() - Math.max(1, Math.min(days, 31)) * 86_400_000).toISOString();
+    const games = new Map(readTable('games').map((g) => [g.id, g]));
+    const studios = new Map(readTable('studios').map((s) => [s.id, s.name]));
+    const by = new Map<string, { plays: number; players: Set<string>; real: Set<string>; ads: number }>();
+    for (const e of readTable('events')) {
+      if (!e.gameId || e.ts < since) continue;
+      const row = by.get(e.gameId) ?? { plays: 0, players: new Set<string>(), real: new Set<string>(), ads: 0 };
+      if (e.type === 'play_click') {
+        row.plays++;
+        row.players.add(e.anonId);
+      } else if ((e.type === 'gameplay_stop' || e.type === 'session_end') && Number(e.payload.t) >= 20 && e.sessionId) row.real.add(e.sessionId);
+      else if (e.type === 'ad_started') row.ads++;
+      by.set(e.gameId, row);
+    }
+    return [...by]
+      .filter(([id]) => games.has(id))
+      .map(([id, r]) => {
+        const g = games.get(id)!;
+        return {
+          gameId: id,
+          title: g.title,
+          studio: studios.get(g.studioId) ?? '',
+          plays: r.plays,
+          players: r.players.size,
+          realSessions: r.real.size,
+          adViews: r.ads,
+          playsPerPlayer: Math.round((r.plays / Math.max(1, r.players.size)) * 10) / 10,
+          cappedCallers: 0,
+        };
+      })
+      .sort((a, b) => b.playsPerPlayer - a.playsPerPlayer || b.plays - a.plays);
   },
   async pendingChanges() {
     requireStaff();

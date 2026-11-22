@@ -11,6 +11,8 @@ import { PUBLIC_STATUSES } from '@/lib/data/types';
 import { BOOSTS, formatInr, type BoostPackage } from '@/lib/domain/premium';
 import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
+import { useCountry } from '@/lib/hooks/useCountry';
+import { canBuyIn } from '@/lib/domain/market';
 import { useCheckout } from './Checkout';
 
 export const BOOST_TONE: Record<BoostOrder['status'], BadgeTone> = {
@@ -97,6 +99,9 @@ export function BoostPage() {
   const [gameId, setGameId] = useState('');
   const [buying, setBuying] = useState<BoostPackage | null>(null);
   const selected = gameId || live[0]?.id || '';
+  // Boosts are sold in India only for now (lib/domain/market.ts). Free credits work everywhere.
+  const { country } = useCountry();
+  const sellsHere = canBuyIn(country);
 
   const buy = async (pkg: BoostPackage) => {
     setBuying(pkg);
@@ -123,6 +128,11 @@ export function BoostPage() {
         <>
           <SelectField label={t('game')} className="max-w-sm" value={selected} onChange={(e) => setGameId(e.target.value)} options={live.map((g) => ({ value: g.id, label: g.title }))} data-testid="boost-game" />
           <FreeBoostCredit gameId={selected} onUsed={() => orders.refresh()} />
+          {!sellsHere ? (
+            <p className="text-sm font-bold" data-testid="india-only">
+              {t('indiaOnly')}
+            </p>
+          ) : null}
           <div className="grid gap-4 lg:grid-cols-3">
             {(Object.keys(BOOSTS) as BoostPackage[]).map((pkg) => {
               const def = BOOSTS[pkg];
@@ -152,7 +162,7 @@ export function BoostPage() {
                       </li>
                     ) : null}
                   </ul>
-                  <Button variant={featured ? 'primary' : 'secondary'} loading={buying === pkg} disabled={!selected} onClick={() => void buy(pkg)} data-testid={`buy-boost-${pkg}`}>
+                  <Button variant={featured ? 'primary' : 'secondary'} loading={buying === pkg} disabled={!selected || !sellsHere} onClick={() => void buy(pkg)} data-testid={`buy-boost-${pkg}`}>
                     {t('buy', { price: formatInr(def.price) })}
                   </Button>
                 </Card>

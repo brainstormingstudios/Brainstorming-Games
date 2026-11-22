@@ -1,7 +1,7 @@
 import type { Currency, GameImpressions } from '@/lib/domain/revenue';
 import { validatePayoutProfile } from '@/lib/domain/payoutProfile';
 import { emitTopic } from '../bus';
-import { RepoError, type PayoutRow, type RevenueMonthRow, type RevenueRepo } from '../repo';
+import { RepoError, type PayoutProfileSummary, type PayoutRow, type RevenueMonthRow, type RevenueRepo } from '../repo';
 import { callFunction } from './account';
 import { getSupabase } from './client';
 import { toRepoError } from './errors';
@@ -56,9 +56,15 @@ export const supabaseRevenue: RevenueRepo = {
       carry: Record<string, number>;
       creatorCarry?: Record<string, number>;
     };
+    // Earnings are open to studios in India only (lib/domain/market.ts): staff can read each country.
+    const studioIds = [...new Set((data.games ?? []).map((g) => g.studioId))];
+    const countries = new Map(
+      ((check(await getSupabase().from('studios').select('id, country').in('id', studioIds.length ? studioIds : ['00000000-0000-0000-0000-000000000000'])) ?? []) as { id: string; country: string | null }[]).map((s) => [s.id, s.country]),
+    );
     return {
       games: (data.games ?? []).map((g) => ({
         ...g,
+        studioCountry: countries.get(g.studioId) ?? null,
         refImpressions: Number(g.refImpressions ?? 0),
         impressionsByCountry: Object.fromEntries(Object.entries(g.impressionsByCountry ?? {}).map(([c, n]) => [c, Number(n)])),
         creatorImpressions: Object.fromEntries(Object.entries(g.creatorImpressions ?? {}).map(([c, n]) => [c, Number(n)])),
@@ -121,13 +127,17 @@ export const supabaseRevenue: RevenueRepo = {
     return supabaseRevenue.payouts();
   },
   async payoutProfile() {
-    const r = await callFunction<{ profile: { method: PayoutRow['method']; currency: Currency; summary: string; updatedAt: string } | null }>('payout-profile', { action: 'get' });
+    const r = await callFunction<{ profile: PayoutProfileSummary | null }>('payout-profile', { action: 'get' });
     return r.profile;
   },
   async savePayoutProfile(input) {
     const error = validatePayoutProfile(input);
     if (error) throw new RepoError('invalid', error);
     await callFunction('payout-profile', { action: 'save', profile: input });
+    emitTopic('revenue');
+  },
+  async cancelPayoutChange() {
+    await callFunction('payout-profile', { action: 'cancel' });
     emitTopic('revenue');
   },
 };

@@ -21,20 +21,20 @@ import {
 import { PreQaReportView } from '@/components/dev/PreQaReportView';
 import { AutoReviewView } from './AutoReviewView';
 import { LiveChangesQueue } from './LiveChangesQueue';
+import { ReviewDetails } from './ReviewDetails';
 import { OwnerCodeGate } from './OwnerCode';
 import { GameStatusBadge } from '@/components/dev/StatusBadge';
 import { GameFrame } from '@/components/game/GameFrame';
 import { localizePath } from '@/i18n/config';
 import { Link, useLocale } from '@/i18n/navigation';
 import { requestLogin } from '@/lib/auth/loginPrompt';
-import { IS_MOCK, PLAY_ORIGIN } from '@/lib/config';
+import { IS_MOCK } from '@/lib/config';
 import { getRepo, RepoError } from '@/lib/data';
 import { QA_CHECKLIST, type QaChecklistItem } from '@/lib/data/devTypes';
 import type { GameSummary } from '@/lib/data/types';
-import { Markdown } from '@/lib/domain/markdown';
 import { sparkDays } from '@/lib/domain/spark';
 import { grade, sparkVerdict, summarise } from '@/lib/domain/kpis';
-import { formatDate } from '@/lib/format';
+import { buildUrl, formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { isStaff, useSession } from '@/lib/hooks/useSession';
 
@@ -229,7 +229,7 @@ export function QaReview() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-5">
           {playing ? (
-            <GameFrame game={frameGame} src={`${PLAY_ORIGIN}/${frameGame.playPath}`} preview autoStart />
+            <GameFrame game={frameGame} src={frameGame.playPath ? buildUrl(frameGame.playPath) : null} preview autoStart />
           ) : (
             <Button size="lg" className="self-start" onClick={() => setPlaying(true)} data-testid="qa-play">
               {t('play')}
@@ -241,31 +241,7 @@ export function QaReview() {
               <PreQaReportView report={version.preQaReport} />
             </Card>
           ) : null}
-          <Card className="p-4">
-            <h2 className="mb-2 text-xl font-semibold">{t('media')}</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {media.filter((m) => m.isActive).map((m) =>
-                m.kind.startsWith('preview') ? (
-                  <video key={m.id} src={m.url} muted controls className="w-full rounded-control" />
-                ) : (
-                  <img key={m.id} src={m.url} alt={m.kind} className="w-full rounded-control border border-border" />
-                ),
-              )}
-            </div>
-          </Card>
-          <Card className="prose-bg p-4">
-            <h2>{t('content')}</h2>
-            <p>
-              <strong>{game.shortDescription}</strong>
-            </p>
-            <Markdown source={game.descriptionMd} />
-            <Markdown source={game.howToPlayMd} />
-            {game.faq.map((f, i) => (
-              <p key={i}>
-                <strong>{f.q}</strong> {f.a}
-              </p>
-            ))}
-          </Card>
+          <ReviewDetails item={data} />
         </div>
         <Card className="flex h-fit flex-col gap-4 p-4 xl:sticky xl:top-20">
           <fieldset className="flex flex-col gap-2">

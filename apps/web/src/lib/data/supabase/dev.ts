@@ -399,6 +399,9 @@ export const supabaseDev: DevRepo = {
     if (input.fingerprint) {
       check(await getSupabase().rpc('set_build_fingerprint', { p_version: created.version_id, p_fingerprint: input.fingerprint }));
     }
+    if (input.assetHashes?.length) {
+      check(await getSupabase().rpc('set_asset_hashes', { p_version: created.version_id, p_hashes: input.assetHashes.slice(0, 2000) }));
+    }
     // Presigned R2 URLs, requested in batches so each Edge Function call stays small.
     const total = input.files.reduce((n, f) => n + f.data.size, 0) || 1;
     let sent = 0;
@@ -568,7 +571,20 @@ export const supabaseAdmin: AdminRepo = {
     if (!d) return null;
     const studio = check(await db.from('studios').select('*').eq('id', d.game.studioId).single<Row>());
     if (!studio) return null;
+    const [others, reviews] = await Promise.all([
+      db.from('games').select('id, title, status').eq('studio_id', d.game.studioId).neq('id', d.game.id),
+      db.from('qa_reviews').select('action, games!inner(studio_id)').eq('games.studio_id', d.game.studioId),
+    ]);
+    const actions = ((check(reviews) ?? []) as Row[]).map((r) => String(r.action));
+    const dec = (version.declaration as { ownsRights?: boolean; noCopies?: boolean; credits?: string } | null) ?? null;
     return {
+      declaration: dec ? { ownsRights: Boolean(dec.ownsRights), noCopies: Boolean(dec.noCopies), credits: String(dec.credits ?? '') } : null,
+      studioRecord: {
+        games: ((check(others) ?? []) as Row[]).map((r) => ({ title: String(r.title), status: r.status as DevGame['status'] })),
+        approvals: actions.filter((a) => a === 'approve').length,
+        rejections: actions.filter((a) => a === 'reject').length,
+        changesRequested: actions.filter((a) => a === 'changes').length,
+      },
       // The page players see; held edits are reviewed in Changes to live games.
       game: { ...d.game, ...(d.pendingEdit?.live ?? {}) },
       studio: toStudio(studio),
@@ -588,6 +604,36 @@ export const supabaseAdmin: AdminRepo = {
       }),
     );
     emitTopic('qa');
+  },
+  async securityAlerts(openOnly = true) {
+    const data = check(await getSupabase().rpc('admin_security_alerts', { p_open_only: openOnly })) as Row[] | null;
+    return (data ?? []).map((r) => ({
+      id: String(r.id),
+      kind: String(r.kind),
+      severity: r.severity as 'info' | 'warn' | 'high',
+      title: String(r.title),
+      detail: (r.detail as Record<string, unknown>) ?? {},
+      createdAt: String(r.created_at),
+      resolvedAt: (r.resolved_at as string | null) ?? null,
+    }));
+  },
+  async resolveAlert(id) {
+    check(await getSupabase().rpc('admin_resolve_alert', { p_id: Number(id) }));
+    emitTopic('admin');
+  },
+  async fraudOverview(days) {
+    const data = check(await getSupabase().rpc('admin_fraud_overview', { p_days: days })) as Row[] | null;
+    return (data ?? []).map((r) => ({
+      gameId: String(r.game_id),
+      title: String(r.title),
+      studio: String(r.studio ?? ''),
+      plays: Number(r.plays ?? 0),
+      players: Number(r.players ?? 0),
+      realSessions: Number(r.real_sessions ?? 0),
+      adViews: Number(r.ad_views ?? 0),
+      playsPerPlayer: Number(r.plays_per_player ?? 0),
+      cappedCallers: Number(r.capped_callers ?? 0),
+    }));
   },
   async pendingChanges() {
     const data = check(await getSupabase().rpc('admin_pending_changes')) as Row[] | null;

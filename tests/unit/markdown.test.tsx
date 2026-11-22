@@ -43,6 +43,8 @@ describe('markdown renderer', () => {
     expect(isSafeUrl('/privacy/')).toBe(true);
     expect(isSafeUrl('#faq')).toBe(true);
     expect(isSafeUrl('//evil.example')).toBe(false);
+    expect(isSafeUrl('/\\evil.example')).toBe(false);
+    expect(isSafeUrl('/\t/evil.example')).toBe(false);
     expect(isSafeUrl(' JavaScript:alert(1)')).toBe(false);
   });
 

@@ -11,10 +11,13 @@
  *                the studio's own referral players). It comes out of the platform's part; the
  *                developer's share is unchanged.
  *   payout       monthly; amounts under ₹2,000 / $25 roll over to the next month
+ *   where        only studios in India earn for now (lib/domain/market.ts); others get 0%
  *
  * Money is handled in integer minor units (paise / cents) and split with the largest-remainder
  * method, so the parts always add up exactly to the whole.
  */
+
+import { canEarnIn } from './market';
 
 export const SHARES = { standard: 0.7, referral: 0.85, exclusive: 0.8, creator: 0.1 } as const;
 export const THRESHOLD_MINOR = { INR: 200_000, USD: 2_500 } as const;
@@ -33,6 +36,8 @@ export interface GameImpressions {
   title: string;
   studioId: string;
   studioName: string;
+  /** The studio's country. Only studios in EARNING_COUNTRIES (India for now) earn a share. */
+  studioCountry?: string | null;
   /** Ad impressions this month, per country. */
   impressionsByCountry: Record<string, number>;
   /** Of those, impressions from players who came through the studio's referral link. */
@@ -194,7 +199,10 @@ export function computeRevenue(input: RevenueInput): RevenueRun {
   for (const g of games) {
     const net = netByGame.get(g.gameId) ?? 0;
     // Whole basis points, so 77.5% is exactly 7750 and never 0.77499…
-    const bps = Math.round(effectiveShare(g, month) * 10_000);
+    // Studios outside the earning countries (India only for now) earn nothing yet.
+    // (undefined = the caller passed no country data at all, as in older tests: not filtered.)
+    const earns = g.studioCountry === undefined || canEarnIn(g.studioCountry);
+    const bps = earns ? Math.round(effectiveShare(g, month) * 10_000) : 0;
     const line: GameLine = {
       gameId: g.gameId,
       title: g.title,

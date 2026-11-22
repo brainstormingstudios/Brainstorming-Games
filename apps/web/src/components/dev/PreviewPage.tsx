@@ -7,11 +7,10 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Card, EmptyState, IconButton, Skeleton, Switch, Tabs, buttonClass, cn } from '@brainstorming/ui';
 import { GameFrame } from '@/components/game/GameFrame';
 import { Link } from '@/i18n/navigation';
-import { PLAY_ORIGIN } from '@/lib/config';
 import type { PreviewInfo } from '@/lib/data/devTypes';
 import type { GameSummary } from '@/lib/data/types';
 import type { PreQaCheck } from '@/lib/domain/preqa';
-import { formatBytes } from '@/lib/format';
+import { buildUrl, formatBytes } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import type { HostLogEntry } from '@/lib/sdk-host/bridge';
 import { SDK_ITEMS, sdkSeen } from './SdkChecklist';
@@ -299,7 +298,7 @@ export function PreviewPage() {
           <GameFrame
             key={run}
             game={game}
-            src={`${PLAY_ORIGIN}/${p.playPath}`}
+            src={buildUrl(p.playPath)}
             preview
             autoStart
             previewOptions={{ limitMidgame, testAds }}

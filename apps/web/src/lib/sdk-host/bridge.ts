@@ -150,8 +150,17 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     ctx.onLog?.({ at: Date.now(), direction, method, detail: typeof detail === 'string' ? detail : JSON.stringify(detail) ?? '' });
   };
 
+  // Each game has its own origin: talk only to the origin of the build this frame was given. If
+  // the game navigates its frame somewhere else, that page gets nothing and is not listened to.
+  const frameOrigin = (): string => {
+    try {
+      return new URL(frame.getAttribute('src') ?? '', window.location.href).origin;
+    } catch {
+      return PLAY_ORIGIN;
+    }
+  };
   const post = (message: Record<string, unknown>) => {
-    if (!destroyed) frame.contentWindow?.postMessage({ p: PROTOCOL, v: PROTOCOL_VERSION, ...message }, PLAY_ORIGIN);
+    if (!destroyed) frame.contentWindow?.postMessage({ p: PROTOCOL, v: PROTOCOL_VERSION, ...message }, frameOrigin());
   };
   const emit = <E extends HostEventName>(name: E, data: HostEvents[E]) => {
     post({ kind: 'evt', name, data });
@@ -335,7 +344,7 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
   };
 
   const onMessage = (e: MessageEvent) => {
-    if (e.source !== frame.contentWindow || e.origin !== PLAY_ORIGIN) return;
+    if (e.source !== frame.contentWindow || e.origin !== frameOrigin() || e.origin === window.location.origin) return;
     const req: ParsedRequest | null = parseRequest(e.data);
     if (!req) return;
     if (req.params === undefined) {

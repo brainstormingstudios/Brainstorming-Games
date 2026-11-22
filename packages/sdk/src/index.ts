@@ -53,7 +53,9 @@ export type {
 } from './protocol';
 export { SDK_VERSION } from './protocol';
 
-const HANDSHAKE_MS = 2500;
+// Only paid when the game is framed: a game opened on its own (local testing) skips the wait.
+// Games now run in their own process (their own origin), so give a busy page or a slow phone time.
+const HANDSHAKE_MS = 8000;
 const CALL_TIMEOUT_MS = 20_000;
 /** Ads wait for the player; they get a much longer timeout. */
 const LONG_CALLS: MethodName[] = ['ad.midgame', 'ad.rewarded', 'user.login'];

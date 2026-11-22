@@ -85,7 +85,21 @@ git push -u origin main
    (the vertical-trailer maker draws preview videos onto a canvas, which needs CORS). The `PUT`
    rule must allow the request headers `content-type` and `if-none-match`: upload links are
    signed for one file's exact type and size and are write-once.
-4. Create an R2 API token with read and write on that bucket and put its values in the
+4. **Game origins.** Every game runs on its own origin, so one game can never read another's
+   saves or storage. Buy a second, cheap domain used only for games (for example
+   `bgplay.net`; never a subdomain of the site's domain) and add it to Cloudflare. Then:
+   - DNS: a proxied (orange cloud) `*` record pointing anywhere, e.g. `AAAA * 100::`.
+   - Edit `workers/play/wrangler.toml` (games domain, bucket name, the three site addresses) and
+     deploy the Worker: `npx wrangler deploy --config workers/play/wrangler.toml`.
+   - Set `NEXT_PUBLIC_GAME_ORIGIN_PATTERN=https://{game}.<games domain>` (GitHub variable) and
+     the Supabase secrets `GAME_ORIGIN_PATTERN` (same value) and `PLAY_ORIGIN`.
+   - Optional, later: ask for the games domain to be added to the Public Suffix List
+     (publicsuffix.org) so browsers also keep cookies apart between game subdomains.
+   - Free plan: 100,000 Worker requests a day. Files are cached in the browser for a year, so a
+     repeat player costs a few requests, but a busy day of new players can pass it. Watch the
+     Workers dashboard; Workers Paid (USD 5 a month) covers 10 million.
+   The live build refuses to start without the pattern.
+5. Create an R2 API token with read and write on that bucket and put its values in the
    Supabase secrets from step 2.
 
 ## 4. Cloudflare Pages (the site)
@@ -145,6 +159,21 @@ scan with Google Authenticator, Microsoft Authenticator or Authy.
 To make your co-founder an admin: they sign up on the site, then you open Moderation > Players and
 press **Make admin** (or run `update public.profiles set role = 'admin' where username = '…'`).
 
+### Keep the management portal private (Cloudflare Access, free)
+
+The player site and the developer portal contain no link to the management portal and not even
+its address (the build checks this). Lock the door too, so nobody else can load it at all:
+
+1. Cloudflare dashboard > Zero Trust (free for up to 50 people) > Access > Applications > Add an
+   application > Self-hosted.
+2. Application domain: the management portal's address (for example `manage.<your-domain>`).
+3. Policy: Action **Allow**, Include **Emails**: only your and your co-founder's addresses.
+   Login method: **One-time PIN** (a code e-mailed by Cloudflare).
+4. Save. Anyone else now sees Cloudflare's door, not the portal. Behind it the portal still asks
+   for your sign-in and the owner code.
+
+Keep the address out of public places (posts, screenshots, the developer docs) and bookmark it.
+
 ## 9. Payments (Premium and Boost)
 
 1. Create a Razorpay account (no monthly fee) and complete its business verification.
@@ -158,6 +187,21 @@ press **Make admin** (or run `update public.profiles set role = 'admin' where us
 
 A membership or Boost only ever starts from Razorpay's signed webhook, never from the browser.
 Without the keys, the site shows a clearly marked test checkout where no money moves.
+
+### India only, for now
+
+Money flows in India only (`apps/web/src/lib/domain/market.ts`):
+
+- Premium and Boosts are sold only to visitors in India. The site asks the `geo` Edge Function
+  for the visitor's country (deploy it with the others), the `billing` function refuses buyers
+  from other countries, and Razorpay refuses foreign cards as long as **International payments
+  stays switched off** in the Razorpay dashboard. Keep it off.
+- Only studios in India earn a share of ad revenue (others get 0% in the monthly split), and
+  payouts go only to Indian bank accounts (IFSC). Creators likewise.
+
+To open another country later: add it to `PAID_COUNTRIES` / `EARNING_COUNTRIES`, switch on
+Razorpay international payments or add a provider, and settle GST, export and withholding-tax
+rules with a CA first.
 
 ## 10. Google and Apple sign-in
 

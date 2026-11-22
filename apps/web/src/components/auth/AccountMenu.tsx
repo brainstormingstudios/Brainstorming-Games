@@ -7,7 +7,7 @@ import { Button, Dialog, MascotAvatar, useToast } from '@brainstorming/ui';
 import { Link } from '@/i18n/navigation';
 import { onLoginRequest, requestLogin, settleLogin } from '@/lib/auth/loginPrompt';
 import { getRepo } from '@/lib/data';
-import { isStaff, useSession } from '@/lib/hooks/useSession';
+import { useSession } from '@/lib/hooks/useSession';
 import { LoginForm } from './LoginForm';
 
 /** The login dialog. Anything can open it with `requestLogin()` (including games, via the SDK). */
@@ -113,11 +113,6 @@ export function AccountMenu() {
               {label}
             </Link>
           ))}
-          {isStaff(user) ? (
-            <Link role="menuitem" href="/admin" className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2" onClick={() => setOpen(false)} data-testid="admin-link">
-              {t('adminConsole')}
-            </Link>
-          ) : null}
           <button
             type="button"
             role="menuitem"

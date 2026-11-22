@@ -59,12 +59,18 @@ test('ad impressions → revenue CSV → statement → payout details', async ({
     await page.getByTestId('statement-row').getByRole('button', { name: 'PDF' }).click();
     expect((await download).suggestedFilename()).toMatch(/^statement-\d{4}-\d{2}-probe-studio\.pdf$/);
 
-    await page.getByLabel('Method').selectOption('paypal');
-    await page.getByLabel('Currency').selectOption('USD');
+    // Payouts go to Indian bank accounts only for now, and a change waits 48 hours (then the
+    // owner can still cancel it).
+    await expect(page.getByLabel('Method').locator('option')).toHaveCount(1);
     await page.getByLabel('Account holder’s full name').fill('Probe Studio Owner');
-    await page.getByLabel('Account e-mail').fill('payouts@example.test');
+    await page.getByLabel('Account number').fill('123456789012');
+    await page.getByLabel('IFSC').fill('HDFC0001234');
     await page.getByRole('button', { name: 'Save payout details' }).click();
-    await expect(page.getByTestId('payouts-page')).toContainText('PayPal pa•••@example.test');
+    const pending = page.getByTestId('payout-pending');
+    await expect(pending).toContainText('Bank ••••9012 (HDFC0001234)');
+    await expect(pending).toContainText('48 hours');
+    await pending.getByTestId('payout-cancel').click();
+    await expect(page.getByTestId('payout-pending')).toHaveCount(0);
   } finally {
     await deleteUpload(request, 'e2e-revenue');
   }

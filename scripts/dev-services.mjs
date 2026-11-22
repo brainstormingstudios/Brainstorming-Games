@@ -20,6 +20,7 @@ import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import { createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize, sep } from 'node:path';
+import { gameHeaders, gameKey } from './lib/game-origin.mjs';
 import { ROOT, TSX, WEB, loadEnv } from './lib/run.mjs';
 
 loadEnv();
@@ -376,7 +377,28 @@ async function ownerApi(req, res, action) {
   res.setHeader('cache-control', 'no-store');
   if (!uid || !isAdmin(uid)) return json(res, 403, { error: 'not_allowed' });
   const key = ownerKeys[uid];
-  if (action === 'status') return json(res, 200, { enrolled: Boolean(key?.confirmed), unlocked: ownerUnlocked(req, uid) });
+  if (action === 'status') {
+    const devices = (key?.confirmed ? 1 : 0) + (key?.backups ?? []).filter((b) => b.confirmed).length;
+    return json(res, 200, { enrolled: Boolean(key?.confirmed), unlocked: ownerUnlocked(req, uid), devices });
+  }
+  // A second authenticator (backup phone), added only from an unlocked session.
+  if (action === 'add-backup') {
+    if (!key?.confirmed || !ownerUnlocked(req, uid)) return json(res, 403, { error: 'not_allowed' });
+    const secret = base32(randomBytes(20));
+    key.backups = [...(key.backups ?? []).filter((b) => b.confirmed).slice(0, 4), { secret, confirmed: false }];
+    saveOwnerKeys();
+    const email = getRows('users').find((u) => u.id === uid)?.email ?? 'owner';
+    const label = encodeURIComponent(`Brainstorming Games (backup):${email}`);
+    return json(res, 200, { secret, uri: `otpauth://totp/${label}?secret=${secret}&issuer=Brainstorming%20Games&algorithm=SHA1&digits=6&period=30` });
+  }
+  if (action === 'confirm-backup') {
+    if (!key?.confirmed || !ownerUnlocked(req, uid)) return json(res, 403, { error: 'not_allowed' });
+    const pending = (key.backups ?? []).find((b) => !b.confirmed);
+    if (!pending || !totpOk(pending.secret, body.code)) return json(res, 200, { ok: false });
+    pending.confirmed = true;
+    saveOwnerKeys();
+    return json(res, 200, { ok: true });
+  }
   if (action === 'enroll') {
     // A code that is already set up can only be replaced from an unlocked session.
     if (key?.confirmed && !ownerUnlocked(req, uid)) return json(res, 403, { error: 'not_allowed' });
@@ -390,7 +412,8 @@ async function ownerApi(req, res, action) {
   if (action === 'verify') {
     const lock = ownerLocks.get(uid);
     if (lock && lock.until > Date.now()) return json(res, 429, { error: 'rate_limited', retryInSeconds: Math.ceil((lock.until - Date.now()) / 1000) });
-    if (!key || !totpOk(key.secret, body.code)) {
+    const anyDevice = key && (totpOk(key.secret, body.code) || (key.backups ?? []).some((b) => b.confirmed && totpOk(b.secret, body.code)));
+    if (!anyDevice) {
       // Five wrong codes lock the account for five minutes, then every further miss doubles it.
       const fails = (lock?.fails ?? 0) + 1;
       ownerLocks.set(uid, { fails, until: fails >= 5 ? Date.now() + 300_000 * 2 ** (fails - 5) : 0 });
@@ -622,9 +645,52 @@ function runPreQa(url) {
   });
 }
 
+/** Sends one stored file (a build file or media) with the game-origin headers. */
+function sendFile(req, res, file) {
+  if (!file || !existsSync(file) || !statSync(file).isFile()) {
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    return res.end('Not found');
+  }
+  const type = MIME[extname(file).toLowerCase()];
+  res.writeHead(200, {
+    'content-type': type,
+    'content-length': statSync(file).size,
+    'cache-control': 'no-cache',
+    ...gameHeaders(type, SITE_ORIGINS),
+  });
+  if (req.method === 'HEAD') return res.end();
+  return createReadStream(file).pipe(res);
+}
+
+/**
+ * A game's own origin, http://g-<id>.localhost:<port> (the local twin of workers/play): it serves
+ * that game's folder and nothing else. No test tools, no database, no other game's files.
+ */
+function serveGameOrigin(req, res, label, pathname) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { 'content-type': 'text/plain', allow: 'GET, HEAD' });
+    return res.end('Method not allowed');
+  }
+  const key = pathname.startsWith('/__mock') ? null : gameKey(label, pathname);
+  if (!key) {
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    return res.end('Not found');
+  }
+  const original = resolveOriginal(key);
+  return sendFile(req, res, original === undefined ? resolveKey(key) : original);
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
   const path = url.pathname;
+  const gameHost = /^([a-z0-9-]+)\.localhost(?::\d+)?$/.exec(String(req.headers.host ?? '').toLowerCase());
+  if (gameHost) {
+    try {
+      return serveGameOrigin(req, res, gameHost[1], path);
+    } catch (err) {
+      return json(res, 500, { error: String(err) });
+    }
+  }
   cors(req, res);
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -735,35 +801,22 @@ const server = createServer(async (req, res) => {
     if (path === '/__mock/pre-qa' && req.method === 'POST') {
       const body = JSON.parse((await readBody(req)) || '{}');
       const target = String(body.url ?? '');
-      if (!target.startsWith(`http://localhost:${PORT}/`) && !target.startsWith(`http://127.0.0.1:${PORT}/`)) {
-        return json(res, 400, { error: 'url must be on this play origin' });
+      if (!new RegExp(`^http://[a-z0-9-]+\\.localhost:${PORT}/`).test(target)) {
+        return json(res, 400, { error: 'url must be on a local game origin' });
       }
       return json(res, 200, await runPreQa(target));
     }
 
     if (req.method === 'GET' || req.method === 'HEAD') {
       const key = path.replace(/^\/+/, '') || 'index.html';
-      const original = resolveOriginal(key.endsWith('/') ? `${key}index.html` : key);
-      const file = original === undefined ? resolveKey(key) : original;
-      if (!file || !existsSync(file) || !statSync(file).isFile()) {
+      // Game pages never run on this shared origin (it holds the local database and test
+      // tools): they open on their own g-<id>.localhost origin. Media and scripts still load here.
+      if (/\.html?$/i.test(key) || key.endsWith('/')) {
         res.writeHead(404, { 'content-type': 'text/plain' });
-        return res.end('Not found');
+        return res.end('Games open on their own origin');
       }
-      const type = MIME[extname(file).toLowerCase()];
-      const headers = {
-        'content-type': type,
-        'content-length': statSync(file).size,
-        'cache-control': 'no-cache',
-        'cross-origin-resource-policy': 'cross-origin',
-        'x-content-type-options': 'nosniff',
-      };
-      // Sitelock: a game document may only be framed by our own site.
-      if (type.startsWith('text/html')) {
-        headers['content-security-policy'] = `frame-ancestors ${SITE_ORIGINS.join(' ')}`;
-      }
-      res.writeHead(200, headers);
-      if (req.method === 'HEAD') return res.end();
-      return createReadStream(file).pipe(res);
+      const original = resolveOriginal(key);
+      return sendFile(req, res, original === undefined ? resolveKey(key) : original);
     }
 
     res.writeHead(405, { 'content-type': 'text/plain' });

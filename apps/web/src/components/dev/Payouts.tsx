@@ -11,6 +11,9 @@ import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useLocale } from '@/i18n/navigation';
 import { useDev } from './DevShell';
+import { PendingPayoutChange, ReauthPrompt, needsReauth } from '@/components/account/PayoutSafety';
+import { OPEN_PAYOUT_METHODS } from '@/lib/domain/payoutProfile';
+import { canEarnIn } from '@/lib/domain/market';
 
 const download = async (row: RevenueMonthRow) => (await import('@/lib/revenue/statementPdf')).downloadStatement(row);
 
@@ -26,15 +29,17 @@ export function PayoutsPage() {
   const profile = useRepoQuery((repo) => repo.revenue.payoutProfile(), [], { topics: ['revenue'] });
   const [form, setForm] = useState<PayoutProfileInput>({ method: 'bank', currency: 'INR', accountName: studio.guardianName ?? '', details: {} });
   const [error, setError] = useState<string | null>(null);
+  const [reauth, setReauth] = useState(false);
 
   const save = async () => {
     setError(null);
     try {
       await (await getRepo()).revenue.savePayoutProfile(form);
-      toast(t('saved'), { tone: 'success' });
+      toast(t('savedOnHold'), { tone: 'success' });
       setForm({ ...form, details: {} });
     } catch (err) {
-      setError(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'));
+      if (needsReauth(err)) setReauth(true);
+      else setError(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'));
     }
   };
   const field = (key: string, label: string, props: Record<string, unknown> = {}) => (
@@ -47,15 +52,21 @@ export function PayoutsPage() {
       <p className="text-sm text-fg-muted">
         {t('intro', { inr: formatMoney(THRESHOLD_MINOR.INR, 'INR'), usd: formatMoney(THRESHOLD_MINOR.USD, 'USD') })}
       </p>
+      {!canEarnIn(studio.country) ? (
+        <p role="status" className="rounded-card border border-warning bg-surface-3 p-3 text-sm font-bold" data-testid="earnings-india-only">
+          {t('indiaOnly')}
+        </p>
+      ) : null}
       <Card className="flex flex-col gap-3 p-4">
         <h2 className="text-xl font-semibold">{t('profile')}</h2>
-        {profile.data ? (
+        {profile.data?.summary ? (
           <p className="text-sm">
             <span className="font-bold">{profile.data.summary}</span> · {profile.data.currency} · {formatDate(profile.data.updatedAt, locale)}
           </p>
         ) : (
           <p className="text-sm text-fg-muted">{t('noProfile')}</p>
         )}
+        <PendingPayoutChange profile={profile.data} onCancel={async () => (await getRepo()).revenue.cancelPayoutChange()} />
         <div className="grid gap-3 sm:grid-cols-3">
           <SelectField
             label={t('method')}
@@ -64,7 +75,7 @@ export function PayoutsPage() {
               const method = e.target.value as PayoutMethod;
               setForm({ ...form, method, currency: method === 'bank' ? 'INR' : form.currency, details: {} });
             }}
-            options={(['bank', 'paypal', 'wise', 'payoneer'] as const).map((m) => ({ value: m, label: t(`methods.${m}`) }))}
+            options={OPEN_PAYOUT_METHODS.map((m) => ({ value: m, label: t(`methods.${m}`) }))}
           />
           <SelectField
             label={t('currency')}
@@ -89,9 +100,19 @@ export function PayoutsPage() {
           </p>
         ) : null}
         <p className="text-xs text-fg-muted">{t('encrypted')}</p>
-        <Button className="self-start" onClick={() => void save()}>
-          {t('save')}
-        </Button>
+        {reauth ? (
+          <ReauthPrompt
+            onClose={() => setReauth(false)}
+            onDone={() => {
+              setReauth(false);
+              void save();
+            }}
+          />
+        ) : (
+          <Button className="self-start" onClick={() => void save()} data-testid="payout-save">
+            {t('save')}
+          </Button>
+        )}
       </Card>
 
       <Card className="flex flex-col gap-3 p-4">

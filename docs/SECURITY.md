@@ -32,10 +32,51 @@ to 127.0.0.1.
 4. R2 CORS allows `content-type` and `if-none-match` on PUT.
 5. Turnstile site key in the build, secret key in Supabase, then turn CAPTCHA on.
 
-## Phase 2: isolation (next)
+## Phase 2: isolation (done)
 
-Per-game origins on a separate domain through Cloudflare; HSTS, stricter CSP, `security.txt`;
-Next.js and test-tool updates; pre-QA checks for crypto-mining and fake password forms.
+| Attack | Defence | Where |
+| --- | --- | --- |
+| One game reading another game's saves, IndexedDB, cookies or service worker | Every game on its own origin, `g-<game id>.<games domain>`, on a domain separate from the site; the server maps each subdomain to exactly one game folder | `workers/play`, `_shared/gameOrigin.ts`, `scripts/dev-services.mjs` |
+| A game page opened on the shared play origin, or reading the local test database | The shared origin no longer serves game pages; game origins serve no tools | `scripts/dev-services.mjs` |
+| Our games framed on someone else's site | Game pages carry `frame-ancestors` with only our three sites | `gameHeaders()` |
+| A game talking to the site as another game | The bridge only answers the exact origin of the frame it loaded | `lib/sdk-host/bridge.ts` |
+| Phishing forms, camera or microphone inside a game | `form-action 'self'`, Permissions-Policy denies camera, microphone, location, payment, USB | `gameHeaders()` |
+| Script injection (XSS) on the sites | Each page carries a second policy that allows only its own inline scripts (by SHA-256); the player site skips it while AdSense is on | `scripts/postbuild.mjs` |
+| HTTPS downgrade, clickjacking | HSTS for a year (live https builds), `X-Frame-Options: DENY` with `frame-ancestors 'none'` | `_headers` |
+| No way to report a vulnerability | `/.well-known/security.txt` on every site | `scripts/postbuild.mjs` |
+| Hidden crypto-miners | Pre-QA fails builds that contact mining pools or contain miner code | `lib/domain/preqa.ts`, `scripts/pre-qa.ts` |
+| Fake sign-in or payment forms | Pre-QA fails builds that show password, card or one-time-code fields (warns if only the code can make them) | same |
+| Known holes in dependencies | Next.js 15.5.29 (newest 15.x) with PostCSS forced to 8.5.32; Vitest 5, Playwright 1.65, typescript-eslint 8.73; `npm audit` reports 0 | `package.json` |
+
+Next.js 16 is a major upgrade with breaking changes. It is left for a planned upgrade; 15.5.x
+still gets security fixes.
+
+### Go-live checklist for Phase 2
+
+1. A separate games domain on Cloudflare, wildcard DNS, the `workers/play` Worker deployed
+   (DEPLOY.md, section 3, step 4).
+2. `NEXT_PUBLIC_GAME_ORIGIN_PATTERN` (GitHub variable), `GAME_ORIGIN_PATTERN` and `PLAY_ORIGIN`
+   (Supabase secrets).
+3. After the first live deploy, check the headers at securityheaders.com and the HSTS line.
+4. Verify the crypto-mining and password-form checks online, on the live pre-QA bot. No fake
+   malware samples are kept on the development machine (antivirus rightly flags them).
+
+## Full audit, 2026-11-22
+
+| Area | Result |
+| --- | --- |
+| Secrets | Git history (18 commits) and all three built sites checked against the real key values and common key formats: no leaks. Env files are ignored by Git. Only public keys reach the browser. |
+| Admin routes | Management portal: separate site, no links or address in the public sites (build check), owner code enforced by the database, Cloudflare Access at go-live. |
+| Authentication | E-mail code sign-in (no passwords stored anywhere; Supabase handles codes), owner code (TOTP) for staff, Turnstile bot check. |
+| Own data only | Row-level security on every table; guests cannot write any table; every admin function checks the staff role; every privileged function pins its search path (`tests/db/security-audit.test.ts`). |
+| Forms and XSS | Markdown is rendered without HTML; unsafe link schemes and backslash tricks dropped; structured data escaped; strict per-page script policy. |
+| Rate limits | Database token buckets on sign-in, events, uploads, payments and edits. |
+| CORS | Edge Functions answer only our three sites, never `*`. |
+| Headers | CSP, HSTS, X-Frame-Options, nosniff, Referrer and Permissions policies; private headers on the management portal. |
+| Debug | No source maps or debug logging in production; a live build refuses mock mode. |
+| Dependencies | `npm audit`: 0 vulnerabilities. Next.js's own copy of PostCSS is forced to the patched version: after `npm update`, check `npm audit` again (it can bring the old copy back). |
+| Exposed files | No env, map, source, SQL or Git files in the built sites. |
+| Antivirus | Windows Defender scan of the project: clean. No malware-like test samples are kept; such checks run online only. |
 
 ## Phase 3: money and accounts
 

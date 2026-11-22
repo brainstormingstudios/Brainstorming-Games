@@ -93,6 +93,7 @@ export interface MockVersion {
   autoReview?: unknown | null;
   declaration?: unknown | null;
   fingerprint?: string | null;
+  assetHashes?: string[] | null;
   qaStatus: string;
   qaNotes: string | null;
   previewToken: string;
@@ -100,6 +101,15 @@ export interface MockVersion {
   submittedAt?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
+}
+
+/** Payout details in mock mode (masked only) with a change waiting out its 48 hours. */
+export interface MockPayoutHoldRow {
+  method: 'bank' | 'paypal' | 'wise' | 'payoneer' | null;
+  currency: 'INR' | 'USD' | null;
+  summary: string | null;
+  updatedAt: string;
+  pending?: { method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; effectiveAt: string } | null;
 }
 
 export interface MockMedia extends MediaAsset {
@@ -152,6 +162,8 @@ export interface MockFeedback extends FeedbackInput {
 
 export interface MockUser {
   id: string;
+  /** "Sign out everywhere": sessions that started before this are no longer valid. */
+  sessionsRevokedAt?: string | null;
   email: string;
   username: string | null;
   displayName: string;
@@ -294,7 +306,7 @@ export interface MockTables {
   }[];
   revenueImports: { month: string; currency: string; fxInr: number | null; rows: unknown[]; at: string }[];
   payouts: { id: string; studioId: string; studioName: string; amount: number; currency: 'INR' | 'USD'; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; reference: string; months: string[]; paidAt: string }[];
-  payoutProfiles: { studioId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
+  payoutProfiles: ({ studioId: string } & MockPayoutHoldRow)[];
   userFavourites: { userId: string; gameId: string; createdAt: string }[];
   userHistory: { userId: string; gameId: string; slug: string; lastPlayedAt: string; playCount: number; secondsPlayed: number }[];
   referralVisits: { studioSlug: string; anonId: string; at: string }[];
@@ -335,7 +347,9 @@ export interface MockTables {
   creatorMonths: CreatorMonthRow[];
   creatorPayouts: CreatorPayoutRow[];
   boostCredits: { id: string; studioId: string; versionId: string; createdAt: string; usedAt: string | null; usedBoostId: string | null }[];
-  creatorPayoutProfiles: { creatorId: string; method: 'bank' | 'paypal' | 'wise' | 'payoneer'; currency: 'INR' | 'USD'; summary: string; updatedAt: string }[];
+  creatorPayoutProfiles: ({ creatorId: string } & MockPayoutHoldRow)[];
+  /** Security alerts for staff (mirror of security_alerts). */
+  securityAlerts: { id: string; kind: string; severity: 'info' | 'warn' | 'high'; title: string; detail: Record<string, unknown>; createdAt: string; resolvedAt: string | null }[];
   /** Held edits of released games (mirror of game_pending_edits). */
   pendingEdits: { gameId: string; changes: Record<string, unknown>; submittedBy: string; submittedAt: string }[];
 }

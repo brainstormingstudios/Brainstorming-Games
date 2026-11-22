@@ -112,6 +112,14 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   // The automatic moderation ran first: an original game from a new studio is clear.
   await expect(page.getByTestId('auto-review')).toContainText('Rights declaration');
   await expect(page.getByTestId('auto-check').and(page.locator('[data-status="fail"]'))).toHaveCount(0);
+  await expect(page.getByTestId('auto-risk')).toContainText('Risk');
+  // Every detail for the manual decision: store page, build, rights declaration, studio record.
+  const details = page.getByTestId('review-details');
+  await expect(details).toContainText('Probe Quest');
+  await expect(details).toContainText('Press a button');
+  await expect(page.getByTestId('review-declaration')).toContainText('Yes');
+  await expect(page.getByTestId('review-studio')).toContainText('Probe Studio');
+  await expect(page.getByTestId('review-media').locator('img')).toHaveCount(3);
   await page.getByTestId('qa-approve').click();
   await expect(page.getByTestId('qa-queue')).toBeVisible();
   await expect(page.getByTestId('qa-row')).toHaveCount(0);

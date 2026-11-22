@@ -27,7 +27,9 @@ export type MailTemplate =
   | 'guest_pass_redeemed'
   | 'boost_received'
   | 'boost_posted'
-  | 'parental_consent';
+  | 'parental_consent'
+  | 'payout_details_changed'
+  | 'security_alert';
 
 export interface MailContext {
   /** Public URL of the player site, no trailing slash. */
@@ -302,6 +304,38 @@ export function renderMail(template: MailTemplate, data: Record<string, unknown>
           paragraphs: ['Thank you for applying. We could not approve your creator account this time.'],
           quote: s(data.note) || undefined,
           button: { label: 'Apply again later', url: `${ctx.siteUrl}/creators/` },
+        },
+        ctx,
+      );
+    case 'payout_details_changed':
+      return layout(
+        {
+          subject: 'Your payout details were changed',
+          preview: 'If this was not you, cancel it now. Nothing is paid to the new details for 48 hours.',
+          heading: 'Your payout details were changed',
+          paragraphs: [
+            'Someone signed in to your account and changed where your earnings are paid. For your safety the new details only take effect after 48 hours; until then payouts still go to your old details.',
+            'If this was you, there is nothing to do. If it was not, open your payout page, cancel the change, sign out everywhere and tell us at the address below.',
+          ],
+          facts: [
+            ['New details', s(data.summary)],
+            ['Takes effect', s(data.effectiveAt)],
+          ],
+          button: { label: 'Review the change', url: s(data.scope) === 'creator' ? `${ctx.siteUrl}/creators/dashboard/` : dev('/payouts/') },
+        },
+        ctx,
+      );
+    case 'security_alert':
+      return layout(
+        {
+          subject: `Security alert: ${s(data.title)}`,
+          preview: 'Something on the platform needs a look.',
+          heading: s(data.title),
+          paragraphs: ['The platform noticed something that may need action. Details are in the management portal.'],
+          facts: [
+            ['Severity', s(data.severity)],
+            ['Type', s(data.kind)],
+          ],
         },
         ctx,
       );

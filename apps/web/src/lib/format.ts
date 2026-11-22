@@ -1,4 +1,5 @@
-import { PLAY_ORIGIN } from '@/lib/config';
+import { GAME_ORIGIN_PATTERN, PLAY_ORIGIN } from '@/lib/config';
+import { gamePlayUrl } from '@/lib/play/gameOrigin';
 import type { GameSummary, MediaAsset } from '@/lib/data/types';
 
 export function formatBytes(bytes: number): string {
@@ -51,9 +52,14 @@ export function srcSetFor(asset: MediaAsset, maxWidth = Infinity): string | unde
   return widths.map((w) => `${variantUrl(asset, w)} ${w}w`).join(', ');
 }
 
-/** Absolute URL of a game build on the play origin. */
+/** Absolute URL of a game build, on that game's own origin. */
 export function playUrl(game: Pick<GameSummary, 'playPath'>): string | null {
-  return game.playPath ? `${PLAY_ORIGIN}/${game.playPath}` : null;
+  return game.playPath ? buildUrl(game.playPath) : null;
+}
+
+/** Absolute URL of a stored build path (`<game id>/<version>/<file>`), on the game's own origin. */
+export function buildUrl(playPath: string): string {
+  return gamePlayUrl(playPath, GAME_ORIGIN_PATTERN, PLAY_ORIGIN);
 }
 
 /** A stable two-colour gradient for games without a cover, derived from the slug. */

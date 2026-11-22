@@ -5,11 +5,16 @@
  *
  * What a machine can honestly check here:
  *   - the developer declared they own or have licensed everything in the game
- *   - famous game, film and cartoon names in the title, description or tags (likely unlicensed)
+ *   - famous game, film and cartoon names in the title, description or tags (likely unlicensed),
+ *     also when disguised ("M1necraft", "mine craft", "subwaysurfers", one letter off)
  *   - the same build, or a near-identical cover, already published by another studio (copied)
+ *   - art, audio and model files identical to another studio's game (copied assets)
+ *   - a description largely copied from another studio's game
  *   - a title very close to another studio's game
  *   - other portals' SDKs, ad networks or outside requests found by the pre-QA bot
  *   - words that point to gambling or adult content
+ *   - an incomplete store page, and a studio with earlier rejections
+ * Every check adds to a risk score (0 to 100) that tells the moderator where to look hardest.
  * What it cannot: judge whether art is appropriate, or prove who owns a game. Those stay with the
  * moderator, and the report says so.
  *
@@ -29,6 +34,8 @@ export interface AutoReviewReport {
   status: 'pass' | 'warn' | 'fail';
   checks: AutoCheck[];
   ranAt: string;
+  /** 0 (clean) to 100 (look very hard). Older reports lack it. */
+  risk?: number;
 }
 
 export interface Declaration {
@@ -45,6 +52,16 @@ export interface OtherGame {
   studioId: string;
   buildFingerprints: string[];
   coverHashes: string[];
+  /** Short description and description, to spot copied text. */
+  description?: string;
+}
+
+/** Another studio's game that shares asset files (art, audio, models) with this build. */
+export interface AssetOverlap {
+  title: string;
+  studioId: string;
+  /** How many of this build's hashed asset files that game also has. */
+  shared: number;
 }
 
 export interface ReviewInput {
@@ -59,6 +76,13 @@ export interface ReviewInput {
   preQaProblems: { id: string; status: 'warn' | 'fail' }[];
   /** Released games of all studios (this one included; it is skipped by studio id). */
   others: OtherGame[];
+  /** How many asset files of this build were fingerprinted, and which other games share them. */
+  assetCount?: number;
+  assetOverlaps?: AssetOverlap[];
+  /** The store page, for the completeness check. */
+  page?: { shortDescription: string; descriptionMd: string; howToPlayMd: string; controls: number; tags: number };
+  /** The studio's record. */
+  studio?: { createdAt: string; rejections: number; verified: boolean };
 }
 
 /** Names of well-known games, characters and brands. A match needs a licence, not a guess. */
@@ -123,6 +147,56 @@ function hasName(text: string, name: string): boolean {
   return t.includes(` ${normalise(name)} `);
 }
 
+/** Undoes common disguises: digits for letters (m1necraft), symbols (p@c-man). */
+const unLeet = (s: string) =>
+  s.toLowerCase().replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't').replace(/@/g, 'a').replace(/\$/g, 's');
+
+/**
+ * A protected name hidden in the text: written with digits for letters, with the spaces moved
+ * ("mine craft", "subwaysurfers"), or one letter off for longer names ("minecraf", "pokemom").
+ * `hidden` = deliberately changed spelling or spacing; `close` = one letter off, which can also
+ * be an honest word, so it only warns. Null when not found.
+ */
+export function disguisedName(text: string, name: string): 'hidden' | 'close' | null {
+  const plain = normalise(unLeet(text));
+  const target = normalise(name);
+  if (` ${plain} `.includes(` ${target} `)) return 'hidden';
+  const squashedTarget = target.replace(/ /g, '');
+  const words = plain.split(' ');
+  // Spacing moved: one to three neighbouring words that join into the name exactly.
+  if (squashedTarget.length >= 5) {
+    for (let i = 0; i < words.length; i++) {
+      for (let k = 1; k <= 3 && i + k <= words.length; k++) if (words.slice(i, i + k).join('') === squashedTarget) return 'hidden';
+    }
+  }
+  if (squashedTarget.length >= 7) {
+    const n = target.split(' ').length;
+    for (let i = 0; i + n <= words.length; i++) {
+      const candidate = words.slice(i, i + n).join('');
+      if (Math.abs(candidate.length - squashedTarget.length) <= 1 && similarity(candidate, squashedTarget) >= 1 - 1.5 / squashedTarget.length) return 'close';
+    }
+  }
+  return null;
+}
+
+/** Share of word triples two texts have in common (0 to 1), relative to the shorter text. */
+export function textOverlap(a: string, b: string): number {
+  const shingles = (s: string) => {
+    const w = normalise(s).split(' ').filter((x) => x.length > 2);
+    const out = new Set<string>();
+    for (let i = 0; i + 3 <= w.length; i++) out.add(w.slice(i, i + 3).join(' '));
+    return out;
+  };
+  const x = shingles(a);
+  const y = shingles(b);
+  if (x.size < 5 || y.size < 5) return 0;
+  let common = 0;
+  for (const s of x) if (y.has(s)) common++;
+  return common / Math.min(x.size, y.size);
+}
+
+const RISK_POINTS: Record<CheckStatus, number> = { fail: 40, warn: 15, manual: 0, pass: 0 };
+
 export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoReviewReport {
   const checks: AutoCheck[] = [];
   const d = input.declaration;
@@ -135,10 +209,20 @@ export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoR
 
   const text = `${input.title}\n${input.description}\n${input.tags.join(' ')}`;
   const names = PROTECTED_NAMES.filter((n) => hasName(text, n));
+  // Disguised names count more than plain mentions: hiding a name suggests the developer knew.
+  const titleTags = `${input.title} ${input.tags.join(' ')}`;
+  const found = PROTECTED_NAMES.filter((n) => !names.includes(n)).map((n) => ({ n, how: disguisedName(titleTags, n) }));
+  const hidden = found.filter((x) => x.how === 'hidden').map((x) => x.n);
+  const near = found.filter((x) => x.how === 'close').map((x) => x.n);
+  const quote = (list: string[]) => list.slice(0, 5).map((n) => `"${n}"`).join(', ');
   checks.push(
-    names.length
-      ? { id: 'protected-names', status: 'warn', detail: `Mentions ${names.slice(0, 5).map((n) => `"${n}"`).join(', ')}: these belong to other companies. Ask for proof of a licence.` }
-      : { id: 'protected-names', status: 'pass', detail: 'No well-known game, film or brand names found.' },
+    hidden.length
+      ? { id: 'protected-names', status: 'fail', detail: `The title or tags hide ${quote(hidden)} (changed spelling or spacing). These belong to other companies.` }
+      : names.length
+        ? { id: 'protected-names', status: 'warn', detail: `Mentions ${quote(names)}: these belong to other companies. Ask for proof of a licence.` }
+        : near.length
+          ? { id: 'protected-names', status: 'warn', detail: `The title or tags look like ${quote(near)}. Check it is not a copy.` }
+          : { id: 'protected-names', status: 'pass', detail: 'No well-known game, film or brand names found, also not disguised.' },
   );
 
   const others = input.others.filter((o) => o.studioId !== input.studioId);
@@ -158,6 +242,34 @@ export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoR
     coverMatch
       ? { id: 'copied-cover', status: 'fail', detail: `A cover is nearly identical to one of "${coverMatch.title}" from another studio.` }
       : { id: 'copied-cover', status: input.coverHashes.length ? 'pass' : 'manual', detail: input.coverHashes.length ? 'The covers do not match other studios’ covers.' : 'No cover fingerprints to compare.' },
+  );
+
+  // Asset files (art, audio, models) identical to another studio's game. Free asset packs are
+  // shared by many honest games, so only a large share is a fail.
+  const assetCount = input.assetCount ?? 0;
+  const topAssets = (input.assetOverlaps ?? []).filter((o) => o.studioId !== input.studioId).sort((a, b) => b.shared - a.shared)[0];
+  const assetShare = topAssets && assetCount ? topAssets.shared / assetCount : 0;
+  checks.push(
+    !assetCount
+      ? { id: 'copied-assets', status: 'manual', detail: 'No asset fingerprints to compare (uploaded before this check existed).' }
+      : topAssets && assetShare >= 0.6 && topAssets.shared >= 10
+        ? { id: 'copied-assets', status: 'fail', detail: `${topAssets.shared} of ${assetCount} art and audio files are identical to "${topAssets.title}" from another studio.` }
+        : topAssets && (assetShare >= 0.25 || topAssets.shared >= 20)
+          ? { id: 'copied-assets', status: 'warn', detail: `${topAssets.shared} of ${assetCount} art and audio files also appear in "${topAssets.title}". Could be a free asset pack: check the credits.` }
+          : { id: 'copied-assets', status: 'pass', detail: `${assetCount} art and audio files checked; none copied from another studio's game.` },
+  );
+
+  // Description text copied from another studio's game.
+  const copiedText = others
+    .filter((o) => o.description)
+    .map((o) => ({ o, s: textOverlap(input.description, o.description!) }))
+    .sort((a, b) => b.s - a.s)[0];
+  checks.push(
+    copiedText && copiedText.s >= 0.5
+      ? { id: 'copied-text', status: 'fail', detail: `About ${Math.round(copiedText.s * 100)}% of the description matches "${copiedText.o.title}" from another studio.` }
+      : copiedText && copiedText.s >= 0.25
+        ? { id: 'copied-text', status: 'warn', detail: `Parts of the description (${Math.round(copiedText.s * 100)}%) match "${copiedText.o.title}".` }
+        : { id: 'copied-text', status: 'pass', detail: 'The description is not copied from another studio’s game.' },
   );
 
   const close = others.map((o) => ({ o, s: similarity(input.title, o.title) })).filter((x) => x.s >= 0.85).sort((a, b) => b.s - a.s)[0];
@@ -183,6 +295,36 @@ export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoR
       : { id: 'content-words', status: 'pass', detail: 'Nothing in the text points to gambling, adult content or gore.' },
   );
 
+  // An incomplete store page: players cannot tell what the game is.
+  if (input.page) {
+    const p = input.page;
+    const gaps = [
+      p.shortDescription.trim().length < 20 ? 'a short description of at least 20 characters' : null,
+      p.descriptionMd.trim().length < 80 ? 'a description of at least 80 characters' : null,
+      !p.howToPlayMd.trim() ? 'how to play' : null,
+      p.controls < 1 ? 'the controls' : null,
+      p.tags < 3 ? 'at least 3 tags' : null,
+    ].filter(Boolean);
+    checks.push(
+      gaps.length
+        ? { id: 'page-complete', status: 'warn', detail: `The page is missing ${gaps.join(', ')}.` }
+        : { id: 'page-complete', status: 'pass', detail: 'Title, descriptions, how to play, controls and tags are all filled in.' },
+    );
+  }
+
+  // The studio's record: earlier rejections, or a brand-new unverified studio.
+  if (input.studio) {
+    const s = input.studio;
+    const ageDays = (now.getTime() - Date.parse(s.createdAt)) / 86_400_000;
+    checks.push(
+      s.rejections >= 2
+        ? { id: 'studio-record', status: 'warn', detail: `This studio had ${s.rejections} earlier submissions rejected.` }
+        : !s.verified && ageDays < 7
+          ? { id: 'studio-record', status: 'manual', detail: 'A studio less than a week old: look a little closer.' }
+          : { id: 'studio-record', status: 'pass', detail: s.verified ? 'Verified studio.' : 'No earlier rejections.' },
+    );
+  }
+
   checks.push({
     id: 'art',
     status: 'manual',
@@ -192,5 +334,6 @@ export function runAutoReview(input: ReviewInput, now: Date = new Date()): AutoR
   });
 
   const status = checks.some((c) => c.status === 'fail') ? 'fail' : checks.some((c) => c.status === 'warn') ? 'warn' : 'pass';
-  return { status, checks, ranAt: now.toISOString() };
+  const risk = Math.min(100, checks.reduce((n, c) => n + RISK_POINTS[c.status], 0));
+  return { status, checks, ranAt: now.toISOString(), risk };
 }

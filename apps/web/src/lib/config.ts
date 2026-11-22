@@ -18,6 +18,15 @@ export const SITE_URL = trim(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost
 /** Origin that serves game builds. It must differ from SITE_URL (games are sandboxed by origin). */
 export const PLAY_ORIGIN = trim(process.env.NEXT_PUBLIC_PLAY_ORIGIN, 'http://localhost:4100');
 
+/**
+ * Each game's own origin, e.g. `https://{game}.bgplay.net` (see lib/play/gameOrigin.ts). Locally
+ * every game gets `http://{game}.localhost:4100`. The live build refuses to start without it.
+ */
+export const GAME_ORIGIN_PATTERN = trim(
+  process.env.NEXT_PUBLIC_GAME_ORIGIN_PATTERN,
+  /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(PLAY_ORIGIN) ? `http://{game}.localhost:${PLAY_ORIGIN.split(':').pop()}` : '',
+);
+
 export const SUPABASE_URL = trim(process.env.NEXT_PUBLIC_SUPABASE_URL, '');
 export const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
 
@@ -32,7 +41,14 @@ export type SiteId = 'play' | 'developers' | 'manage';
 const site = process.env.NEXT_PUBLIC_BG_SITE;
 export const SITE: SiteId = site === 'developers' || site === 'manage' ? site : 'play';
 export const DEVELOPERS_URL = trim(process.env.NEXT_PUBLIC_DEVELOPERS_URL, 'http://localhost:3001');
-export const MANAGE_URL = trim(process.env.NEXT_PUBLIC_MANAGE_URL, 'http://localhost:3002');
+/**
+ * The management portal's address exists only in the management build. The player site and the
+ * developer portal never contain it (no link, no address in their code); staff open it from
+ * their own bookmark, and Cloudflare Access guards it (docs/DEPLOY.md, "Management portal").
+ */
+// Compared on the raw build setting (inlined as a constant), so the minifier removes the address
+// entirely from the other two builds.
+export const MANAGE_URL = process.env.NEXT_PUBLIC_BG_SITE === 'manage' ? trim(process.env.NEXT_PUBLIC_MANAGE_URL, 'http://localhost:3002') : '';
 
 /**
  * Live site: the parent domain shared by the three sites (for example `.brainstorming.games`).

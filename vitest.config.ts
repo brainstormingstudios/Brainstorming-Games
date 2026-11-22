@@ -13,7 +13,7 @@ export default defineConfig({
       '@brainstorming/ui': r('./packages/ui/src/index.ts'),
     },
   },
-  esbuild: { jsx: 'automatic' },
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     // DOM tests opt in per file with `// @vitest-environment happy-dom`.
     environment: 'node',
@@ -27,8 +27,11 @@ export default defineConfig({
     ],
     exclude: ['**/node_modules/**', 'tests/e2e/**'],
     testTimeout: 30_000,
-    hookTimeout: 60_000,
+    hookTimeout: 120_000,
     pool: 'forks',
+    // Each database test file boots its own Postgres (PGlite) with every migration; more than a
+    // few at once starve each other and time out.
+    maxWorkers: 4,
   },
   cacheDir: 'node_modules/.cache/vite',
 });

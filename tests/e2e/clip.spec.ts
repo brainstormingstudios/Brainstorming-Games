@@ -11,8 +11,12 @@ test('clip & share records the game through the SDK and makes a vertical clip', 
   await addGame(page, { slug: 'homecoming-clip', title: 'Homecoming Clip Test', storagePrefix: 'originals/project-homecoming', status: 'rise', usesSdk: true });
   await page.goto('/game/homecoming-clip/');
   await page.getByTestId('play-button').click();
+  // The game runs on its own origin.
+  await expect(page.getByTestId('game-iframe')).toHaveAttribute('src', /^http:\/\/o-project-homecoming\.localhost:4100\//);
   const clip = page.getByTestId('clip-button');
   await expect(clip).toBeVisible({ timeout: 30_000 });
+  // Wait for the game's SDK: before it connects, the button would record the screen instead.
+  await expect(clip).toHaveAttribute('data-via', 'sdk', { timeout: 30_000 });
   await clip.click();
   // 15 seconds of recording, then the vertical version is made from it.
   const dialog = page.getByTestId('clip-dialog');

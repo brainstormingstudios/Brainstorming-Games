@@ -469,7 +469,8 @@
       "terms": "I accept the developer terms (version {version}).",
       "readTerms": "Read the developer terms",
       "create": "Create studio",
-      "termsRequired": "Accept the developer terms to continue."
+      "termsRequired": "Accept the developer terms to continue.",
+      "earningsIndiaOnly": "You can publish games from anywhere. Earnings from ads are paid to studios in India only for now."
     },
     "dashboard": {
       "title": "Dashboard",
@@ -927,7 +928,9 @@
       },
       "pdf": "PDF",
       "payouts": "Payouts",
-      "noPayouts": "No payouts yet."
+      "noPayouts": "No payouts yet.",
+      "savedOnHold": "Saved. For your safety the new details take effect in 48 hours; we e-mailed you.",
+      "indiaOnly": "Earnings are available to studios in India for now. Your games can still be published and played everywhere."
     },
     "growth": {
       "abTitle": "Thumbnail test",
@@ -1085,6 +1088,72 @@
         "covers": "Your covers include badges or borders. Covers may only show the game title. Please upload clean covers.",
         "ads": "We detected an external ad network in your build. Ads may only run through the Brainstorming SDK. Please remove it.",
         "content": "Some content is not suitable for players aged 12. Please remove or tone it down and resubmit."
+      },
+      "details": {
+        "yes": "Yes",
+        "no": "No",
+        "page": "Store page and settings",
+        "title": "Title",
+        "address": "Address",
+        "short": "Short description",
+        "category": "Category",
+        "tags": "Tags",
+        "skills": "Skills trained",
+        "orientation": "Orientation",
+        "platforms": "Platforms",
+        "engine": "Engine",
+        "multiplayer": "Multiplayer",
+        "progress": "Saves progress",
+        "maxScore": "Highest score per second",
+        "exclusive": "Wants web exclusive",
+        "description": "Description",
+        "howToPlay": "How to play",
+        "features": "Features",
+        "tips": "Tips",
+        "controls": "Controls",
+        "action": "Action",
+        "keyboard": "Keyboard / mouse",
+        "touch": "Touch",
+        "faq": "FAQ",
+        "media": "Covers and videos",
+        "variant": "Test {label}",
+        "inactive": "Not shown",
+        "kinds": {
+          "cover_landscape": "Landscape cover",
+          "cover_portrait": "Portrait cover",
+          "cover_square": "Square cover",
+          "preview_landscape": "Landscape video",
+          "preview_portrait": "Portrait video"
+        },
+        "build": "Build",
+        "version": "Version",
+        "size": "Size",
+        "files": "Files",
+        "entry": "Start file",
+        "sdk": "Uses the SDK",
+        "minor": "Marked as minor update",
+        "uploaded": "Uploaded",
+        "submitted": "Sent for review",
+        "declaration": "Rights declaration",
+        "ownsRights": "Owns or licensed everything",
+        "noCopies": "Nothing copied",
+        "credits": "Credits and licences",
+        "studio": "Studio",
+        "studioName": "Name",
+        "verified": "Verified",
+        "firstParty": "Our own",
+        "suspended": "Suspended",
+        "country": "Country",
+        "contact": "Contact e-mail",
+        "level": "Level",
+        "since": "Studio since",
+        "terms": "Developer terms",
+        "guardian": "Guardian (under 18)",
+        "bio": "About",
+        "links": "Links",
+        "reviews": "Earlier reviews",
+        "reviewCounts": "{approved} approved · {changes} changes asked · {rejected} rejected",
+        "otherGames": "Other games"
       }
     },
     "spark": {
@@ -1439,7 +1508,7 @@
     },
     "autoReview": {
       "title": "Automatic moderation",
-      "intro": "Runs the moment a game is submitted, before a person looks at it. It compares the build and covers with every other studio's games, looks for protected names and outside ad code, and checks the rights declaration. A person still has to play the game and look at the art before approving.",
+      "intro": "Runs the moment a game is submitted, before a person looks at it. It compares the build, art and audio files, covers and description with every other studio's games, looks for protected names (also when disguised) and outside ad code, checks the page and the studio's record, and the rights declaration. A person still has to play the game and look at the art before approving.",
       "notRun": "Not run yet",
       "status": {
         "pass": "Clear",
@@ -1455,8 +1524,13 @@
         "similar-title": "Similar title",
         "outside-code": "Outside SDKs and ads",
         "content-words": "Content rules (text)",
-        "art": "Art and licences"
-      }
+        "art": "Art and licences",
+        "copied-assets": "Copied art and audio files",
+        "copied-text": "Copied description",
+        "page-complete": "Complete store page",
+        "studio-record": "Studio record"
+      },
+      "risk": "Risk {score}/100"
     },
     "creators": {
       "title": "Creators",
@@ -1999,7 +2073,8 @@
         "other_plan": "Points extend the plan you already have."
       },
       "note": "Brain Points have no cash value. Up to {max} Premium days a month can come from points; the rest of Premium is a paid membership."
-    }
+    },
+    "indiaOnly": "Memberships are available in India only for now. Everything else on the site stays free for you."
   },
   "boost": {
     "title": "Boost",
@@ -2035,7 +2110,8 @@
     "creditTitle": "{count, plural, one {You have a free Spotlight Boost} other {You have # free Spotlight Boosts}}",
     "creditBody": "A review of yours took longer than our 72-hour promise. Sorry! Use it on the game selected above: 3 days of sponsored placement.",
     "creditUse": "Use a free Spotlight",
-    "creditUsed": "Your free Spotlight Boost is live."
+    "creditUsed": "Your free Spotlight Boost is live.",
+    "indiaOnly": "Paid Boosts are available in India only for now. Free Boost credits still work."
   },
   "creators": {
     "metaTitle": "Creator program: earn by sharing games",
@@ -2126,7 +2202,8 @@
         "t6": "Either side can end the agreement at any time; balances already earned are still paid."
       },
       "agree": "I am 18 or over and accept the Creator Agreement",
-      "submit": "Send application"
+      "submit": "Send application",
+      "indiaOnly": "The creator program is open to people in India with an Indian bank account."
     },
     "dashboard": {
       "metaTitle": "Creator dashboard",
@@ -2267,5 +2344,14 @@
     "yourRank": "You are #{rank} today",
     "signInToRank": "Sign in to put your score on the board.",
     "none": "No challenge today yet."
+  },
+  "payoutSafety": {
+    "pendingTitle": "New payout details waiting {hours} hours",
+    "pendingBody": "From {date}, payouts go to {summary}. Until then they still go to your old details. If you did not make this change, cancel it now and sign out everywhere.",
+    "cancel": "Cancel this change",
+    "cancelled": "The change was cancelled",
+    "reauthTitle": "Confirm it is you",
+    "reauthBody": "For your safety, changing where your money goes needs a fresh sign-in. We will send a code to your e-mail.",
+    "reauthCancel": "Not now"
   }
 }

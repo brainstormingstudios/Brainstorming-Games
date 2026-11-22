@@ -1,10 +1,12 @@
 import { formatMoney } from '@/lib/domain/revenue';
 import { maskPayoutProfile, validatePayoutProfile } from '@/lib/domain/payoutProfile';
+import { holdUntil, promoteHold, REAUTH_MINUTES } from '@/lib/domain/payoutHold';
 import { emitTopic } from '../bus';
 import { CREATOR_HANDLE, type AdminCreatorRow, type Creator } from '../creatorTypes';
 import { getAnonId } from '../local';
 import type { CreatorRepo } from '../repo';
-import { requireProfile, requireStaff } from './auth';
+import { requireProfile, requireRecentSignIn, requireStaff } from './auth';
+import { raiseAlert } from './security';
 import { appendRows, audit, fail, mutateTable, newId, notify, nowIso, readTable } from './db';
 import { sendMail } from './mail';
 
@@ -115,16 +117,31 @@ export const mockCreators: CreatorRepo = {
     const c = myCreator();
     if (!c) return null;
     const p = readTable('creatorPayoutProfiles').find((x) => x.creatorId === c.id);
-    return p ? { method: p.method, currency: p.currency, summary: p.summary, updatedAt: p.updatedAt } : null;
+    if (!p) return null;
+    const now = promoteHold(p);
+    if (now !== p) mutateTable('creatorPayoutProfiles', (list) => list.map((x) => (x.creatorId === c.id ? now : x)));
+    return { method: now.method, currency: now.currency, summary: now.summary, updatedAt: now.updatedAt, pending: now.pending ?? null };
   },
   async savePayoutProfile(input) {
+    // A change needs a recent sign-in and waits 48 hours (mirror of the payout-profile function).
+    const user = requireRecentSignIn(REAUTH_MINUTES);
     const c = requireApproved();
     const error = validatePayoutProfile(input);
     if (error) fail('invalid', error);
-    mutateTable('creatorPayoutProfiles', (list) => [
-      ...list.filter((p) => p.creatorId !== c.id),
-      { creatorId: c.id, method: input.method, currency: input.currency, summary: maskPayoutProfile(input), updatedAt: nowIso() },
-    ]);
+    const pending = { method: input.method, currency: input.currency, summary: maskPayoutProfile(input), effectiveAt: holdUntil() };
+    mutateTable('creatorPayoutProfiles', (list) => {
+      const old = list.find((p) => p.creatorId === c.id);
+      const row = old ? { ...old, pending } : { creatorId: c.id, method: null, currency: null, summary: null, updatedAt: nowIso(), pending };
+      return [...list.filter((p) => p.creatorId !== c.id), row];
+    });
+    sendMail(user.email, 'payout_details_changed', { summary: pending.summary, effectiveAt: pending.effectiveAt.slice(0, 16).replace('T', ' ') + ' UTC', scope: 'creator' });
+    raiseAlert('payout_change', 'info', 'Payout details changed (on hold for 48 hours)', { creatorId: c.id, summary: pending.summary });
+    emitTopic('creators');
+  },
+  async cancelPayoutChange() {
+    const c = requireApproved();
+    mutateTable('creatorPayoutProfiles', (list) => list.map((p) => (p.creatorId === c.id ? { ...p, pending: null } : p)));
+    raiseAlert('payout_change_cancelled', 'warn', 'A payout-details change was cancelled by its owner', { creatorId: c.id });
     emitTopic('creators');
   },
 

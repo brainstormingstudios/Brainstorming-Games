@@ -96,6 +96,11 @@ export function StudioSignup({ user, onCreated }: { user: SessionUser; onCreated
         required
       />
       <SelectField label={t('country')} value={country} onChange={(e) => setCountry(e.target.value)} options={COUNTRIES.map(([value, label]) => ({ value, label }))} />
+      {country !== 'IN' ? (
+        <p role="status" className="text-sm text-fg-muted" data-testid="signup-india-only">
+          {t('earningsIndiaOnly')}
+        </p>
+      ) : null}
       <TextField label={t('contact')} hint={t('contactHint')} type="email" value={contact} onChange={(e) => setContact(e.target.value)} required />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-bold">{t('holder')}</legend>

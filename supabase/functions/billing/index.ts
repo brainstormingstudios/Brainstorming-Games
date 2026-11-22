@@ -24,6 +24,12 @@ Deno.serve(async (req) => {
   const { data: limited } = await db.rpc('take_token_public', { p_key: `billing:${user.id}`, p_capacity: 10, p_window_seconds: 600 });
   if (limited === false) return json(req, 429, { error: 'rate_limited' });
   const prefill = { email: user.email ?? '', name: profile.display_name || profile.username };
+  // Sales are open in India only for now (lib/domain/market.ts). Razorpay also refuses foreign
+  // cards while international payments are switched off in its dashboard.
+  const country = (req.headers.get('cf-ipcountry') ?? '').toUpperCase();
+  if ((body.action === 'subscribe' || body.action === 'boost') && /^[A-Z]{2}$/.test(country) && country !== 'XX' && country !== 'IN') {
+    return json(req, 403, { error: 'country_unavailable', message: 'Payments are available in India only for now.' });
+  }
 
   try {
     if (body.action === 'subscribe') {

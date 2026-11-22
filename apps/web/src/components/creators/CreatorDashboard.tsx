@@ -14,6 +14,8 @@ import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
 import { TrailerButton } from './TrailerButton';
+import { PendingPayoutChange, ReauthPrompt, needsReauth } from '@/components/account/PayoutSafety';
+import { OPEN_PAYOUT_METHODS } from '@/lib/domain/payoutProfile';
 
 /** `${SITE_URL}/game/slug/?cr=handle`: every link a creator shares carries their handle. */
 export const creatorLink = (handle: string, slug?: string) => `${SITE_URL}${slug ? `/game/${slug}/` : '/'}?cr=${handle}`;
@@ -48,14 +50,16 @@ function PayoutDetails() {
   const profile = useRepoQuery((repo) => repo.creators.payoutProfile(), [], { topics: ['creators'] });
   const [form, setForm] = useState<PayoutProfileInput>({ method: 'bank', currency: 'INR', accountName: '', details: {} });
   const [error, setError] = useState<string | null>(null);
+  const [reauth, setReauth] = useState(false);
   const save = async () => {
     setError(null);
     try {
       await (await getRepo()).creators.savePayoutProfile(form);
-      toast(t('saved'), { tone: 'success' });
+      toast(t('savedOnHold'), { tone: 'success' });
       setForm({ ...form, details: {} });
     } catch (err) {
-      setError(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'));
+      if (needsReauth(err)) setReauth(true);
+      else setError(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'));
     }
   };
   const field = (key: string, label: string, props: Record<string, unknown> = {}) => (
@@ -64,13 +68,14 @@ function PayoutDetails() {
   return (
     <Card className="flex flex-col gap-3 p-4" data-testid="creator-payout-profile">
       <h2 className="text-xl font-semibold">{t('profile')}</h2>
-      {profile.data ? (
+      {profile.data?.summary ? (
         <p className="text-sm">
           <span className="font-bold">{profile.data.summary}</span> · {profile.data.currency} · {formatDate(profile.data.updatedAt, locale)}
         </p>
       ) : (
         <p className="text-sm text-fg-muted">{t('noProfile')}</p>
       )}
+      <PendingPayoutChange profile={profile.data} onCancel={async () => (await getRepo()).creators.cancelPayoutChange()} />
       <div className="grid gap-3 sm:grid-cols-3">
         <SelectField
           label={t('method')}
@@ -79,7 +84,7 @@ function PayoutDetails() {
             const method = e.target.value as PayoutMethod;
             setForm({ ...form, method, currency: method === 'bank' ? 'INR' : form.currency, details: {} });
           }}
-          options={(['bank', 'paypal', 'wise', 'payoneer'] as const).map((m) => ({ value: m, label: t(`methods.${m}`) }))}
+          options={OPEN_PAYOUT_METHODS.map((m) => ({ value: m, label: t(`methods.${m}`) }))}
         />
         <SelectField
           label={t('currency')}
@@ -104,9 +109,19 @@ function PayoutDetails() {
         </p>
       ) : null}
       <p className="text-xs text-fg-muted">{t('encrypted')}</p>
-      <Button className="self-start" onClick={() => void save()}>
-        {t('save')}
-      </Button>
+      {reauth ? (
+        <ReauthPrompt
+          onClose={() => setReauth(false)}
+          onDone={() => {
+            setReauth(false);
+            void save();
+          }}
+        />
+      ) : (
+        <Button className="self-start" onClick={() => void save()} data-testid="payout-save">
+          {t('save')}
+        </Button>
+      )}
     </Card>
   );
 }

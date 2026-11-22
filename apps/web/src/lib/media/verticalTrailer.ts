@@ -148,11 +148,19 @@ export async function makeVerticalTrailer(input: TrailerInput): Promise<TrailerR
       if (input.signal?.aborted) return;
       resolve({ blob: new Blob(chunks, { type: mimeType.split(';')[0] }), mimeType, extension });
     };
+    // Recordings made by MediaRecorder (MP4 in current Chrome) may report no duration and may
+    // never fire "ended", so stop at the known length too, and after a safety timeout at the latest.
+    const lengthOf = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : (input.durationHint ?? 0));
+    video.onended = () => stop();
+    const watchdog = window.setTimeout(() => stop(), ((lengthOf() || 60) + 10) * 1000);
+    input.signal?.addEventListener('abort', () => window.clearTimeout(watchdog));
     const loop = () => {
+      if (recorder.state === 'inactive') return;
       draw();
-      const length = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : (input.durationHint ?? 0);
+      const length = lengthOf();
       input.onProgress?.(length ? Math.min(1, video.currentTime / length) : 0);
-      if (video.ended) {
+      if (video.ended || (length > 0 && video.currentTime >= length - 0.05)) {
+        window.clearTimeout(watchdog);
         stop();
         return;
       }

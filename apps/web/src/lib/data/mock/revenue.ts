@@ -2,10 +2,12 @@ import { formatMoney } from '@/lib/domain/revenue';
 import { studioEmail } from './dev';
 import { sendMail } from './mail';
 import { maskPayoutProfile, validatePayoutProfile } from '@/lib/domain/payoutProfile';
+import { holdUntil, promoteHold, REAUTH_MINUTES } from '@/lib/domain/payoutHold';
 import type { GameImpressions } from '@/lib/domain/revenue';
 import { emitTopic } from '../bus';
 import type { RevenueRepo } from '../repo';
-import { requireStaff } from './auth';
+import { requireRecentSignIn, requireStaff } from './auth';
+import { raiseAlert } from './security';
 import { audit, fail, mutateTable, newId, notify, nowIso, readTable } from './db';
 import { requireStudio } from './dev';
 
@@ -38,6 +40,7 @@ export const mockRevenue: RevenueRepo = {
           title: g.title,
           studioId: g.studioId,
           studioName: s?.name ?? '',
+          studioCountry: s?.country ?? null,
           impressionsByCountry: {},
           refImpressions: 0,
           exclusiveUntil: g.exclusiveUntil,
@@ -147,18 +150,33 @@ export const mockRevenue: RevenueRepo = {
   async payoutProfile() {
     const s = requireStudio();
     const p = readTable('payoutProfiles').find((x) => x.studioId === s.id);
-    return p ? { method: p.method, currency: p.currency, summary: p.summary, updatedAt: p.updatedAt } : null;
+    if (!p) return null;
+    const now = promoteHold(p);
+    if (now !== p) mutateTable('payoutProfiles', (list) => list.map((x) => (x.studioId === s.id ? now : x)));
+    return { method: now.method, currency: now.currency, summary: now.summary, updatedAt: now.updatedAt, pending: now.pending ?? null };
   },
   async savePayoutProfile(input) {
+    // A change needs a recent sign-in and waits 48 hours (mirror of the payout-profile function).
+    const user = requireRecentSignIn(REAUTH_MINUTES);
     const s = requireStudio();
     const error = validatePayoutProfile(input);
     if (error) fail('invalid', error);
     // Mock mode keeps only the masked summary. Production encrypts the full details in the
     // payout-profile Edge Function (AES-GCM) and only finance staff can decrypt them.
-    mutateTable('payoutProfiles', (list) => [
-      ...list.filter((p) => p.studioId !== s.id),
-      { studioId: s.id, method: input.method, currency: input.currency, summary: maskPayoutProfile(input), updatedAt: nowIso() },
-    ]);
+    const pending = { method: input.method, currency: input.currency, summary: maskPayoutProfile(input), effectiveAt: holdUntil() };
+    mutateTable('payoutProfiles', (list) => {
+      const old = list.find((p) => p.studioId === s.id);
+      const row = old ? { ...old, pending } : { studioId: s.id, method: null, currency: null, summary: null, updatedAt: nowIso(), pending };
+      return [...list.filter((p) => p.studioId !== s.id), row];
+    });
+    sendMail(user.email, 'payout_details_changed', { summary: pending.summary, effectiveAt: pending.effectiveAt.slice(0, 16).replace('T', ' ') + ' UTC', scope: 'studio' });
+    raiseAlert('payout_change', 'info', 'Payout details changed (on hold for 48 hours)', { studioId: s.id, summary: pending.summary });
+    emitTopic('revenue');
+  },
+  async cancelPayoutChange() {
+    const s = requireStudio();
+    mutateTable('payoutProfiles', (list) => list.map((p) => (p.studioId === s.id ? { ...p, pending: null } : p)));
+    raiseAlert('payout_change_cancelled', 'warn', 'A payout-details change was cancelled by its owner', { studioId: s.id });
     emitTopic('revenue');
   },
 };

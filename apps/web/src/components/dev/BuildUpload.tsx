@@ -16,7 +16,7 @@ import {
 } from '@/lib/domain/zipValidation';
 import { savePreviewToken } from '@/lib/dev/previewTokens';
 import { formatBytes } from '@/lib/format';
-import { MIME_BY_EXT, buildFingerprint } from './media';
+import { MIME_BY_EXT, assetHashes, buildFingerprint } from './media';
 
 import type JSZipType from 'jszip';
 
@@ -119,7 +119,7 @@ export function BuildUpload({ gameId, suggestedVersion, isLive, onUploaded }: Bu
       }
       const repo = await getRepo();
       const { versionId, previewToken } = await repo.dev.createVersion(
-        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: picked.sdk, minorUpdate: isLive && minor, fingerprint: await buildFingerprint(files) },
+        { gameId, version: version.trim(), files, entryFile: 'index.html', usesSdk: picked.sdk, minorUpdate: isLive && minor, fingerprint: await buildFingerprint(files), assetHashes: await assetHashes(files) },
         setProgress,
       );
       savePreviewToken(versionId, previewToken);

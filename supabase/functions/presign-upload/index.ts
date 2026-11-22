@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
   for (const f of body.files) {
     const p = String(f?.path ?? '');
     const ext = p.includes('.') ? p.slice(p.lastIndexOf('.') + 1).toLowerCase() : '';
-    if (!p || p.length > 300 || p.includes('\\') || p.startsWith('/') || p.split('/').some((s) => s === '..' || s === '.' || s === '') || /[\u0000-\u001f]/.test(p) || !TYPES[ext]) {
+    if (!p || p.length > 300 || p.includes('\\') || p.startsWith('/') || p.split('/').some((s) => s === '..' || s === '.' || s === '') || [...p].some((ch) => ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f) ||!TYPES[ext]) {
       return json(req, 400, { error: `invalid path: ${p.slice(0, 100)}` });
     }
     const size = Number(f.size);

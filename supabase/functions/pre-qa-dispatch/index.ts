@@ -1,6 +1,7 @@
 // POST /functions/v1/pre-qa-dispatch { versionId }
 // Starts the pre-QA bot: a repository_dispatch to the GitHub Actions workflow pre-qa.yml with the
 // build URL on the play origin. The caller must own the version.
+import { gamePlayUrl } from '../_shared/gameOrigin.ts';
 import { json, preflight, userClient } from '../_shared/http.ts';
 
 Deno.serve(async (req) => {
@@ -28,7 +29,11 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       event_type: 'pre-qa',
-      client_payload: { url: `${playOrigin}/${version.storage_prefix}/${version.entry_file}`, version_id: version.id },
+      // The bot loads the build from the game's own origin, exactly as players will.
+      client_payload: {
+        url: gamePlayUrl(`${version.storage_prefix}/${version.entry_file}`, (Deno.env.get('GAME_ORIGIN_PATTERN') ?? '').trim(), playOrigin),
+        version_id: version.id,
+      },
     }),
   });
   if (!res.ok) return json(req, 502, { error: `dispatch failed (${res.status})` });

@@ -8,7 +8,7 @@ import { getRepo, RepoError } from '@/lib/data';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 
 /** Draws the set-up link as a QR code. The library is only fetched on this screen. */
-function Qr({ uri }: { uri: string }) {
+export function Qr({ uri }: { uri: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let live = true;

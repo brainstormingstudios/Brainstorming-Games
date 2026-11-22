@@ -10,10 +10,16 @@ import { Fragment, type ReactNode } from 'react';
  * block quotes, fenced code, tables and horizontal rules.
  */
 
-const SAFE_URL = /^(https?:\/\/|mailto:|\/(?!\/)|#)/i;
+const SAFE_URL = /^(https?:\/\/|mailto:|\/(?![/\\])|#)/i;
 
 export function isSafeUrl(url: string): boolean {
-  return SAFE_URL.test(url.trim());
+  const u = url.trim();
+  // Browsers read "\" as "/" and drop tabs and newlines, so "/\evil.com" would leave the site.
+  for (let i = 0; i < u.length; i++) {
+    const c = u.charCodeAt(i);
+    if (c === 0x5c || c < 0x20 || c === 0x7f) return false;
+  }
+  return SAFE_URL.test(u);
 }
 
 const INLINE = /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\n]+\*)|(\[[^\]\n]+\]\([^)\s]+\))/g;

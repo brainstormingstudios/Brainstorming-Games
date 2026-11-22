@@ -3,6 +3,7 @@ import { normaliseSkills } from '@/lib/domain/brain';
 import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/config';
 import { computeDailyKpis, percentRank, summarise, type KpiEvent, type KpiRating, type KpiResult } from '@/lib/domain/kpis';
 import { HELD_FIELDS, splitLivePatch } from '@/lib/domain/liveEdits';
+import { buildUrl } from '@/lib/format';
 import type { PreQaReport } from '@/lib/domain/preqa';
 import { runAutoReview } from '../../../../../../supabase/functions/_shared/autoReview';
 import { emitTopic } from '../bus';
@@ -218,14 +219,25 @@ export function submissionGaps(g: MockGame, media: MockMedia[]): string[] {
 function autoReviewFor(g: MockGame, v: MockVersion, declaration: Declaration): AutoReviewReport {
   const media = readTable('media');
   const versions = readTable('versions');
-  const others = readTable('games')
-    .filter((x) => x.releasedAt && x.id !== g.id)
-    .map((x) => ({
-      title: x.title,
-      studioId: x.studioId,
-      buildFingerprints: versions.filter((y) => y.gameId === x.id && y.fingerprint).map((y) => y.fingerprint!),
-      coverHashes: media.filter((m) => m.gameId === x.id && m.phash).map((m) => m.phash!),
-    }));
+  const released = readTable('games').filter((x) => x.releasedAt && x.id !== g.id);
+  const others = released.map((x) => ({
+    title: x.title,
+    studioId: x.studioId,
+    buildFingerprints: versions.filter((y) => y.gameId === x.id && y.fingerprint).map((y) => y.fingerprint!),
+    coverHashes: media.filter((m) => m.gameId === x.id && m.phash).map((m) => m.phash!),
+    description: `${x.shortDescription}\n${x.descriptionMd}`,
+  }));
+  // Asset files shared with other studios' released games (mirror of public.asset_overlaps).
+  const mine = new Set(v.assetHashes ?? []);
+  const assetOverlaps = released
+    .filter((x) => x.studioId !== g.studioId)
+    .map((x) => {
+      const theirs = new Set(versions.filter((y) => y.gameId === x.id).flatMap((y) => y.assetHashes ?? []));
+      return { title: x.title, studioId: x.studioId, shared: [...mine].filter((h) => theirs.has(h)).length };
+    })
+    .filter((o) => o.shared > 0);
+  const studio = readTable('studios').find((s) => s.id === g.studioId);
+  const myGames = new Set(readTable('games').filter((x) => x.studioId === g.studioId).map((x) => x.id));
   const report = v.preQaReport as PreQaReport | null;
   return runAutoReview({
     title: g.title,
@@ -237,6 +249,22 @@ function autoReviewFor(g: MockGame, v: MockVersion, declaration: Declaration): A
     coverHashes: media.filter((m) => m.gameId === g.id && m.isActive && m.phash).map((m) => m.phash!),
     preQaProblems: (report?.checks ?? []).filter((c) => c.status !== 'pass').map((c) => ({ id: c.id, status: c.status as 'warn' | 'fail' })),
     others,
+    assetCount: mine.size,
+    assetOverlaps,
+    page: {
+      shortDescription: g.shortDescription,
+      descriptionMd: g.descriptionMd,
+      howToPlayMd: g.howToPlayMd,
+      controls: g.controls.filter((c) => c.action.trim()).length,
+      tags: g.tags.length,
+    },
+    studio: studio
+      ? {
+          createdAt: studio.createdAt,
+          rejections: readTable('reviews').filter((r) => myGames.has(r.gameId) && r.action === 'reject').length,
+          verified: Boolean(studio.verified),
+        }
+      : undefined,
   });
 }
 
@@ -616,6 +644,7 @@ export const mockDev: DevRepo = {
       storagePrefix: prefix,
       fileCount: input.files.length,
       fingerprint: input.fingerprint ?? null,
+      assetHashes: input.assetHashes?.slice(0, 2000) ?? null,
       totalBytes,
       entryFile: input.entryFile,
       usesSdk: input.usesSdk,
@@ -644,7 +673,7 @@ export const mockDev: DevRepo = {
       const res = await fetch(`${PLAY_ORIGIN}/__mock/pre-qa`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: `${PLAY_ORIGIN}/${v.storagePrefix}/${v.entryFile}` }),
+        body: JSON.stringify({ url: buildUrl(`${v.storagePrefix}/${v.entryFile}`) }),
       });
       report = (await res.json()) as PreQaReport & { reason?: string };
     } catch {

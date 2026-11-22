@@ -92,7 +92,8 @@ test.describe('catalogue', () => {
 
       const iframe = page.getByTestId('game-iframe');
       await expect(iframe).toHaveAttribute('sandbox', /allow-scripts allow-same-origin allow-pointer-lock/);
-      await expect(iframe).toHaveAttribute('src', /^http:\/\/localhost:4100\//);
+      // Every game runs on its own origin (g-<folder>.localhost here, g-<id>.<games domain> live).
+      await expect(iframe).toHaveAttribute('src', new RegExp(`^http://g-${prefix.split('/')[0]}\\.localhost:4100/1/`));
     } finally {
       await deleteUpload(request, prefix.split('/')[0]!);
     }

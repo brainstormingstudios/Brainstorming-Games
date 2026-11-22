@@ -242,6 +242,7 @@ export function ClipButton({ title, slug, requestClip, canClip }: ClipButtonProp
         aria-pressed={recording}
         active={recording}
         data-testid="clip-button"
+        data-via={sdkReady ? 'sdk' : 'tab'}
         onClick={onClick}
       >
         {recording ? (

@@ -29,6 +29,9 @@ jobs:
       NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
       PRE_QA_CALLBACK_SECRET: ${{ secrets.PRE_QA_CALLBACK_SECRET }}
       REPORT_URL: ${{ secrets.PRE_QA_REPORT_URL }}
+      # Crypto-miner rules, kept online only (comma-separated lists, docs/SECURITY.md).
+      PRE_QA_MINER_HOSTS: ${{ secrets.PRE_QA_MINER_HOSTS }}
+      PRE_QA_MINER_SIGNATURES: ${{ secrets.PRE_QA_MINER_SIGNATURES }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

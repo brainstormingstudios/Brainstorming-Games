@@ -39,7 +39,7 @@ export async function callFunction<T>(name: string, body: unknown): Promise<T> {
   const json = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) {
     if (res.status === 429) throw new RepoError('rate_limited');
-    if (res.status === 401) throw new RepoError('login_required');
+    if (res.status === 401) throw new RepoError(json.error === 'reauth_required' ? 'reauth_required' : 'login_required');
     if (res.status === 403) throw new RepoError('not_allowed');
     throw new RepoError('unavailable', json.error ?? `${name} ${res.status}`);
   }
@@ -168,11 +168,40 @@ export const supabaseAuth: AuthRepo = {
   async ownerCodeStatus() {
     const mfa = getSupabase().auth.mfa;
     const [factors, level] = await Promise.all([mfa.listFactors(), mfa.getAuthenticatorAssuranceLevel()]);
+    const verified = (factors.data?.totp ?? []).filter((f) => f.status === 'verified');
     return {
-      enrolled: (factors.data?.totp ?? []).some((f) => f.status === 'verified'),
+      enrolled: verified.length > 0,
       // aal2 means this session has passed the code. The database checks the same claim.
       unlocked: level.data?.currentLevel === 'aal2',
+      devices: verified.length,
     };
+  },
+  async ownerCodeAddBackup() {
+    const mfa = getSupabase().auth.mfa;
+    // Supabase only lets an aal2 session add another factor, so a stolen password alone cannot.
+    const existing = await mfa.listFactors();
+    for (const f of existing.data?.all ?? []) if (f.factor_type === 'totp' && f.status !== 'verified') await mfa.unenroll({ factorId: f.id });
+    const { data, error } = await mfa.enroll({ factorType: 'totp', friendlyName: `Backup owner code ${new Date().toISOString().slice(0, 16)}` });
+    if (error || !data) throw toRepoError(error ?? { message: 'enroll failed' });
+    return { secret: data.totp.secret, uri: data.totp.uri };
+  },
+  async ownerCodeConfirmBackup(code) {
+    const mfa = getSupabase().auth.mfa;
+    const factors = await mfa.listFactors();
+    const pending = (factors.data?.all ?? []).find((f) => f.factor_type === 'totp' && f.status !== 'verified');
+    if (!pending) return false;
+    const { error } = await mfa.challengeAndVerify({ factorId: pending.id, code: code.replace(/\D/g, '') });
+    if (error) {
+      if (/rate|too many/i.test(error.message)) throw new RepoError('rate_limited');
+      return false;
+    }
+    return true;
+  },
+  async signOutEverywhere() {
+    // Revokes every refresh token of the account; open tabs elsewhere lose access when their
+    // short-lived access token expires (keep the JWT expiry short: docs/SECURITY.md).
+    await getSupabase().auth.signOut({ scope: 'global' });
+    emitTopic('session', { local: true });
   },
   async ownerCodeEnroll() {
     const mfa = getSupabase().auth.mfa;
@@ -187,15 +216,18 @@ export const supabaseAuth: AuthRepo = {
     const mfa = getSupabase().auth.mfa;
     const factors = await mfa.listFactors();
     const all = (factors.data?.all ?? []).filter((f) => f.factor_type === 'totp');
-    const factor = all.find((f) => f.status === 'verified') ?? all[0];
-    if (!factor) return false;
-    const { error } = await mfa.challengeAndVerify({ factorId: factor.id, code: code.replace(/\D/g, '') });
-    if (error) {
+    const verified = all.filter((f) => f.status === 'verified');
+    // The code may come from the main phone or a backup one: try each set-up device.
+    const candidates = verified.length ? verified : all.slice(0, 1);
+    for (const factor of candidates) {
+      const { error } = await mfa.challengeAndVerify({ factorId: factor.id, code: code.replace(/\D/g, '') });
+      if (!error) {
+        emitTopic('session', { local: true });
+        return true;
+      }
       if (/rate|too many/i.test(error.message)) throw new RepoError('rate_limited');
-      return false;
     }
-    emitTopic('session', { local: true });
-    return true;
+    return false;
   },
   async ownerCodeLock() {
     // A session cannot step back down from aal2: locking means signing out.

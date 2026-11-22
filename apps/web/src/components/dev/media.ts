@@ -104,6 +104,24 @@ export async function buildFingerprint(files: { path: string; data: Blob }[]): P
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Art, audio, model and video files: what a copied game reuses. Engine and code files are not. */
+const ASSET_FILE = /\.(png|jpe?g|webp|gif|avif|svg|mp3|ogg|wav|m4a|glb|gltf|ktx2|mp4|webm|ttf|otf|woff2?)$/i;
+
+/**
+ * A fingerprint (SHA-256, first 32 hex) of each asset file of at least 1 KB, so the auto-review
+ * can tell when a submission reuses another studio's art or audio. At most 2,000 files.
+ */
+export async function assetHashes(files: { path: string; data: Blob }[]): Promise<string[]> {
+  const out = new Set<string>();
+  for (const f of files) {
+    if (out.size >= 2000) break;
+    if (!ASSET_FILE.test(f.path) || f.data.size < 1024) continue;
+    const digest = await crypto.subtle.digest('SHA-256', await f.data.arrayBuffer());
+    out.add([...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32));
+  }
+  return [...out];
+}
+
 export interface VideoInfo {
   duration: number;
   width: number;

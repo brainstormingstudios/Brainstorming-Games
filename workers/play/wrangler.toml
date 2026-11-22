@@ -1,0 +1,19 @@
+# Game origins Worker (docs/DEPLOY.md, "Game origins"). Deploy with:
+#   npx wrangler deploy --config workers/play/wrangler.toml
+# Replace the example domains below with yours first.
+name = "bg-play"
+main = "index.mjs"
+compatibility_date = "2025-06-01"
+workers_dev = false
+
+# Every game subdomain of the games domain (a domain of its own, NOT the site's domain).
+routes = [{ pattern = "*.bgplay.example/*", zone_name = "bgplay.example" }]
+
+[[r2_buckets]]
+binding = "BUILDS"
+bucket_name = "bg-play"
+
+[vars]
+GAMES_DOMAIN = "bgplay.example"
+# The sites allowed to frame games, separated by spaces.
+SITE_ORIGINS = "https://brainstorming.example https://developers.brainstorming.example https://manage.brainstorming.example"

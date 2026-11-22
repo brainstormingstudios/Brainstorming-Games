@@ -28,25 +28,49 @@ function readSessionId(): string | null {
   return match ? decodeURIComponent(match[1]!) : null;
 }
 
+/** When this browser signed in (ISO), for "recent sign-in" checks and "sign out everywhere". */
+const SIGNED_AT_KEY = 'bg.mock.at';
+const SIGNED_AT_COOKIE = 'bg_at';
+
+function readSignedAt(): string | null {
+  if (typeof document === 'undefined') return null;
+  if (tabScoped()) return tabSession.get<string | null>(SIGNED_AT_KEY, null);
+  const match = /(?:^|;\s*)bg_at=([^;]+)/.exec(document.cookie);
+  return match ? decodeURIComponent(match[1]!) : null;
+}
+
 /** Signs this browser in (or out, with null) on every site of the product. */
 function writeSessionId(id: string | null): void {
   if (typeof document === 'undefined') return;
+  const at = id ? new Date().toISOString() : null;
   if (tabScoped()) {
-    if (id) tabSession.set(SESSION_KEY, id);
-    else writeSessionId(null);
+    tabSession.set(SESSION_KEY, id);
+    tabSession.set(SIGNED_AT_KEY, at);
     return;
   }
-  document.cookie = `${SESSION_COOKIE}=${id ? encodeURIComponent(id) : ''}; Path=/; Max-Age=${id ? MONTH_SECONDS : 0}; SameSite=Lax`;
+  const age = id ? MONTH_SECONDS : 0;
+  document.cookie = `${SESSION_COOKIE}=${id ? encodeURIComponent(id) : ''}; Path=/; Max-Age=${age}; SameSite=Lax`;
+  document.cookie = `${SIGNED_AT_COOKIE}=${at ? encodeURIComponent(at) : ''}; Path=/; Max-Age=${age}; SameSite=Lax`;
 }
 
 export function currentUserId(): string | null {
-  return readSessionId();
+  return currentMockUser()?.id ?? null;
 }
 
 export function currentMockUser(): MockUser | null {
-  const id = currentUserId();
+  const id = readSessionId();
   if (!id) return null;
   const user = readTable('users').find((u) => u.id === id && !u.bannedAt) ?? null;
+  // "Sign out everywhere" ends every session that started before it.
+  if (user?.sessionsRevokedAt && (readSignedAt() ?? '') < user.sessionsRevokedAt) return null;
+  return user;
+}
+
+/** Sensitive changes (payout details) need a sign-in from the last few minutes. */
+export function requireRecentSignIn(minutes: number): MockUser {
+  const user = requireUser();
+  const at = Date.parse(readSignedAt() ?? '');
+  if (!Number.isFinite(at) || Date.now() - at > minutes * 60_000) fail('reauth_required', 'For your safety, confirm it is you: sign in again, then save.');
   return user;
 }
 
@@ -267,6 +291,19 @@ export const mockAuth: AuthRepo = {
   async signOut() {
     writeSessionId(null);
     emitTopic('session', { local: true });
+  },
+  async signOutEverywhere() {
+    const user = requireUser();
+    updateUser(user.id, { sessionsRevokedAt: new Date().toISOString() });
+    writeSessionId(null);
+    emitTopic('session', { local: true });
+  },
+  async ownerCodeAddBackup() {
+    return ownerCall('add-backup', {});
+  },
+  async ownerCodeConfirmBackup(code) {
+    const { ok } = await ownerCall<{ ok: boolean }>('confirm-backup', { code });
+    return ok;
   },
   async updateProfile(patch) {
     const user = requireUser();

@@ -1,7 +1,14 @@
-import type { PayoutProfileInput } from '@/lib/data/repo';
+import type { PayoutMethod, PayoutProfileInput } from '@/lib/data/repo';
+
+/**
+ * Payout methods open now: Indian bank accounts (INR) only, as earnings are for India only
+ * (lib/domain/market.ts). PayPal, Wise and Payoneer stay in the code for when we open abroad.
+ */
+export const OPEN_PAYOUT_METHODS: readonly PayoutMethod[] = ['bank'];
 
 /** Validates payout details and returns an error message, or null when they look right. */
 export function validatePayoutProfile(p: PayoutProfileInput): string | null {
+  if (!OPEN_PAYOUT_METHODS.includes(p.method)) return 'Payouts go to Indian bank accounts only for now.';
   if (p.accountName.trim().length < 3) return 'Enter the account holder’s full name.';
   if (p.method === 'bank') {
     if (p.currency !== 'INR') return 'Indian bank transfers are paid in INR.';

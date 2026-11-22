@@ -97,6 +97,9 @@ function ApplyForm({ defaultName, onDone }: { defaultName: string; onDone: () =>
           ))}
         </ul>
       </details>
+      <p className="text-sm font-bold" data-testid="creator-india-only">
+        {t('indiaOnly')}
+      </p>
       <Checkbox
         label={t('agree')}
         checked={agreed}

@@ -14,7 +14,18 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, devices, type Browser, type BrowserContextOptions } from '@playwright/test';
-import { isAdNetwork, scorePreQa, type PreQaReport, type PreQaRun, GAMEPLAY_LIMIT_MS } from '../apps/web/src/lib/domain/preqa';
+import {
+  codeMakesPasswordFields,
+  findCredentialFields,
+  isAdNetwork,
+  isMiningUrl,
+  minerRules,
+  scanForMiner,
+  scorePreQa,
+  type PreQaReport,
+  type PreQaRun,
+  GAMEPLAY_LIMIT_MS,
+} from '../apps/web/src/lib/domain/preqa';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -26,6 +37,8 @@ const url = args.find((a) => /^https?:\/\//.test(a));
 const asJson = args.includes('--json');
 const SITE = (flag('site') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const HARNESS_PATH = '/__bg-pre-qa/';
+// Crypto-miner rules come from online secrets only (see minerRules in lib/domain/preqa.ts).
+const RULES = minerRules();
 
 if (!url) {
   console.error('usage: pre-qa <build url> [--json] [--site <site origin>] [--report-to <url> --version-id <id>]');
@@ -78,6 +91,9 @@ async function runOnce(browser: Browser, device: 'desktop' | 'mobile', gameUrl: 
   const consoleErrors: string[] = [];
   const absolute404s = new Set<string>();
   const externalAds = new Set<string>();
+  const mining = new Set<string>();
+  const credentialFields = new Set<string>();
+  let passwordInCode = false;
   const transfers: { at: number; bytes: number }[] = [];
   let crashed = false;
 
@@ -114,6 +130,27 @@ async function runOnce(browser: Browser, device: 'desktop' | 'mobile', gameUrl: 
   });
   page.on('request', (req) => {
     if (isAdNetwork(req.url())) externalAds.add(new URL(req.url()).hostname);
+    if (isMiningUrl(req.url(), RULES)) mining.add(`request to ${safeHost(req.url())}`);
+  });
+  page.on('websocket', (ws) => {
+    if (isMiningUrl(ws.url(), RULES)) mining.add(`connection to ${safeHost(ws.url())}`);
+  });
+  // The build's own code, read as it loads: miner signatures and password fields.
+  let scanned = 0;
+  page.on('response', async (res) => {
+    try {
+      if (!res.url().startsWith(playOrigin) || res.status() !== 200) return;
+      const type = res.headers()['content-type'] ?? '';
+      if (!/javascript|html|json|wasm/.test(type) || scanned > 40 * 1048576) return;
+      const body = await res.body();
+      if (body.length > 15 * 1048576) return;
+      scanned += body.length;
+      const text = body.toString('latin1');
+      for (const s of scanForMiner(text, RULES)) mining.add(`"${s}" in ${new URL(res.url()).pathname.split('/').pop()}`);
+      if (!passwordInCode && /javascript|html/.test(type) && codeMakesPasswordFields(text)) passwordInCode = true;
+    } catch {
+      // the page closed first
+    }
   });
   page.on('requestfinished', async (req) => {
     try {
@@ -149,6 +186,11 @@ async function runOnce(browser: Browser, device: 'desktop' | 'mobile', gameUrl: 
   }
   const playAt = gameplayAt();
   if (playAt) await page.waitForTimeout(2_000);
+  // What the game shows the player: any password, card or one-time-code field, in any of its frames.
+  for (const f of page.frames().filter((fr) => fr.url().startsWith(playOrigin))) {
+    const found = await f.evaluate(`(${findCredentialFields.toString()})(document)`).catch(() => []);
+    for (const x of found as string[]) credentialFields.add(x);
+  }
   let screenshot: string | null = null;
   try {
     const shot = await page.screenshot({ type: 'jpeg', quality: 45 });
@@ -169,7 +211,18 @@ async function runOnce(browser: Browser, device: 'desktop' | 'mobile', gameUrl: 
     externalAds: [...externalAds],
     screenshot,
     crashed,
+    miningSignals: [...mining].slice(0, 20),
+    credentialFields: [...credentialFields],
+    passwordInCode,
   };
+}
+
+function safeHost(u: string): string {
+  try {
+    return new URL(u).host;
+  } catch {
+    return u.slice(0, 80);
+  }
 }
 
 function localChannel(): string | undefined {

@@ -8,7 +8,8 @@ const ORIGINS = [SITE_URL, clean(Deno.env.get('DEVELOPERS_URL')), clean(Deno.env
 
 export function cors(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') ?? '';
-  const allowed = ORIGINS.includes(origin) ? origin : SITE_URL || '*';
+  // Only our three sites; never "*", even if SITE_URL were missing.
+  const allowed = ORIGINS.includes(origin) ? origin : SITE_URL || 'null';
   return {
     'access-control-allow-origin': allowed,
     'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',

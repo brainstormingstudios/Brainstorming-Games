@@ -3,7 +3,7 @@
 // include and that the caller owns the game), then runs the auto-review with the service role and
 // stores it on the version, where only the moderators' view reads it.
 import { adminClient, json, preflight, requireUser, userClient } from '../_shared/http.ts';
-import { runAutoReview, type Declaration } from '../_shared/autoReview.ts';
+import { runAutoReview, type AssetOverlap, type Declaration } from '../_shared/autoReview.ts';
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -20,10 +20,26 @@ Deno.serve(async (req) => {
   if (error) return json(req, 400, { error: 'invalid', message: error.message });
 
   const db = adminClient();
-  const { data: game } = await db.from('games').select('id, title, short_description, description_md, tags, studio_id').eq('id', body.gameId).single();
+  const { data: game } = await db
+    .from('games')
+    .select('id, title, short_description, description_md, how_to_play_md, controls, tags, studio_id, studios(created_at, verified)')
+    .eq('id', body.gameId)
+    .single();
   const { data: version } = await db.from('game_versions').select('build_fingerprint, pre_qa_report').eq('id', versionId).single();
   const { data: media } = await db.from('game_media').select('game_id, phash, is_active').not('phash', 'is', null);
-  const { data: released } = await db.from('games').select('id, title, studio_id, game_versions(build_fingerprint)').not('released_at', 'is', null).neq('id', body.gameId);
+  const { data: released } = await db
+    .from('games')
+    .select('id, title, studio_id, short_description, description_md, game_versions(build_fingerprint)')
+    .not('released_at', 'is', null)
+    .neq('id', body.gameId);
+  const { data: assets } = await db.rpc('asset_overlaps', { p_version: versionId });
+  const { count: rejections } = await db
+    .from('qa_reviews')
+    .select('id, games!inner(studio_id)', { count: 'exact', head: true })
+    .eq('action', 'reject')
+    .eq('games.studio_id', game.studio_id);
+  const studio = (game.studios ?? {}) as { created_at?: string; verified?: boolean };
+
   const report = runAutoReview({
     title: game.title,
     description: `${game.short_description}\n${game.description_md}`,
@@ -40,7 +56,18 @@ Deno.serve(async (req) => {
       studioId: o.studio_id,
       buildFingerprints: ((o.game_versions ?? []) as { build_fingerprint: string | null }[]).map((v) => v.build_fingerprint).filter(Boolean) as string[],
       coverHashes: (media ?? []).filter((m) => m.game_id === o.id).map((m) => m.phash),
+      description: `${o.short_description ?? ''}\n${o.description_md ?? ''}`,
     })),
+    assetCount: Number((assets as { count?: number } | null)?.count ?? 0),
+    assetOverlaps: ((assets as { overlaps?: AssetOverlap[] } | null)?.overlaps ?? []).map((o) => ({ ...o, shared: Number(o.shared) })),
+    page: {
+      shortDescription: game.short_description ?? '',
+      descriptionMd: game.description_md ?? '',
+      howToPlayMd: game.how_to_play_md ?? '',
+      controls: Array.isArray(game.controls) ? game.controls.length : 0,
+      tags: (game.tags ?? []).length,
+    },
+    studio: { createdAt: studio.created_at ?? new Date().toISOString(), rejections: rejections ?? 0, verified: Boolean(studio.verified) },
   });
   await db.from('game_versions').update({ auto_review: report }).eq('id', versionId);
   return json(req, 200, { ok: true, autoReview: report.status });

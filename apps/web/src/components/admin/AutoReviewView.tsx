@@ -18,6 +18,11 @@ export function AutoReviewView({ report }: { report: AutoReviewReport | null }) 
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-xl font-semibold">{t('title')}</h2>
         {report ? <Badge tone={TONE[report.status]}>{t(`status.${report.status}`)}</Badge> : <Badge>{t('notRun')}</Badge>}
+        {report?.risk != null ? (
+          <Badge tone={report.risk >= 40 ? 'danger' : report.risk >= 15 ? 'warning' : 'success'} data-testid="auto-risk">
+            {t('risk', { score: report.risk })}
+          </Badge>
+        ) : null}
       </div>
       <p className="text-sm text-fg-muted">{t('intro')}</p>
       {report ? (

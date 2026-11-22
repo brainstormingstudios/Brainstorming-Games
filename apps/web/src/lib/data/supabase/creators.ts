@@ -107,6 +107,10 @@ export const supabaseCreators: CreatorRepo = {
     await callFunction('payout-profile', { action: 'save', scope: 'creator', profile: input });
     emitTopic('creators');
   },
+  async cancelPayoutChange() {
+    await callFunction('payout-profile', { action: 'cancel', scope: 'creator' });
+    emitTopic('creators');
+  },
   async list(status) {
     const data = check(await getSupabase().rpc('admin_creators', { p_status: status })) as Row[] | null;
     return (data ?? []).map<AdminCreatorRow>((r) => ({ ...toCreator(r), username: (r.username as string | null) ?? null, email: (r.email as string | null) ?? null }));

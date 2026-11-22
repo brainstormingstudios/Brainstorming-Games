@@ -84,6 +84,8 @@ export type RepoErrorCode =
   | 'invalid'
   | 'conflict'
   | 'login_required'
+  /** A sensitive change needs a sign-in from the last few minutes. */
+  | 'reauth_required'
   | 'unavailable';
 
 export class RepoError extends Error {
@@ -205,7 +207,14 @@ export interface AuthRepo {
    * The owner code: the second lock on the management portal. `enrolled` once an authenticator
    * app is set up; `unlocked` after a correct code in this browser session.
    */
-  ownerCodeStatus(): Promise<{ enrolled: boolean; unlocked: boolean }>;
+  /** `devices`: how many authenticators can produce the owner code (2+ means a backup exists). */
+  ownerCodeStatus(): Promise<{ enrolled: boolean; unlocked: boolean; devices?: number }>;
+  /** Starts adding a backup authenticator (a second phone). Needs an unlocked session. */
+  ownerCodeAddBackup(): Promise<{ secret: string; uri: string }>;
+  /** Confirms the backup with a code it shows. */
+  ownerCodeConfirmBackup(code: string): Promise<boolean>;
+  /** Ends every session of this account on every device, this one included. */
+  signOutEverywhere(): Promise<void>;
   /** Starts (or restarts) the set-up: the secret to add to an authenticator app. */
   ownerCodeEnroll(): Promise<{ secret: string; uri: string }>;
   /** Checks a 6-digit code. Throws `rate_limited` after too many wrong ones. */
@@ -459,6 +468,35 @@ export interface AdminRepo {
   audit(limit?: number): Promise<AuditRecord[]>;
   /** Re-run yesterday's and today's KPI roll-up now (the daily job). */
   runDailyJobs(): Promise<void>;
+  /** Security alerts, newest first (open ones only by default). */
+  securityAlerts(openOnly?: boolean): Promise<SecurityAlert[]>;
+  resolveAlert(id: string): Promise<void>;
+  /** Per game over the last `days` days: the numbers that show fake traffic. */
+  fraudOverview(days: number): Promise<FraudRow[]>;
+}
+
+export interface SecurityAlert {
+  id: string;
+  kind: string;
+  severity: 'info' | 'warn' | 'high';
+  title: string;
+  detail: Record<string, unknown>;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface FraudRow {
+  gameId: string;
+  title: string;
+  studio: string;
+  plays: number;
+  players: number;
+  /** Sessions with at least 20 seconds of play. */
+  realSessions: number;
+  adViews: number;
+  playsPerPlayer: number;
+  /** Browsers or addresses that hit the daily play limit. */
+  cappedCallers: number;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -503,11 +541,14 @@ export interface PayoutProfileInput {
 }
 
 export interface PayoutProfileSummary {
-  method: PayoutMethod;
-  currency: Currency;
+  /** The details payouts go to now (null until a first change has passed its 48 hours). */
+  method: PayoutMethod | null;
+  currency: Currency | null;
   /** Masked, e.g. "Bank ••••4321 (HDFC0001234)". The full details never come back. */
-  summary: string;
+  summary: string | null;
   updatedAt: string;
+  /** A change waiting out its 48 hours (Security Phase 3). */
+  pending?: { method: PayoutMethod; currency: Currency; summary: string; effectiveAt: string } | null;
 }
 
 export interface RevenueRepo {
@@ -523,7 +564,10 @@ export interface RevenueRepo {
   myStatements(): Promise<RevenueMonthRow[]>;
   myPayouts(): Promise<PayoutRow[]>;
   payoutProfile(): Promise<PayoutProfileSummary | null>;
+  /** Puts new details on hold for 48 hours. Throws RepoError('reauth_required') without a recent sign-in. */
   savePayoutProfile(input: PayoutProfileInput): Promise<void>;
+  /** Drops a change that is still on hold. */
+  cancelPayoutChange(): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -625,7 +669,10 @@ export interface CreatorRepo {
   myStatements(): Promise<CreatorMonthRow[]>;
   myPayouts(): Promise<CreatorPayoutRow[]>;
   payoutProfile(): Promise<PayoutProfileSummary | null>;
+  /** Puts new details on hold for 48 hours. Throws RepoError('reauth_required') without a recent sign-in. */
   savePayoutProfile(input: PayoutProfileInput): Promise<void>;
+  /** Drops a change that is still on hold. */
+  cancelPayoutChange(): Promise<void>;
   /** Records a visit that arrived through a creator link. */
   recordVisit(handle: string): Promise<void>;
   // Staff

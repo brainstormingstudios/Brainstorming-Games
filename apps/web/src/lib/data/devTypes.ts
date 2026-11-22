@@ -201,6 +201,8 @@ export interface NewVersionInput {
   minorUpdate: boolean;
   /** SHA-256 of the build's file paths and sizes, to spot the same build uploaded twice. */
   fingerprint?: string | null;
+  /** Fingerprints of its art, audio and model files, to spot assets copied from other games. */
+  assetHashes?: string[];
 }
 
 export interface MediaUpload {
@@ -277,6 +279,10 @@ export interface QaReviewItem {
   version: DevVersion;
   media: DevMedia[];
   previous: ReviewRecord[];
+  /** The rights declaration given with this submission. */
+  declaration?: { ownsRights: boolean; noCopies: boolean; credits: string } | null;
+  /** The studio's other games and how earlier reviews went, for the moderator's judgement. */
+  studioRecord?: { games: { title: string; status: GameStatus }[]; approvals: number; rejections: number; changesRequested: number };
 }
 
 export interface SparkRow {

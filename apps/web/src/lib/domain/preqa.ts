@@ -21,6 +21,12 @@ export interface PreQaRun {
   screenshot: string | null;
   /** The page crashed or never loaded. */
   crashed: boolean;
+  /** Strong signs of a crypto miner (pool connections, miner code). Older reports lack it. */
+  miningSignals?: string[];
+  /** Password, payment-card or one-time-code fields the game showed to the player. */
+  credentialFields?: string[];
+  /** The build's code creates password fields (may be unused engine code, so only a warning). */
+  passwordInCode?: boolean;
 }
 
 export type CheckStatus = 'pass' | 'warn' | 'fail';
@@ -62,6 +68,64 @@ export function isAdNetwork(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Crypto-miner detection rules live ONLINE only, as GitHub Actions secrets read by the pre-QA bot:
+ * PRE_QA_MINER_HOSTS (mining pools and miner script hosts) and PRE_QA_MINER_SIGNATURES (text
+ * only miner code contains), each comma-separated. Antivirus rightly flags any file that holds
+ * such text, so none is kept in this repository or on a developer machine. Without the secrets
+ * the mining check reports nothing.
+ */
+export interface MinerRules {
+  hosts: string[];
+  signatures: string[];
+}
+
+export function minerRules(env: Record<string, string | undefined> = typeof process === 'undefined' ? {} : process.env): MinerRules {
+  const list = (v: string | undefined) => (v ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return { hosts: list(env.PRE_QA_MINER_HOSTS), signatures: list(env.PRE_QA_MINER_SIGNATURES) };
+}
+
+export function isMiningUrl(url: string, rules: MinerRules): boolean {
+  try {
+    const u = new URL(url);
+    const target = `${u.hostname}${u.pathname}`.toLowerCase();
+    return rules.hosts.some((h) => target.includes(h));
+  } catch {
+    return false;
+  }
+}
+
+/** The miner signatures found in a piece of the build's code. */
+export function scanForMiner(code: string, rules: MinerRules): string[] {
+  const text = code.toLowerCase();
+  return rules.signatures.filter((s) => text.includes(s));
+}
+
+/** True when the build's code makes password inputs. */
+export function codeMakesPasswordFields(code: string): boolean {
+  return /type\s*=\s*\\?["']password\\?["']|\.type\s*=\s*["']password["']|setAttribute\(\s*["']type["']\s*,\s*["']password["']/i.test(code);
+}
+
+/**
+ * Runs inside the game's frame: the fields a phishing page would show. Returned as short
+ * descriptions such as "password field" or "card number field (cc-number)".
+ */
+export function findCredentialFields(doc: Document): string[] {
+  const found = new Set<string>();
+  for (const el of Array.from(doc.querySelectorAll('input, textarea'))) {
+    const input = el as HTMLInputElement;
+    const visible = input.type !== 'hidden' && !input.disabled;
+    if (!visible) continue;
+    const auto = (input.getAttribute('autocomplete') ?? '').toLowerCase();
+    const words = `${input.name} ${input.id} ${input.placeholder} ${input.getAttribute('aria-label') ?? ''}`.toLowerCase();
+    if (input.type === 'password' || /current-password|new-password/.test(auto)) found.add('password field');
+    if (/^cc-/.test(auto) || /card.?number|cvv|cvc|expiry|card.?holder/.test(words)) found.add(`payment card field${auto ? ` (${auto})` : ''}`);
+    if (auto === 'one-time-code' || /\botp\b|one.?time|upi.?pin|\bpin\b|passcode/.test(words)) found.add('one-time code or PIN field');
+    if (/\bpassword\b|\bpasswd\b/.test(words)) found.add('password field');
+  }
+  return [...found];
 }
 
 const mb = (b: number) => (b < 1048576 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1048576).toFixed(1)} MB`);
@@ -138,6 +202,26 @@ export function scorePreQa(url: string, runs: { desktop: PreQaRun | null; mobile
     detail: ads.length ? `Requests to: ${ads.slice(0, 5).join(', ')}` : 'None detected.',
     fix: ads.length ? 'Remove other ad networks and portal SDKs. Ads run only through the Brainstorming SDK.' : null,
   });
+
+  // Crypto-mining: a miner burns the player's battery and electricity for someone else's profit.
+  const mining = [...new Set(all.flatMap((r) => r.miningSignals ?? []))];
+  add({
+    id: 'no-mining', status: mining.length ? 'fail' : 'pass', label: 'No crypto-mining',
+    detail: mining.length ? `Found: ${mining.slice(0, 5).join(', ')}` : 'No mining code or mining-pool connections.',
+    fix: mining.length ? 'Remove the miner. Games that mine on players’ devices are removed and the studio is suspended.' : null,
+  });
+
+  // Phishing: games never ask for passwords, card details or one-time codes. Sign-in and
+  // payments go through the platform.
+  const fields = [...new Set(all.flatMap((r) => r.credentialFields ?? []))];
+  const inCode = all.some((r) => r.passwordInCode);
+  add(
+    fields.length
+      ? { id: 'no-credentials', status: 'fail', label: 'No password, card or code fields', detail: `The game showed: ${fields.join(', ')}.`, fix: 'Remove these fields. Players sign in through the Brainstorming SDK (BG.user); games never collect passwords, card details or one-time codes.' }
+      : inCode
+        ? { id: 'no-credentials', status: 'warn', label: 'No password, card or code fields', detail: 'The code can create a password field, although none was shown during the test.', fix: 'If this is unused engine code, ignore this. A game that asks for passwords is removed.' }
+        : { id: 'no-credentials', status: 'pass', label: 'No password, card or code fields', detail: 'None found.', fix: null },
+  );
 
   const status: CheckStatus = checks.some((c) => c.status === 'fail') ? 'fail' : checks.some((c) => c.status === 'warn') ? 'warn' : 'pass';
   return { status, ranAt: new Date().toISOString(), url, usesSdk: sawSdk, checks, desktop: runs.desktop, mobile: runs.mobile };
