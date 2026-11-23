@@ -199,7 +199,11 @@ async function myStudioRow(): Promise<Row | null> {
   const { data: auth } = await db.auth.getSession();
   const uid = auth.session?.user.id;
   if (!uid) return null;
-  return check(await db.from('studios').select('*').eq('owner_id', uid).maybeSingle<Row>());
+  // The studio the caller owns or co-owns (migration 0028); staff can read every studio, so the
+  // id comes from the database rather than from a plain select.
+  const { data: id } = await db.rpc('my_studio_id');
+  if (!id) return null;
+  return check(await db.from('studios').select('*').eq('id', String(id)).maybeSingle<Row>());
 }
 
 async function detail(gameId: string): Promise<DevGameDetail | null> {

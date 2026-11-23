@@ -15,6 +15,13 @@ const PLAN_ENV = { plus: 'RAZORPAY_PLAN_PLUS', max: 'RAZORPAY_PLAN_MAX' } as con
 /** The Verified tick for studios: ₹49 a month or ₹399 a year (migration 0027). */
 const VERIFIED = { month: { paise: 4900, days: 30 }, year: { paise: 39900, days: 365 } } as const;
 
+/** The studio's main owner or a co-owner (migration 0028). */
+async function managesStudio(db: ReturnType<typeof adminClient>, studioId: string, ownerId: string | undefined, userId: string): Promise<boolean> {
+  if (ownerId === userId) return true;
+  const { data } = await db.from('studio_members').select('user_id').eq('studio_id', studioId).eq('user_id', userId).maybeSingle();
+  return Boolean(data);
+}
+
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
       const pkg = body.pkg as keyof typeof BOOSTS;
       if (!(pkg in BOOSTS)) return json(req, 400, { error: 'invalid' });
       const { data: game } = await db.from('games').select('id, title, status, studio_id, studios!inner(owner_id)').eq('id', body.gameId ?? '').maybeSingle();
-      if (!game || (game.studios as { owner_id?: string }).owner_id !== user.id) return json(req, 404, { error: 'not_found' });
+      if (!game || !(await managesStudio(db, game.studio_id, (game.studios as { owner_id?: string }).owner_id, user.id))) return json(req, 404, { error: 'not_found' });
       if (!['spark', 'rise', 'featured'].includes(game.status)) return json(req, 400, { error: 'invalid', message: 'Only a live game can be boosted.' });
       const { data: running } = await db.from('boosts').select('id').eq('game_id', game.id).in('status', ['paid', 'live']).gt('ends_at', new Date().toISOString()).limit(1);
       if (running?.length) return json(req, 409, { error: 'conflict', message: 'This game already has a Boost running.' });
@@ -70,7 +77,10 @@ Deno.serve(async (req) => {
     if (body.action === 'verify') {
       const plan = body.plan === 'year' ? 'year' : body.plan === 'month' ? 'month' : null;
       if (!plan) return json(req, 400, { error: 'invalid' });
-      const { data: studio } = await db.from('studios').select('id, name, is_first_party, suspended_at').eq('owner_id', user.id).maybeSingle();
+      const { data: member } = await db.from('studio_members').select('studio_id').eq('user_id', user.id).maybeSingle();
+      const { data: studio } = member
+        ? await db.from('studios').select('id, name, is_first_party, suspended_at').eq('id', member.studio_id).maybeSingle()
+        : await db.from('studios').select('id, name, is_first_party, suspended_at').eq('owner_id', user.id).maybeSingle();
       if (!studio || studio.suspended_at) return json(req, 403, { error: 'not_allowed' });
       if (studio.is_first_party) return json(req, 400, { error: 'invalid', message: 'The house studio is always official.' });
       const price = VERIFIED[plan];
