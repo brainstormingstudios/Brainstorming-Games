@@ -1,0 +1,11 @@
+# gitleaks settings for the CI security job: the default rules, minus test fixtures that use
+# made-up keys on purpose.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and documentation placeholders"
+paths = [
+  '''^tests/''',
+  '''\.test\.ts$''',
+]

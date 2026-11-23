@@ -1,0 +1,60 @@
+name: Nightly backup
+
+# Every night: a full dump of the database (schemas public, auth and storage metadata), encrypted
+# with a passphrase only the owners hold (AES-256, PBKDF2 with 600,000 rounds), kept as a private
+# workflow artifact for 30 days. Supabase Free has no backups of its own.
+# Needs two secrets: SUPABASE_DB_URL (the "Session pooler" connection string, with the database
+# password) and BACKUP_PASSPHRASE. Restore steps: docs/BACKUPS.md.
+on:
+  schedule:
+    - cron: '40 21 * * *' # 03:10 in India
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check the secrets are set
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then echo "::error::Set SUPABASE_DB_URL and BACKUP_PASSPHRASE in the repository secrets"; exit 1; fi
+          if [ ${#PASSPHRASE} -lt 20 ]; then echo "::error::BACKUP_PASSPHRASE must be at least 20 characters"; exit 1; fi
+      - name: Install the PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Dump and encrypt
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          stamp=$(date -u +%Y-%m-%d)
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" --format=custom --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage --file=db.dump
+          size=$(stat -c %s db.dump)
+          if [ "$size" -lt 10000 ]; then echo "::error::The dump is suspiciously small ($size bytes)"; exit 1; fi
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in db.dump -out "brainstorming-db-$stamp.dump.enc" -pass env:PASSPHRASE
+          shred -u db.dump
+          sha256sum "brainstorming-db-$stamp.dump.enc" > "brainstorming-db-$stamp.sha256"
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          echo "Backup: $size bytes before encryption"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: db-backup-${{ env.STAMP }}
+          path: brainstorming-db-*
+          retention-days: 30
+          if-no-files-found: error

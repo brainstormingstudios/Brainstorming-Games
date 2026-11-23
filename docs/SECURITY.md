@@ -79,12 +79,27 @@ still gets security fixes.
 | Exposed files | No env, map, source, SQL or Git files in the built sites. |
 | Antivirus | Windows Defender scan of the project: clean. No malware-like test samples are kept; such checks run online only. |
 
-## Phase 3: money and accounts
+## Phase 3: money and accounts (done)
 
-Payout-detail changes: e-mail alert, fresh sign-in and a 48-hour hold; sign out everywhere;
-owner backup codes and a second owner; alerts and a fraud review screen.
+Payout-detail changes get an e-mail alert, a fresh sign-in and a 48-hour hold; sign out
+everywhere; owner backup codes; security alerts and a fraud scan in the daily job
+(`0023_security_accounts.sql`). Studio co-owners (`0028`): a second owner for BrainStorming
+Studios, while payout details stay with the main owner.
 
-## Phase 4: resilience
+## Phase 4: resilience (done)
 
-Nightly encrypted backups and monitoring; incident plan (CERT-In within 6 hours, DPDP); key
-rotation; automated security tests in CI.
+| What | How | Where |
+| --- | --- | --- |
+| Nightly encrypted backups | pg_dump of public, auth and storage, AES-256 with the owners' passphrase, 30 days | `.github/workflows/backup.yml`, docs/BACKUPS.md |
+| Live monitoring | Every 3 hours: sites, games server and database answer; HSTS, CSP, framing, nosniff, permissions; private tables and builds stay private; the management portal stays hidden. A failure e-mails the owner | `.github/workflows/monitor.yml`, `scripts/monitor-live.mjs` |
+| Security checks on every change | Leaked secrets in the whole history (gitleaks), vulnerable packages (npm audit, high and above), risky code patterns (Semgrep, errors) | `.github/workflows/ci.yml` (job `security`) |
+| Supply chain | Every GitHub Action pinned to a commit, the deploy tool to an exact version; jobs only read the repository; weekly Dependabot updates | `.github/workflows/*`, `.github/dependabot.yml` |
+| Miner rules online only | The test-play downloads the community miner host list on GitHub's runner for each run; extra hosts and code signatures can be GitHub secrets. Nothing of the kind is stored in the repository or on a developer machine | `.github/workflows/pre-qa.yml` |
+| Incident plan | Contain, keep evidence, CERT-In within 6 hours, DPDP notices | docs/INCIDENT.md |
+| Key rotation | Every secret, where it lives and how to change it | docs/KEY-ROTATION.md |
+| Bot check on sign-in | Cloudflare Turnstile before a sign-in code is sent | DEPLOY.md, "Bot check on sign-in" |
+
+Limits of the free plans, and what replaces them: GitHub's CodeQL, secret scanning and branch
+protection need a paid plan for private repositories (gitleaks and Semgrep run instead);
+Supabase Free has no backups (the nightly job); Cloudflare Access needs a card (the management
+portal relies on the admin role plus the owner code, enforced by the database).

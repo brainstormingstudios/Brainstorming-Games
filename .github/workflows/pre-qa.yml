@@ -15,6 +15,10 @@ on:
         description: Version id to attach the report to (optional)
         required: false
 
+# Least privilege: jobs only read the repository unless they say otherwise.
+permissions:
+  contents: read
+
 concurrency:
   group: pre-qa-${{ github.event.client_payload.version_id || github.event.inputs.version_id || github.run_id }}
   cancel-in-progress: true
@@ -29,18 +33,31 @@ jobs:
       NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
       PRE_QA_CALLBACK_SECRET: ${{ secrets.PRE_QA_CALLBACK_SECRET }}
       REPORT_URL: ${{ secrets.PRE_QA_REPORT_URL }}
-      # Crypto-miner rules, kept online only (comma-separated lists, docs/SECURITY.md).
-      PRE_QA_MINER_HOSTS: ${{ secrets.PRE_QA_MINER_HOSTS }}
+      # Crypto-miner rules live online only, never in this repository or on a developer machine
+      # (antivirus rightly flags files that contain them). Extra hosts and code signatures can be
+      # added as GitHub secrets; the community host list is downloaded on the runner below.
+      PRE_QA_MINER_HOSTS_EXTRA: ${{ secrets.PRE_QA_MINER_HOSTS }}
       PRE_QA_MINER_SIGNATURES: ${{ secrets.PRE_QA_MINER_SIGNATURES }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build:sdk
+      # The NoCoin community block list (MIT), fetched fresh on GitHub's runner for this run only.
+      - name: Load the miner host list
+        env:
+          MINER_LIST_URL: https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt
+        run: |
+          set -uo pipefail
+          hosts=$(curl -fsSL --max-time 30 "$MINER_LIST_URL" | awk '($1=="0.0.0.0"||$1=="127.0.0.1") && $2!="localhost" {print tolower($2)}' | sort -u | paste -sd, -) || hosts=""
+          if [ -z "$hosts" ]; then echo "::warning::Miner host list unavailable; using the secret list only"; fi
+          all=$(printf '%s,%s' "${PRE_QA_MINER_HOSTS_EXTRA:-}" "$hosts" | sed 's/^,*//; s/,*$//')
+          echo "PRE_QA_MINER_HOSTS=$all" >> "$GITHUB_ENV"
+          echo "Miner hosts loaded: $(printf '%s' "$all" | tr ',' '\n' | grep -c . || true)"
       - name: Run the bot
         run: |
           if [ -n "$VERSION_ID" ] && [ -n "$REPORT_URL" ]; then

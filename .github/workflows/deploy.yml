@@ -10,6 +10,10 @@ on:
     types: [rebuild]
   workflow_dispatch:
 
+# Least privilege: jobs only read the repository unless they say otherwise.
+permissions:
+  contents: read
+
 concurrency:
   group: deploy
   cancel-in-progress: false
@@ -45,8 +49,8 @@ jobs:
       # Read-only use at build time: the catalogue snapshot only selects public games.
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
@@ -58,14 +62,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@3 pages deploy apps/web/out --project-name="${{ vars.CF_PAGES_PROJECT }}" --branch=main
+        run: npx --yes wrangler@3.114.17 pages deploy apps/web/out --project-name="${{ vars.CF_PAGES_PROJECT }}" --branch=main
       - name: Deploy the developer portal
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@3 pages deploy apps/web/out-developers --project-name="${{ vars.CF_PAGES_PROJECT_DEVELOPERS }}" --branch=main
+        run: npx --yes wrangler@3.114.17 pages deploy apps/web/out-developers --project-name="${{ vars.CF_PAGES_PROJECT_DEVELOPERS }}" --branch=main
       - name: Deploy the management portal
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@3 pages deploy apps/web/out-manage --project-name="${{ vars.CF_PAGES_PROJECT_MANAGE }}" --branch=main
+        run: npx --yes wrangler@3.114.17 pages deploy apps/web/out-manage --project-name="${{ vars.CF_PAGES_PROJECT_MANAGE }}" --branch=main
