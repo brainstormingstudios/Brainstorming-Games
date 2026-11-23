@@ -1894,7 +1894,8 @@
   },
   "ads": {
     "label": "Advertisement",
-    "placeholder": "Ad slot · {size} · {placement}"
+    "placeholder": "Ad slot · {size} · {placement}",
+    "house": "Ad · Brainstorming Studios"
   },
   "policy": {
     "draft": "Draft, pending legal review.",

@@ -152,7 +152,7 @@ export const COVER_WIDTHS = {
 } as const;
 
 export const SOCIAL_LINKS = {
-  youtube: (process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE ?? '').trim(),
+  youtube: (process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE ?? '').trim() || 'https://www.youtube.com/@BrainstormingStudios-Official',
   instagram: (process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM ?? '').trim(),
   x: (process.env.NEXT_PUBLIC_SOCIAL_X ?? '').trim(),
   discord: (process.env.NEXT_PUBLIC_SOCIAL_DISCORD ?? '').trim(),

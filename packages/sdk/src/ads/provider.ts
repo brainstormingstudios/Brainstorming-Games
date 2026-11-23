@@ -6,7 +6,7 @@ export type AdOutcome = 'finished' | 'skipped' | 'error';
  * is ever called; a provider only shows ads.
  */
 export interface AdProvider {
-  readonly name: 'mock' | 'adsense-h5' | 'none';
+  readonly name: 'mock' | 'adsense-h5' | 'house' | 'none';
   init(): Promise<void>;
   showMidgame(): Promise<AdOutcome>;
   showRewarded(): Promise<AdOutcome>;

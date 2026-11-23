@@ -9,6 +9,7 @@ import { cn } from '@brainstorming/ui';
 import { splitLocale } from '@/i18n/config';
 import { loadAdsense } from '@/lib/ads/adsense';
 import { ADSENSE_CLIENT, IS_DEV, IS_MOCK } from '@/lib/config';
+import { HouseAdSlot } from './HouseAdSlot';
 
 export type AdPlacement = 'game-side' | 'game-content' | 'home-rail' | 'grid';
 
@@ -30,7 +31,8 @@ const NO_ADS = /^\/(dev|admin|about|contact|parents|school-safe|terms|privacy|de
 
 /**
  * A display-ad position with its space reserved up front (no layout shift).
- *   - no AdSense client configured: a labelled placeholder in dev and mock mode, nothing otherwise;
+ *   - no AdSense client configured: a labelled placeholder in dev and mock mode, our own promo
+ *     (HouseAdSlot) on the live site;
  *   - with `NEXT_PUBLIC_ADSENSE_CLIENT`: the unit loads only when it is about to scroll into view.
  */
 export function AdSlot({ placement, className }: { placement: AdPlacement; className?: string }) {
@@ -69,7 +71,8 @@ export function AdSlot({ placement, className }: { placement: AdPlacement; class
   // Members see fewer display ads (Plus) or none (Max).
   if (!showsDisplayAd(activePlan(user?.premium), placement)) return null;
   const showPlaceholder = !live && (IS_DEV || IS_MOCK);
-  if (!live && !showPlaceholder) return null;
+  // No ad network on the live site yet: our own promo fills the space.
+  if (!live && !showPlaceholder) return <HouseAdSlot placement={placement} className={className} sizeClass={size.className} />;
   return (
     <aside ref={ref} aria-label={t('label')} data-ad-placement={placement} data-testid="ad-slot" className={cn('ad-slot rounded-control', size.className, className)}>
       {showPlaceholder ? (

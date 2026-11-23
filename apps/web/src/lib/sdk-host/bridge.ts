@@ -3,6 +3,7 @@
 import {
   AdRules,
   createAdsenseH5Provider,
+  createHouseProvider,
   createMockProvider,
   detectAdblock,
   noneProvider,
@@ -24,6 +25,7 @@ import { localizePath, type Locale } from '@/i18n/config';
 import { ADSENSE_CLIENT, INGAME_AD_PROVIDER, PLAY_ORIGIN } from '@/lib/config';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import { canPersonaliseAds } from '@/lib/ads/consent';
+import { HOUSE_AD } from '@/lib/ads/houseAd';
 import { getRepo } from '@/lib/data';
 import { onTopic } from '@/lib/data/bus';
 import { local } from '@/lib/data/local';
@@ -107,6 +109,8 @@ function makeProvider(layer: () => HTMLElement, preview: boolean): AdProvider {
   if (INGAME_AD_PROVIDER === 'adsense-h5' && ADSENSE_CLIENT) {
     return createAdsenseH5Provider({ client: ADSENSE_CLIENT, personalised: canPersonaliseAds() });
   }
+  // Our own promo in ad breaks, until an ad network is approved.
+  if (INGAME_AD_PROVIDER === 'house') return createHouseProvider({ container: layer, ad: HOUSE_AD });
   return noneProvider;
 }
 
