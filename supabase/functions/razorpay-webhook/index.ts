@@ -55,6 +55,15 @@ Deno.serve(async (req) => {
   if (event.event === 'order.paid') {
     const order = event.payload.order.entity;
     const payment = event.payload.payment?.entity;
+    // The Verified tick: a paid order extends the studio's tick (migration 0027).
+    const plan = order.notes?.verified as 'month' | 'year' | undefined;
+    if (plan === 'month' || plan === 'year') {
+      const { data: pending } = await db.from('payments').select('id, amount_paise, status').eq('provider_ref', order.id).eq('kind', 'verified').maybeSingle();
+      if (!pending || pending.status !== 'pending' || order.amount_paid < pending.amount_paise || !order.notes?.studio_id) return ok();
+      await db.from('payments').update({ status: 'paid', provider_payment_id: payment?.id ?? null }).eq('id', pending.id);
+      await db.rpc('extend_verified', { p_studio: order.notes.studio_id, p_days: plan === 'year' ? 365 : 30 });
+      return ok();
+    }
     const { data: boost } = await db.from('boosts').select('*').eq('razorpay_order_id', order.id).maybeSingle();
     if (!boost || boost.status !== 'pending_payment' || order.amount_paid < boost.amount_paise) return ok();
     const [days, heroDays] = BOOST_DAYS[boost.package as keyof typeof BOOST_DAYS];

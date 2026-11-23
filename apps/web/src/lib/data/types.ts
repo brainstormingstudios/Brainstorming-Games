@@ -194,7 +194,8 @@ export type RailId =
   | 'made-in-india'
   | 'under-10mb'
   | 'updated'
-  | 'top-rated';
+  | 'top-rated'
+  | 'verified';
 
 export const DEFAULT_RAIL_ORDER: RailId[] = [
   'top-picks',
@@ -202,6 +203,7 @@ export const DEFAULT_RAIL_ORDER: RailId[] = [
   'fresh',
   'new',
   'originals',
+  'verified',
   'multiplayer',
   'made-in-india',
   'under-10mb',

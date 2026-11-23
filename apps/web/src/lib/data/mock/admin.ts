@@ -38,8 +38,10 @@ export const mockAdmin: AdminRepo = {
           preQaStatus: report?.status ?? null,
           autoReviewStatus: (v.autoReview as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null,
           isUpdate: Boolean(g?.releasedAt),
+          studioVerified: Boolean(studios.get(g?.studioId ?? '')?.verified),
         };
-      });
+      })
+      .sort((a, b) => Number(b.studioVerified) - Number(a.studioVerified));
   },
   async autoRejected() {
     requireStaff();

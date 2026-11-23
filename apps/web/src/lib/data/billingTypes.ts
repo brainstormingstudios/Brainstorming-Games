@@ -56,7 +56,7 @@ export interface BoostOrder {
 
 export interface PaymentRow {
   id: string;
-  kind: 'premium' | 'boost';
+  kind: 'premium' | 'boost' | 'verified';
   what: string;
   amount: number;
   status: 'paid' | 'pending' | 'failed' | 'refunded';

@@ -47,7 +47,7 @@ export function StudioLive({ slug, initial, initialGames }: StudioLiveProps) {
         <div className="min-w-0 flex-1">
           <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold">
             {s.name}
-            {s.verified ? (
+            {s.verified && !s.isFirstParty ? (
               <Badge tone="glow">
                 <BadgeCheck aria-hidden="true" className="size-3.5" />
                 {t('verified')}

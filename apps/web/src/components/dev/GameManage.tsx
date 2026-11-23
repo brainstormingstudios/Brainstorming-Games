@@ -12,7 +12,7 @@ import { summarise } from '@/lib/domain/kpis';
 import { SPARK_MAX_DAYS, SPARK_MIN_PLAYS, sparkDays, sparkProgress } from '@/lib/domain/spark';
 import { getPreviewToken } from '@/lib/dev/previewTokens';
 import { formatBytes, formatDate, formatDateTime } from '@/lib/format';
-import { reviewDeadline } from '@/lib/domain/review';
+import { reviewDeadline, reviewSlaHours } from '@/lib/domain/review';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { BuildUpload } from './BuildUpload';
 import { GrowthPanel } from './GrowthPanel';
@@ -126,8 +126,8 @@ export function GameManage() {
         <Card className="flex flex-wrap items-center gap-3 border-primary/60 p-4" data-testid="review-promise">
           <Clock aria-hidden="true" className="size-6 text-primary" />
           <p className="min-w-0 flex-1 text-sm">
-            <span className="block font-bold">{t('reviewBy', { date: formatDateTime(reviewDeadline(latest.submittedAt).toISOString(), locale) })}</span>
-            {t('reviewPromise')}
+            <span className="block font-bold">{t('reviewBy', { date: formatDateTime(reviewDeadline(latest.submittedAt, reviewSlaHours(studio.verified)).toISOString(), locale) })}</span>
+            {t('reviewPromise', { hours: reviewSlaHours(studio.verified) })}
           </p>
         </Card>
       ) : null}

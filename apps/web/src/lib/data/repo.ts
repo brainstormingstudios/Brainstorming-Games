@@ -15,6 +15,7 @@ import type { AdminCreatorRow, Creator, CreatorApplyInput, CreatorMonthRow, Crea
 import type { PremiumState } from '@/lib/domain/premium';
 import type { KpiResult } from '@/lib/domain/kpis';
 import type { PreQaReport } from '@/lib/domain/preqa';
+import type { VerifiedPlan, VerifiedStatus } from '@/lib/domain/verified';
 import type { Currency, GameImpressions, GameLine, RevenueRow, RevenueRun } from '@/lib/domain/revenue';
 import type {
   AuditRecord,
@@ -654,8 +655,12 @@ export interface BillingRepo {
   /** Developer: buy a Boost for one of their live games. */
   orderBoost(gameId: string, pkg: BoostPackage): Promise<CheckoutIntent>;
   myBoosts(): Promise<BoostOrder[]>;
-  /** Free Spotlight Boosts the studio earned from late reviews, not yet used. */
+  /** Free Spotlight Boosts the studio earned (late reviews, the monthly Verified perk), not yet used. */
   myBoostCredits(): Promise<number>;
+  /** Developer: the studio's Verified tick (founding, paid or staff), and until when. */
+  verifiedStatus(): Promise<VerifiedStatus | null>;
+  /** Developer: buy or extend the Verified tick (₹49 a month, ₹399 a year). */
+  orderVerified(plan: VerifiedPlan): Promise<CheckoutIntent>;
   /** Uses one credit: a free Spotlight Boost for one of the studio's live games. */
   redeemBoostCredit(gameId: string): Promise<void>;
   // Staff

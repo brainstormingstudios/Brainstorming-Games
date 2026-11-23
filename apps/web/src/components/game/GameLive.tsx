@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { BadgeCheck, ChevronRight } from 'lucide-react';
+import { BadgeCheck, ChevronRight, Crown } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { chipClass, cn } from '@brainstorming/ui';
 import { AdSlot } from '@/components/ads/AdSlot';
@@ -106,8 +106,10 @@ export function GameView({ game, related }: GameViewProps) {
       value: (
         <Link href={`/studio/${game.studio.slug}`} hard className="inline-flex items-center gap-1 font-bold text-link underline underline-offset-4">
           {game.studio.name}
-          {game.studio.verified ? (
-            <BadgeCheck aria-label={t('verifiedStudio')} className="size-4 text-glow" />
+          {game.studio.isFirstParty ? (
+            <Crown aria-label={t('bsOfficial')} className="size-4 text-primary" data-testid="bs-official" />
+          ) : game.studio.verified ? (
+            <BadgeCheck aria-label={t('verifiedStudio')} className="size-4 text-glow" data-testid="verified-tick" />
           ) : null}
         </Link>
       ),

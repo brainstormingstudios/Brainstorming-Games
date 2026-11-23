@@ -271,6 +271,8 @@ export interface QaQueueItem {
   preQaStatus: PreQaReport['status'] | null;
   autoReviewStatus: AutoReviewReport['status'] | null;
   isUpdate: boolean;
+  /** Verified studios are promised a review within 24 hours and come first. */
+  studioVerified: boolean;
 }
 
 /** A submission the system rejected by itself (a clear copy or harmful code), for the moderators' record. */

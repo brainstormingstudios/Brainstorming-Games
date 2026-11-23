@@ -1,3 +1,4 @@
+import type { VerifiedStatus } from '@/lib/domain/verified';
 import type { BoostPackage, BoostStatus } from '@/lib/domain/premium';
 import { PLANS, activePlan, type PremiumPlan } from '@/lib/domain/premium';
 import { emitTopic } from '../bus';
@@ -105,6 +106,14 @@ export const supabaseBilling: BillingRepo = {
   },
   async orderBoost(gameId, pkg) {
     return callFunction<CheckoutIntent>('billing', { action: 'boost', gameId, pkg });
+  },
+  async verifiedStatus() {
+    const { data, error } = await getSupabase().rpc('my_verified');
+    if (error) throw toRepoError(error);
+    return (data as VerifiedStatus | null) ?? null;
+  },
+  async orderVerified(plan) {
+    return callFunction<CheckoutIntent>('billing', { action: 'verify', plan });
   },
   async myBoostCredits() {
     const { data, error } = await getSupabase().rpc('my_boost_credits');

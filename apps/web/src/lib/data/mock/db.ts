@@ -36,6 +36,10 @@ export interface MockStudio {
   contactEmail: string | null;
   links: { label: string; url: string }[];
   verified: boolean;
+  /** The Verified tick (migration 0027): why it is on, until when, and the founding number. */
+  verifiedSource?: 'founding' | 'paid' | 'staff' | null;
+  verifiedUntil?: string | null;
+  foundingNumber?: number | null;
   isFirstParty: boolean;
   level: 'rookie' | 'pro' | 'partner';
   suspendedAt: string | null;
@@ -314,7 +318,7 @@ export interface MockTables {
   /** Tile impressions and clicks per game and UTC day (the discovery algorithm's raw input). */
   impressions: { gameId: string; day: string; impressions: number; clicks: number }[];
   /** Checkouts started but not paid yet. */
-  intents: { id: string; kind: 'premium' | 'boost'; userId: string; ref: string; pkg: 'spotlight' | 'push' | 'launch' | null; amount: number; createdAt: string }[];
+  intents: { id: string; kind: 'premium' | 'boost' | 'verified'; userId: string; ref: string; pkg: 'spotlight' | 'push' | 'launch' | null; amount: number; createdAt: string }[];
   payments: PaymentRow[];
   boosts: {
     id: string;

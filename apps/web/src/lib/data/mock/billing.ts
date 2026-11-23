@@ -1,4 +1,5 @@
 import { BOOSTS, GUEST_PASS, PLANS, activePlan, formatInr, type PremiumPlan } from '@/lib/domain/premium';
+import { VERIFIED_PLANS, extendVerifiedUntil, type VerifiedPlan } from '@/lib/domain/verified';
 import { emitTopic } from '../bus';
 import type { BoostOrder, CheckoutIntent, PaymentRow } from '../billingTypes';
 import { PUBLIC_STATUSES } from '../types';
@@ -60,6 +61,21 @@ function fulfil(intent: MockTables['intents'][number]): void {
     recordPayment({ kind: 'premium', what: `Brainstorming ${PLAN_NAME[plan]}, 1 month`, amount: intent.amount, status: 'paid', provider: 'test', reference: intent.id, who: user.username ?? user.email });
     notify(user.id, 'premium', `Welcome to ${PLAN_NAME[plan]}`, `Active until ${dateText(until)}.`, '/premium/');
     sendMail(user.email, 'premium_welcome', { plan: PLAN_NAME[plan], price: `${formatInr(PLANS[plan].price)} a month`, until: dateText(until) });
+  } else if (intent.kind === 'verified') {
+    // ref is "<studio id>:<plan>"
+    const [studioId, plan] = intent.ref.split(':') as [string, VerifiedPlan];
+    let until = '';
+    mutateTable('studios', (rows) => {
+      const s = rows.find((x) => x.id === studioId);
+      if (!s) return;
+      until = extendVerifiedUntil(s.verifiedUntil ?? null, plan);
+      s.verified = true;
+      s.verifiedUntil = until;
+      if (s.verifiedSource !== 'staff') s.verifiedSource = 'paid';
+    });
+    recordPayment({ kind: 'verified', what: `Verified tick (${plan === 'year' ? '1 year' : '1 month'})`, amount: intent.amount, status: 'paid', provider: 'test', reference: intent.id, who: user.username ?? user.email });
+    notify(user.id, 'verified', 'Your Verified tick is active', `Verified until ${dateText(until)}.`, '/dev/verified/');
+    emitTopic('dev-games');
   } else {
     const def = BOOSTS[intent.pkg!];
     const start = Date.now();
@@ -102,7 +118,7 @@ export function grantReviewCredit(versionId: string): void {
   emitTopic('notifications');
 }
 
-function newIntent(kind: 'premium' | 'boost', userId: string, ref: string, amount: number, description: string, pkg?: keyof typeof BOOSTS): CheckoutIntent {
+function newIntent(kind: 'premium' | 'boost' | 'verified', userId: string, ref: string, amount: number, description: string, pkg?: keyof typeof BOOSTS): CheckoutIntent {
   const id = newId();
   mutateTable('intents', (rows) => {
     rows.push({ id, kind, userId, ref, pkg: pkg ?? null, amount, createdAt: nowIso() });
@@ -197,6 +213,22 @@ export const mockBilling: BillingRepo = {
       rows.push({ id, gameId, studioId: studio.id, package: pkg, amount: BOOSTS[pkg].price, status: 'pending_payment', shortUrls: [], reelUrls: [], startsAt: null, endsAt: null, heroUntil: null, notes: '', createdAt: nowIso() });
     });
     return newIntent('boost', user.id, id, BOOSTS[pkg].price, `Boost ${BOOST_NAME[pkg]}: ${game.title}`, pkg);
+  },
+  async verifiedStatus() {
+    const studio = requireStudio();
+    return {
+      verified: studio.verified,
+      source: studio.verifiedSource ?? (studio.verified ? 'staff' : null),
+      until: studio.verifiedUntil ?? null,
+      foundingNumber: studio.foundingNumber ?? null,
+      firstParty: studio.isFirstParty,
+    };
+  },
+  async orderVerified(plan) {
+    const studio = requireStudio();
+    const user = requireProfile();
+    if (studio.isFirstParty) fail('invalid', 'The house studio is always official.');
+    return newIntent('verified', user.id, `${studio.id}:${plan}`, VERIFIED_PLANS[plan].price, `Verified tick: ${studio.name}`);
   },
   async myBoostCredits() {
     const studio = requireStudio();

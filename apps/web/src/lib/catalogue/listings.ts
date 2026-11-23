@@ -99,6 +99,7 @@ const RAIL_HREF: Record<RailId, string | null> = {
   'under-10mb': null,
   updated: '/updated',
   'top-rated': null,
+  verified: null,
 };
 
 export interface RailOptions {
@@ -147,6 +148,8 @@ export function buildRails(
     trending: () => take(sortGames(live, 'trending')),
     new: () => take(sortGames(live, 'new')),
     originals: () => take(sortGames(live.filter((g) => g.studio.isFirstParty), 'popular')),
+    // Studios with the Verified tick (migration 0027); the house studio has its own row above.
+    verified: () => take(sortGames(live.filter((g) => g.studio.verified && !g.studio.isFirstParty), 'popular')),
     multiplayer: () => take(sortGames(live.filter((g) => g.isMultiplayer), 'popular')),
     'made-in-india': () => take(sortGames(live.filter((g) => gameInCategory(g, 'made-in-india')), 'popular')),
     'under-10mb': () => take(sortGames(live.filter((g) => g.sizeBytes <= LIMITS.under10Mb), 'popular')),

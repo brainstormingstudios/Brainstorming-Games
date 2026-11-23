@@ -1,6 +1,6 @@
 'use client';
 
-import { reviewHoursLeft } from '@/lib/domain/review';
+import { reviewHoursLeft, reviewSlaHours } from '@/lib/domain/review';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
@@ -147,13 +147,14 @@ export function QaQueue() {
                 <tr key={item.versionId} className="border-t border-border" data-testid="qa-row">
                   <td className="px-3 py-2 font-bold">
                     {item.title} <Badge className="ml-1">{item.isUpdate ? t('update') : t('newGame')}</Badge>
+                    {item.studioVerified ? <Badge tone="glow" className="ml-1">{t('verifiedStudio')}</Badge> : null}
                   </td>
                   <td className="px-3 py-2">{item.studioName}</td>
                   <td className="px-3 py-2">v{item.version}</td>
                   <td className="px-3 py-2">{formatDate(item.submittedAt, locale)}</td>
                   <td className="px-3 py-2" data-testid="qa-due">
                     {(() => {
-                      const left = reviewHoursLeft(item.submittedAt);
+                      const left = reviewHoursLeft(item.submittedAt, new Date(), reviewSlaHours(item.studioVerified));
                       return left < 0 ? <Badge tone="danger">{t('late')}</Badge> : <Badge tone={left < 12 ? 'warning' : 'neutral'}>{t('hoursLeft', { hours: left })}</Badge>;
                     })()}
                   </td>

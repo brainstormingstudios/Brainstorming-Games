@@ -2,6 +2,7 @@
 //   { action: 'subscribe', plan: 'plus' | 'max' }       → a Razorpay subscription for Checkout
 //   { action: 'cancel' }                                → stop renewal at the end of the period
 //   { action: 'boost', gameId, pkg }                    → a Razorpay order for a Boost
+//   { action: 'verify', plan: 'month' | 'year' }        → a Razorpay order for the Verified tick
 //   { action: 'confirm', reference }                    → whether the webhook has recorded it
 // Nothing here grants anything: memberships and Boosts start only when razorpay-webhook receives
 // Razorpay's signed confirmation.
@@ -11,6 +12,8 @@ import { razorpay, razorpayKeyId } from '../_shared/razorpay.ts';
 const PRICES = { plus: 9900, max: 19900 } as const;
 const BOOSTS = { spotlight: 49900, push: 149900, launch: 399900 } as const;
 const PLAN_ENV = { plus: 'RAZORPAY_PLAN_PLUS', max: 'RAZORPAY_PLAN_MAX' } as const;
+/** The Verified tick for studios: ₹49 a month or ₹399 a year (migration 0027). */
+const VERIFIED = { month: { paise: 4900, days: 30 }, year: { paise: 39900, days: 365 } } as const;
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -27,7 +30,7 @@ Deno.serve(async (req) => {
   // Sales are open in India only for now (lib/domain/market.ts). Razorpay also refuses foreign
   // cards while international payments are switched off in its dashboard.
   const country = (req.headers.get('cf-ipcountry') ?? '').toUpperCase();
-  if ((body.action === 'subscribe' || body.action === 'boost') && /^[A-Z]{2}$/.test(country) && country !== 'XX' && country !== 'IN') {
+  if ((body.action === 'subscribe' || body.action === 'boost' || body.action === 'verify') && /^[A-Z]{2}$/.test(country) && country !== 'XX' && country !== 'IN') {
     return json(req, 403, { error: 'country_unavailable', message: 'Payments are available in India only for now.' });
   }
 
@@ -63,6 +66,17 @@ Deno.serve(async (req) => {
       await db.from('boosts').insert({ game_id: game.id, studio_id: game.studio_id, package: pkg, amount_paise: BOOSTS[pkg], status: 'pending_payment', razorpay_order_id: order.id });
       await db.from('payments').insert({ user_id: user.id, kind: 'boost', what: `Boost ${pkg}: ${game.title}`, amount_paise: BOOSTS[pkg], status: 'pending', provider_ref: order.id });
       return json(req, 200, { mode: 'razorpay', keyId: razorpayKeyId(), orderId: order.id, amount: BOOSTS[pkg], description: `Boost: ${game.title}`, prefill });
+    }
+    if (body.action === 'verify') {
+      const plan = body.plan === 'year' ? 'year' : body.plan === 'month' ? 'month' : null;
+      if (!plan) return json(req, 400, { error: 'invalid' });
+      const { data: studio } = await db.from('studios').select('id, name, is_first_party, suspended_at').eq('owner_id', user.id).maybeSingle();
+      if (!studio || studio.suspended_at) return json(req, 403, { error: 'not_allowed' });
+      if (studio.is_first_party) return json(req, 400, { error: 'invalid', message: 'The house studio is always official.' });
+      const price = VERIFIED[plan];
+      const order = await razorpay<{ id: string }>('orders', { amount: price.paise, currency: 'INR', notes: { user_id: user.id, studio_id: studio.id, verified: plan } });
+      await db.from('payments').insert({ user_id: user.id, kind: 'verified', what: `Verified tick (${plan === 'year' ? '1 year' : '1 month'}): ${studio.name}`, amount_paise: price.paise, status: 'pending', provider_ref: order.id });
+      return json(req, 200, { mode: 'razorpay', keyId: razorpayKeyId(), orderId: order.id, amount: price.paise, description: `Verified tick: ${studio.name}`, prefill });
     }
     if (body.action === 'confirm') {
       const { data } = await db.from('payments').select('status').eq('user_id', user.id).eq('provider_ref', body.reference ?? '').eq('status', 'paid').limit(1);

@@ -1,3 +1,4 @@
+import { FOUNDING_DAYS, FOUNDING_STUDIOS } from '@/lib/domain/verified';
 import { PRIMARY_CATEGORY_SLUGS, tagSlug } from '@/lib/catalogue/categories';
 import { normaliseSkills } from '@/lib/domain/brain';
 import { DEVELOPER_TERMS_VERSION, LIMITS, PLAY_ORIGIN, SITE_URL } from '@/lib/config';
@@ -188,6 +189,13 @@ export function updateVersionRow(versionId: string, patch: Partial<MockVersion>)
   return out;
 }
 
+/** The first 100 studios get the Verified tick free for a year (mirror of app.founding_studio). */
+function foundingTick(): Partial<Pick<MockStudio, 'verified' | 'verifiedSource' | 'verifiedUntil' | 'foundingNumber'>> {
+  const n = Math.max(0, ...readTable('studios').map((s) => s.foundingNumber ?? 0)) + 1;
+  if (n > FOUNDING_STUDIOS) return {};
+  return { verified: true, verifiedSource: 'founding', verifiedUntil: new Date(Date.now() + FOUNDING_DAYS * 86_400_000).toISOString(), foundingNumber: n };
+}
+
 export function ownerOf(gameId: string): string | null {
   const g = readTable('games').find((x) => x.id === gameId);
   return readTable('studios').find((s) => s.id === g?.studioId)?.ownerId ?? null;
@@ -316,6 +324,30 @@ export function autoReject(versionId: string, notes: string): boolean {
   return true;
 }
 
+/** Publishes a house-studio version without a moderator; false for any other studio. */
+function autoApproveOriginal(versionId: string): boolean {
+  const v = readTable('versions').find((x) => x.id === versionId);
+  const g = v && readTable('games').find((x) => x.id === v.gameId);
+  const studio = g && readTable('studios').find((x) => x.id === g.studioId);
+  if (!v || !g || !studio?.isFirstParty || v.qaStatus !== 'in_review') return false;
+  mutateTable('reviews', (rows) => {
+    rows.push({ id: newId(), versionId, gameId: g.id, reviewerId: '', action: 'approve', checklist: { automatic: true }, notes: 'BS Original: approved automatically after a clean test-play.', createdAt: nowIso() });
+  });
+  const first = !g.releasedAt || ['in_review', 'draft', 'changes_requested', 'paused'].includes(g.status);
+  publishVersion(versionId);
+  updateVersionRow(versionId, { reviewedAt: nowIso() });
+  if (first) {
+    const now = nowIso();
+    updateGameRow(g.id, { status: 'spark', sparkStartedAt: now, releasedAt: g.releasedAt ?? now });
+    mutateTable('launches', (rows) => {
+      rows.push({ id: newId(), gameId: g.id, tier: 'spark', startedAt: now, endedAt: null, decision: null, reason: null, kpiSnapshot: null, decidedBy: null });
+    });
+  }
+  notify(ownerOf(g.id), 'qa', 'BS Original published', 'Your game passed its test-play and is live in BS Originals.', `/dev/games/view/?id=${g.id}`);
+  emitTopic('catalogue');
+  return true;
+}
+
 /**
  * Runs the test-play with the local bot (scripts/dev-services.mjs) and stores the report. The
  * mock twin of submit-game starting the GitHub runner; never called from the developer side.
@@ -355,6 +387,8 @@ export function applyPreQaReport(versionId: string, report: PreQaReport): QaStat
   const v = updateVersionRow(versionId, { preQaReport: report, qaStatus: status, usesSdk: report.usesSdk });
   const harm = harmfulReason(report);
   if (harm && autoReject(versionId, harm)) return 'rejected';
+  // BS Originals: a clean test-play publishes a submitted house-studio game (mirror of app.auto_approve).
+  if (status === 'in_review' && report.status !== 'fail' && autoApproveOriginal(versionId)) return 'approved';
   if (minorUpdateOk(v) && takeToken(`minor-publish:${v.gameId}`, 3, 7 * 86_400_000)) {
     publishVersion(versionId);
     return 'approved';
@@ -486,10 +520,11 @@ export const mockDev: DevRepo = {
       country: input.country,
       contactEmail: input.contactEmail.trim(),
       links: [],
-      verified: false,
       isFirstParty: false,
       level: 'rookie',
       suspendedAt: null,
+      verified: false,
+      ...foundingTick(),
       termsVersion: input.termsVersion,
       termsAcceptedAt: nowIso(),
       guardianName: input.holder === 'minor_with_guardian' ? (input.guardianName ?? '').trim() : null,

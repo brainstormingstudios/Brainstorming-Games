@@ -547,13 +547,13 @@ export const supabaseAdmin: AdminRepo = {
     const data = check(
       await getSupabase()
         .from('game_versions')
-        .select('id, version, created_at, submitted_at, pre_qa_report, auto_review, game_id, games!game_versions_game_id_fkey(title, released_at, studios(name))')
+        .select('id, version, created_at, submitted_at, pre_qa_report, auto_review, game_id, games!game_versions_game_id_fkey(title, released_at, studios(name, verified))')
         .eq('qa_status', 'in_review')
         .order('submitted_at', { ascending: true, nullsFirst: false }),
     );
-    return (data ?? []).map((x): QaQueueItem => {
+    const items = (data ?? []).map((x): QaQueueItem => {
       const r = x as Row;
-      const g = (r.games as { title?: string; released_at?: string | null; studios?: { name?: string } } | null) ?? {};
+      const g = (r.games as { title?: string; released_at?: string | null; studios?: { name?: string; verified?: boolean } } | null) ?? {};
       return {
         versionId: String(r.id),
         gameId: String(r.game_id),
@@ -564,8 +564,11 @@ export const supabaseAdmin: AdminRepo = {
         preQaStatus: ((r.pre_qa_report as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
         autoReviewStatus: ((r.auto_review as { status?: 'pass' | 'warn' | 'fail' } | null)?.status ?? null),
         isUpdate: Boolean(g.released_at),
+        studioVerified: Boolean(g.studios?.verified),
       };
     });
+    // Verified studios first (24-hour promise), then oldest first.
+    return items.sort((a, b) => Number(b.studioVerified) - Number(a.studioVerified));
   },
   async autoRejected() {
     const data = check(

@@ -181,7 +181,8 @@
       "under-10mb": "Under 10 MB",
       "updated": "Updated",
       "top-rated": "Top rated",
-      "top-picks": "Top picks"
+      "top-picks": "Top picks",
+      "verified": "From verified studios"
     },
     "railScrollLeft": "Scroll {title} left",
     "railScrollRight": "Scroll {title} right"
@@ -374,14 +375,15 @@
     "verifiedStudio": "Verified studio",
     "notFoundTitle": "We could not find that game",
     "notFoundBody": "It may have been renamed or removed.",
-    "sponsored": "Sponsored"
+    "sponsored": "Sponsored",
+    "bsOfficial": "BS Official: made by Brainstorming Studios"
   },
   "studio": {
     "metaTitle": "{name} – games by this studio",
     "games": "Games by {name}",
     "gamesCount": "{count, plural, one {# game} other {# games}}",
     "verified": "Verified studio",
-    "firstParty": "BS Original",
+    "firstParty": "BS Official",
     "noGamesTitle": "No games published yet",
     "noGamesBody": "This studio has not released a game here yet.",
     "notFoundTitle": "We could not find that studio",
@@ -450,7 +452,8 @@
       "payouts": "Payouts",
       "docs": "Docs",
       "jams": "Jams",
-      "boost": "Boost"
+      "boost": "Boost",
+      "verified": "Verified"
     },
     "signup": {
       "title": "Create your studio",
@@ -698,7 +701,7 @@
       "trailerTitle": "Vertical trailer for Shorts and Reels",
       "trailerBody": "A free 9:16 video made from your preview video, with your game's title and your referral link (players who come through it earn you 85%).",
       "reviewBy": "We'll review it by {date}.",
-      "reviewPromise": "A person reviews every submission within 72 hours. If we take longer, your next Spotlight Boost is free.",
+      "reviewPromise": "A person reviews every submission within {hours} hours. If we take longer, your next Spotlight Boost is free.",
       "publishMinor": "Publish update",
       "minorPublished": "Update published"
     },
@@ -1059,7 +1062,8 @@
       "autoRejectedEmpty": "Nothing rejected automatically yet.",
       "rejectedAt": "Rejected",
       "reason": "Reason",
-      "open": "Open"
+      "open": "Open",
+      "verifiedStudio": "Verified: 24 h"
     },
     "review": {
       "title": "Review {title} v{version}",
@@ -2364,5 +2368,31 @@
     "reauthTitle": "Confirm it is you",
     "reauthBody": "For your safety, changing where your money goes needs a fresh sign-in. We will send a code to your e-mail.",
     "reauthCancel": "Not now"
+  },
+  "verified": {
+    "title": "Verified tick",
+    "intro": "A tick next to your studio name on every game and on your studio page, so players know they can trust your games. Cheap on purpose: we want every serious developer to have it.",
+    "official": "BS Official",
+    "on": "Verified",
+    "off": "Not verified",
+    "stateOfficial": "Your studio is the house studio: it shows the BS Official badge, and its games are BS Originals.",
+    "stateOff": "Your studio has no tick yet. Get it below.",
+    "stateFounding": "Founding studio #{number}: your tick is free until {until}.",
+    "statePaid": "Your tick is active until {until}.",
+    "stateStaff": "Verified by our team.",
+    "benefitsTitle": "What the tick gives you",
+    "benefitTick": "The Verified tick next to your studio name on every game page and on your studio page.",
+    "benefitReview": "Faster review: we promise to review your games within 24 hours instead of 72. If we are late, your next Boost is free.",
+    "benefitShelf": "Your games can appear in the \"From verified studios\" row on the home page.",
+    "benefitBoost": "One free Spotlight Boost every month.",
+    "founding": "The first {count} studios on Brainstorming Games get the tick free for their first year.",
+    "monthTitle": "1 month",
+    "monthBody": "30 days of the tick and all its benefits.",
+    "yearTitle": "1 year",
+    "yearBody": "365 days: about 4 months free compared with paying monthly.",
+    "yearSave": "Best value",
+    "buy": "Get the tick",
+    "extend": "Add time",
+    "indiaOnly": "Payments are available in India only for now."
   }
 }
