@@ -65,6 +65,8 @@ export const supabaseQuestsExtra: Omit<QuestsRepo, 'track'> = {
     };
   },
   async ledger() {
+    // Only a signed-in player has a points history; asking without one is refused.
+    if (!(await uid())) return [];
     const rows = (check(await getSupabase().from('brain_point_ledger').select('delta, reason, created_at').order('created_at', { ascending: false }).limit(100)) ?? []) as Row[];
     return rows.map((r) => ({ delta: Number(r.delta), reason: String(r.reason), createdAt: String(r.created_at) }));
   },

@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { IS_MOCK, SUPABASE_URL } from '@/lib/config';
+import { IS_MOCK, PLAY_ORIGIN } from '@/lib/config';
 
 const KEY = 'bg.country';
 let pending: Promise<string | null> | null = null;
 
 /**
- * The visitor's country (ISO code) as the server sees it, or null when unknown. Asked once per
+ * The visitor's country (ISO code) as Cloudflare sees it (the games server's /__geo), or null when
+ * unknown. Asked once per
  * tab. Mock mode reads `bg.country` from localStorage (default IN) so tests can play a visitor
  * from abroad.
  */
@@ -26,7 +27,7 @@ export function loadCountry(): Promise<string | null> {
   } catch {
     // storage unavailable
   }
-  pending ??= fetch(`${SUPABASE_URL}/functions/v1/geo`)
+  pending ??= fetch(`${PLAY_ORIGIN}/__geo`)
     .then((r) => (r.ok ? (r.json() as Promise<{ country: string | null }>) : { country: null }))
     .then(({ country }) => {
       try {

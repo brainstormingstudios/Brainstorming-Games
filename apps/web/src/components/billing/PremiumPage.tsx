@@ -16,6 +16,7 @@ import { useSession } from '@/lib/hooks/useSession';
 import { useCountry } from '@/lib/hooks/useCountry';
 import { canBuyIn } from '@/lib/domain/market';
 import { useCheckout } from './Checkout';
+import { PAYMENTS_LIVE } from '@/lib/config';
 import { PointsSwap } from './PointsSwap';
 
 const PERKS: Record<PremiumPlan, string[]> = {
@@ -71,7 +72,9 @@ export function PremiumPage() {
   const pass = useSearchParams().get('pass');
   // Memberships are sold in India only for now (lib/domain/market.ts).
   const { country } = useCountry();
-  const sellsHere = canBuyIn(country);
+  // Buying needs payments switched on (Razorpay) and, for now, a visitor in India.
+  const sellsHere = PAYMENTS_LIVE && canBuyIn(country);
+  const tb = useTranslations('billing');
   const redeemed = useRef(false);
 
   // A guest-pass link: redeem it once the visitor is signed in.
@@ -141,8 +144,8 @@ export function PremiumPage() {
         </div>
       )}
       {!sellsHere ? (
-        <p className="mx-auto mt-4 max-w-4xl text-center text-sm font-bold" data-testid="india-only">
-          {t('indiaOnly')}
+        <p className="mx-auto mt-4 max-w-4xl text-center text-sm font-bold" data-testid={PAYMENTS_LIVE ? 'india-only' : 'payments-soon'}>
+          {PAYMENTS_LIVE ? t('indiaOnly') : tb('paymentsSoon')}
         </p>
       ) : null}
       {user?.username && s && !s.canBuy ? <p className="mx-auto mt-4 max-w-4xl text-center text-sm text-fg-muted">{t('adultsOnly')}</p> : null}

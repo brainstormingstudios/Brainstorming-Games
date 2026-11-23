@@ -2011,7 +2011,8 @@
     "testIntro": "This build has no payment keys yet, so this is a test: no money moves.",
     "testNote": "On the live site this opens Razorpay: UPI, cards, net banking and wallets.",
     "payTest": "Pay {amount} (test)",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "paymentsSoon": "Payments open soon. Buying is switched off until our payment partner is set up; nothing is charged."
   },
   "premium": {
     "metaTitle": "Brainstorming Premium",

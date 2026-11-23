@@ -97,6 +97,8 @@ export const TURNSTILE_SITE_KEY = (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ??
 
 /** Payments: Razorpay's public key id. Empty means the local test checkout (no money moves). */
 export const RAZORPAY_KEY_ID = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '').trim();
+/** Payments work: Razorpay is set up (live), or the local test checkout (mock). Buy buttons wait otherwise. */
+export const PAYMENTS_LIVE = IS_MOCK || Boolean(RAZORPAY_KEY_ID);
 
 /** ISO time of this build. Games changed after it are fetched live on the client. */
 export const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME ?? '1970-01-01T00:00:00.000Z';

@@ -90,7 +90,19 @@ export function SocialSignIn({ next, disabled, onSignedIn, onError }: { next?: s
               .finally(() => setBusy(null));
           },
         });
-        window.google.accounts.id.renderButton(googleBox.current, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', width: 320 });
+        // Google's own button, dressed to match the site: dark on the dark theme, rounded like our
+        // buttons and as wide as the other sign-in options (Google allows 200 to 400 px).
+        const light = document.documentElement.getAttribute('data-theme') === 'light';
+        const width = Math.round(Math.min(400, Math.max(200, googleBox.current.parentElement?.clientWidth ?? 320)));
+        window.google.accounts.id.renderButton(googleBox.current, {
+          type: 'standard',
+          theme: light ? 'outline' : 'filled_black',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          logo_alignment: 'left',
+          width,
+        });
         setGoogleReady(true);
       })
       .catch(() => setGoogleReady(false));
@@ -114,8 +126,8 @@ export function SocialSignIn({ next, disabled, onSignedIn, onError }: { next?: s
   return (
     <div className="flex flex-col gap-2" data-testid="social-sign-in">
       {GOOGLE_CLIENT_ID ? (
-        <div className="flex min-h-11 justify-center" data-testid="google-button">
-          <div ref={googleBox} aria-label={t('google')} />
+        <div className="flex min-h-11 w-full items-center justify-center overflow-hidden rounded-full" data-testid="google-button">
+          <div ref={googleBox} aria-label={t('google')} className="flex justify-center [color-scheme:normal]" />
           {!googleReady ? <span className="text-sm text-fg-muted">{t('googleLoading')}</span> : null}
         </div>
       ) : (

@@ -39,9 +39,9 @@ export function DailyPage() {
     return { ...d, game, board };
   }, [user?.id], { topics: ['catalogue', 'leaderboards'] });
 
-  if (today.loading && today.data === undefined) return <div className="page"><Skeleton className="h-96 w-full" /></div>;
+  if (today.loading && today.data === undefined) return <div className="page"><h1 className="sr-only">{t('title')}</h1><Skeleton className="h-96 w-full" /></div>;
   const d = today.data;
-  if (!d) return <div className="page"><EmptyState title={t('none')} /></div>;
+  if (!d) return <div className="page"><h1 className="sr-only">{t('title')}</h1><EmptyState title={t('none')} /></div>;
 
   return (
     <div className="page flex flex-col gap-5" data-testid="daily-page">

@@ -87,10 +87,30 @@ async function readObject(env, key, html) {
   return { body: res.body, size: length === null ? null : Number(length), etag: res.headers.get('etag') ?? '' };
 }
 
+/**
+ * The visitor's country as Cloudflare sees it, for the sites (paid features are sold in India
+ * only). Supabase's servers do not receive it, so the sites ask here. Nothing is stored.
+ */
+function geo(request, env) {
+  const origin = request.headers.get('origin') ?? '';
+  const allowed = String(env.SITE_ORIGINS ?? '').split(/\s+/).filter(Boolean);
+  const country = String(request.cf?.country ?? '').toUpperCase();
+  const body = JSON.stringify({ country: /^[A-Z]{2}$/.test(country) && country !== 'XX' && country !== 'T1' ? country : null });
+  return new Response(body, {
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+      ...(allowed.includes(origin) ? { 'access-control-allow-origin': origin, vary: 'Origin' } : {}),
+    },
+  });
+}
+
 /** Handles one request. Exported for tests. */
 export async function handle(request, env) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return text(405, 'Method not allowed', { allow: 'GET, HEAD' });
   const url = new URL(request.url);
+  if (url.pathname === '/__geo') return geo(request, env);
   const key = keyFor(url, env);
   if (!key) return text(404, 'Not found');
   const ext = key.slice(key.lastIndexOf('.') + 1).toLowerCase();

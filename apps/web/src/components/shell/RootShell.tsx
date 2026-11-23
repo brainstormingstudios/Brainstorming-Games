@@ -34,6 +34,8 @@ const CLIENT_NAMESPACES = [
   'leaderboards',
   // Follow, report, devlog feed, playtest survey and clip button on studio and game pages.
   'growth',
+  // Skill names on game pages ("Trains: speed, focus").
+  'brain',
 ] as const;
 
 function pick(messages: Record<string, unknown>, keys: readonly string[]) {

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Mascot, ToastProvider } from '@brainstorming/ui';
 import { ConsentBanner } from '@/components/ads/ConsentBanner';
+import { NavProgress } from './NavProgress';
 import { LoginDialog } from '@/components/auth/AccountMenu';
 import { MASCOT_NAME } from '@/lib/config';
 import { getRepo } from '@/lib/data';
@@ -81,6 +82,7 @@ function MascotGreeting() {
 export function Providers({ children, dismissLabel }: { children: ReactNode; dismissLabel: string }) {
   return (
     <ToastProvider dismissLabel={dismissLabel}>
+      <NavProgress />
       <AppEffects />
       {children}
       <MascotGreeting />

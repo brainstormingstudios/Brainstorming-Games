@@ -1,7 +1,7 @@
-import NextLink from 'next/link';
 import { useLocale as useIntlLocale } from 'next-intl';
 import type { ComponentProps } from 'react';
 import { defaultLocale, isLocale, localizePath, type Locale } from './config';
+import { IntentLink } from './IntentLink';
 
 /** The active locale. Works in server and client components. */
 export function useLocale(): Locale {
@@ -9,7 +9,7 @@ export function useLocale(): Locale {
   return isLocale(locale) ? locale : defaultLocale;
 }
 
-export interface LinkProps extends Omit<ComponentProps<typeof NextLink>, 'href' | 'locale'> {
+export interface LinkProps extends Omit<ComponentProps<typeof IntentLink>, 'href' | 'locale'> {
   href: string;
   /** Link to another language version instead of the current one. */
   locale?: Locale;
@@ -21,7 +21,10 @@ export interface LinkProps extends Omit<ComponentProps<typeof NextLink>, 'href' 
   hard?: boolean;
 }
 
-/** Locale-aware link. Prefetching is off by default to respect mobile data. */
+/**
+ * Locale-aware link. Nothing loads in advance just because a link is on screen (mobile data);
+ * the next page loads as soon as the visitor points at, focuses or touches the link (IntentLink).
+ */
 export function Link({ href, locale, hard, prefetch = false, children, ...rest }: LinkProps) {
   const current = useLocale();
   const target = localizePath(href, locale ?? current);
@@ -33,8 +36,8 @@ export function Link({ href, locale, hard, prefetch = false, children, ...rest }
     );
   }
   return (
-    <NextLink href={target} prefetch={prefetch} {...rest}>
+    <IntentLink href={target} prefetch={prefetch} {...rest}>
       {children}
-    </NextLink>
+    </IntentLink>
   );
 }

@@ -14,6 +14,7 @@ import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useCountry } from '@/lib/hooks/useCountry';
 import { canBuyIn } from '@/lib/domain/market';
 import { useCheckout } from './Checkout';
+import { PAYMENTS_LIVE } from '@/lib/config';
 
 export const BOOST_TONE: Record<BoostOrder['status'], BadgeTone> = {
   pending_payment: 'neutral',
@@ -101,7 +102,9 @@ export function BoostPage() {
   const selected = gameId || live[0]?.id || '';
   // Boosts are sold in India only for now (lib/domain/market.ts). Free credits work everywhere.
   const { country } = useCountry();
-  const sellsHere = canBuyIn(country);
+  // Buying needs payments switched on (Razorpay) and, for now, a visitor in India.
+  const sellsHere = PAYMENTS_LIVE && canBuyIn(country);
+  const tb = useTranslations('billing');
 
   const buy = async (pkg: BoostPackage) => {
     setBuying(pkg);
@@ -129,8 +132,8 @@ export function BoostPage() {
           <SelectField label={t('game')} className="max-w-sm" value={selected} onChange={(e) => setGameId(e.target.value)} options={live.map((g) => ({ value: g.id, label: g.title }))} data-testid="boost-game" />
           <FreeBoostCredit gameId={selected} onUsed={() => orders.refresh()} />
           {!sellsHere ? (
-            <p className="text-sm font-bold" data-testid="india-only">
-              {t('indiaOnly')}
+            <p className="text-sm font-bold" data-testid={PAYMENTS_LIVE ? 'india-only' : 'payments-soon'}>
+              {PAYMENTS_LIVE ? t('indiaOnly') : tb('paymentsSoon')}
             </p>
           ) : null}
           <div className="grid gap-4 lg:grid-cols-3">

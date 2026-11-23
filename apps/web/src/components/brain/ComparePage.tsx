@@ -23,8 +23,8 @@ export function ComparePage() {
   const theirs = useMemo(() => (them.data ? computeBrainProfile(them.data.rows, them.data.skills) : null), [them.data]);
   const me = useMemo(() => (mine.data ? computeBrainProfile(mine.data.rows, mine.data.skills) : null), [mine.data]);
 
-  if (them.loading && them.data === undefined) return <div className="page"><Skeleton className="h-96 w-full" /></div>;
-  if (!theirs || !them.data) return <div className="page"><EmptyState title={t('compareMissing')} art="sad" /></div>;
+  if (them.loading && them.data === undefined) return <div className="page"><h1 className="sr-only">{t('title')}</h1><Skeleton className="h-96 w-full" /></div>;
+  if (!theirs || !them.data) return <div className="page"><h1 className="sr-only">{t('title')}</h1><EmptyState title={t('compareMissing')} art="sad" /></div>;
   const display = them.data.displayName || them.data.username;
   const self = user?.username === them.data.username;
   const wins = me ? SKILLS.filter((s) => me.scores[s] > theirs.scores[s]).length : 0;

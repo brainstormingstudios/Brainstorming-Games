@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ToastProvider, cn } from '@brainstorming/ui';
+import { NavProgress } from '@/components/shell/NavProgress';
 import { AccountMenu, LoginDialog } from '@/components/auth/AccountMenu';
 import { Logo } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/SettingsToggles';
@@ -122,6 +123,7 @@ export function PortalFrame({ kind, dismissLabel, children }: { kind: PortalKind
   const tc = useTranslations('common');
   return (
     <ToastProvider dismissLabel={dismissLabel}>
+      <NavProgress />
       <a href="#main" className="skip-link">
         {tc('skipToContent')}
       </a>

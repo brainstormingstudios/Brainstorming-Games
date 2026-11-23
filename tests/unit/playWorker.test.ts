@@ -63,6 +63,20 @@ describe('game origins Worker', () => {
     expect(res.status).toBe(304);
   });
 
+  it('tells the sites the country of the visitor, and only the sites', async () => {
+    const req = (origin: string, country?: string) => {
+      const r = new Request('https://bg-play.acct.workers.dev/__geo', { headers: { origin } }) as Request & { cf?: { country?: string } };
+      Object.defineProperty(r, 'cf', { value: country ? { country } : undefined });
+      return r;
+    };
+    const ok = (await handle(req('https://brainstorming.example', 'IN'), env)) as Response;
+    expect(await ok.json()).toEqual({ country: 'IN' });
+    expect(ok.headers.get('access-control-allow-origin')).toBe('https://brainstorming.example');
+    const other = (await handle(req('https://evil.example', 'IN'), env)) as Response;
+    expect(other.headers.get('access-control-allow-origin')).toBeNull();
+    expect(await ((await handle(req('https://brainstorming.example', 'XX'), env)) as Response).json()).toEqual({ country: null });
+  });
+
   describe('reading Supabase Storage (free launch)', () => {
     afterEach(() => vi.unstubAllGlobals());
     const supa = {

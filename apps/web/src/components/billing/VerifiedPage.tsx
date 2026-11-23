@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/format';
 import { useCountry } from '@/lib/hooks/useCountry';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useCheckout } from './Checkout';
+import { PAYMENTS_LIVE } from '@/lib/config';
 
 const BENEFITS = ['benefitTick', 'benefitReview', 'benefitShelf', 'benefitBoost'] as const;
 
@@ -23,7 +24,9 @@ export function VerifiedPage() {
   const { pay, dialog } = useCheckout();
   const status = useRepoQuery((repo) => repo.billing.verifiedStatus(), [], { topics: ['dev-games', 'revenue', 'notifications'] });
   const { country } = useCountry();
-  const sellsHere = canBuyIn(country);
+  // Buying needs payments switched on (Razorpay) and, for now, a visitor in India.
+  const sellsHere = PAYMENTS_LIVE && canBuyIn(country);
+  const tb = useTranslations('billing');
   const [buying, setBuying] = useState<VerifiedPlan | null>(null);
 
   const buy = async (plan: VerifiedPlan) => {
@@ -82,8 +85,8 @@ export function VerifiedPage() {
       {s?.firstParty ? null : (
         <>
           {!sellsHere ? (
-            <p className="text-sm font-bold" data-testid="india-only">
-              {t('indiaOnly')}
+            <p className="text-sm font-bold" data-testid={PAYMENTS_LIVE ? 'india-only' : 'payments-soon'}>
+              {PAYMENTS_LIVE ? t('indiaOnly') : tb('paymentsSoon')}
             </p>
           ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
