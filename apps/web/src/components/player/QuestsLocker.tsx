@@ -153,7 +153,7 @@ function Locker() {
     void act(async () => (await getRepo()).locker.equip(next), t('saved'));
   };
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]" data-testid="locker-page">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[280px_minmax(0,1fr)]" data-testid="locker-page">
       <Card className="relative flex h-fit flex-col items-center gap-2 p-5 lg:sticky lg:top-20">
         <h1 className="text-2xl font-bold">{t('title')}</h1>
         <p className="text-center text-sm text-fg-muted">{t('intro')}</p>

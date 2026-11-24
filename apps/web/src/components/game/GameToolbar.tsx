@@ -131,11 +131,12 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
     setShareOpen(true);
   };
 
-  const pill = 'flex h-11 items-center gap-2 rounded-control px-3 text-sm font-bold transition-colors hover:bg-surface-2';
+  // Compact on phones so the whole toolbar fits on one row (each button stays 44 px tall and wide).
+  const pill = 'flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-control px-2 text-sm font-bold transition-colors hover:bg-surface-2 sm:gap-2 sm:px-3';
 
   return (
     <div role="toolbar" aria-label={t('toolbar')} data-testid="game-toolbar" className="mt-3">
-      <div className="flex flex-wrap items-center gap-1 rounded-card border border-border bg-surface px-2 py-1.5">
+      <div className="flex items-center gap-0.5 overflow-x-auto rounded-card border border-border bg-surface px-1 py-1.5 [scrollbar-width:none] sm:flex-wrap sm:gap-1 sm:overflow-visible sm:px-2">
         <button
           type="button"
           aria-pressed={mine?.value === 1}

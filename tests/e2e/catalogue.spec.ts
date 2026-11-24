@@ -70,6 +70,9 @@ test.describe('catalogue', () => {
       await expect(page.getByRole('link', { name: /Logic/ })).toBeVisible();
 
       await page.goto('/');
+      // On phones search is an icon that opens the search bar.
+      const openSearch = page.getByTestId('search-open');
+      if (await openSearch.isVisible()) await openSearch.click();
       await page.getByTestId('search-input').fill('probe');
       await expect(page.getByTestId('search-results').getByText('Probe Quest')).toBeVisible();
       await page.getByTestId('search-input').press('Enter');

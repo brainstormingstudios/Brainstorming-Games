@@ -58,7 +58,7 @@ export function Rail({ title, games, href, priority, testId }: RailProps) {
         </h2>
         <div className="flex items-center gap-1">
           {href && games.length > 0 ? (
-            <Link href={href} className="mr-1 text-sm font-bold text-link underline-offset-4 hover:underline">
+            <Link href={href} className="mr-1 inline-flex min-h-11 items-center px-1 text-sm font-bold text-link underline-offset-4 hover:underline">
               {tc('seeAll')}
               <span className="sr-only">: {title}</span>
             </Link>

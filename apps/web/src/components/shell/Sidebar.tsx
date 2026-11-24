@@ -31,7 +31,7 @@ export function BottomTabs() {
   const [open, setOpen] = useState(false);
   const tabClass = (active: boolean) =>
     cn(
-      'flex h-full flex-1 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-bold',
+      'flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold',
       active ? 'text-primary light:text-navy-600' : 'text-fg-muted',
     );
   return (
@@ -47,7 +47,8 @@ export function BottomTabs() {
               className={tabClass(active)}
             >
               <item.icon aria-hidden="true" className="size-5" />
-              <span>{t(item.key)}</span>
+              {/* Short labels on the tab bar so each fits on one line. */}
+              <span className="truncate">{t.has(`tab.${item.key}`) ? t(`tab.${item.key}`) : t(item.key)}</span>
             </Link>
           );
         })}

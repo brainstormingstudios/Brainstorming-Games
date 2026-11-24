@@ -31,6 +31,8 @@ export function SearchBox({ className }: { className?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  // Phones: the box is a search icon until tapped, then a full-width bar over the header.
+  const [expanded, setExpanded] = useState(false);
   const [active, setActive] = useState(-1);
   const [index, setIndex] = useState<GameSummary[] | null>(null);
   const [remote, setRemote] = useState<GameSummary[]>([]);
@@ -67,7 +69,10 @@ export function SearchBox({ className }: { className?: string }) {
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!wrapRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setExpanded(false);
+      }
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
@@ -128,6 +133,7 @@ export function SearchBox({ className }: { className?: string }) {
 
   const go = (href: string, hard = false) => {
     setOpen(false);
+    setExpanded(false);
     inputRef.current?.blur();
     const target = localizePath(href, locale);
     if (hard) window.location.assign(target);
@@ -138,7 +144,8 @@ export function SearchBox({ className }: { className?: string }) {
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       if (open) setOpen(false);
-      else setQuery('');
+      else if (query) setQuery('');
+      else setExpanded(false);
       return;
     }
     if (!showList) {
@@ -160,7 +167,33 @@ export function SearchBox({ className }: { className?: string }) {
   };
 
   return (
-    <div ref={wrapRef} role="search" className={cn('relative min-w-0', className)}>
+    <>
+      <button
+        type="button"
+        aria-label={t('searchLabel')}
+        data-testid="search-open"
+        onClick={() => {
+          setExpanded(true);
+          loadIndex();
+          // Focus inside the tap, so phones open the keyboard.
+          requestAnimationFrame(() => inputRef.current?.focus());
+        }}
+        className={cn('ml-auto flex size-11 shrink-0 items-center justify-center rounded-control text-fg hover:bg-surface-2 sm:hidden', expanded && 'hidden')}
+      >
+        <Search aria-hidden="true" className="size-5" />
+      </button>
+    <div
+      ref={wrapRef}
+      role="search"
+      className={cn(
+        'relative min-w-0',
+        className,
+        expanded
+          ? 'max-sm:fixed max-sm:inset-x-0 max-sm:top-0 max-sm:z-[60] max-sm:flex max-sm:h-[var(--header-h)] max-sm:max-w-none max-sm:items-center max-sm:gap-2 max-sm:border-b max-sm:border-border max-sm:bg-[var(--header)] max-sm:px-3'
+          : 'max-sm:hidden',
+      )}
+    >
+      <div className="relative min-w-0 flex-1">
       <label htmlFor={`${listId}-input`} className="sr-only">
         {t('searchLabel')}
       </label>
@@ -191,7 +224,7 @@ export function SearchBox({ className }: { className?: string }) {
           setOpen(true);
         }}
         onKeyDown={onKeyDown}
-        className="h-11 w-full rounded-control border border-border bg-surface-3 pr-9 pl-10 text-[0.95rem] font-semibold text-fg placeholder:text-fg-muted [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 w-full rounded-control border border-border bg-surface-3 pr-9 pl-10 text-base font-semibold text-fg placeholder:text-fg-muted [&::-webkit-search-cancel-button]:hidden"
       />
       {query ? (
         <button
@@ -213,6 +246,18 @@ export function SearchBox({ className }: { className?: string }) {
           /
         </kbd>
       )}
+      </div>
+      <button
+        type="button"
+        aria-label={t('searchClose')}
+        onClick={() => {
+          setExpanded(false);
+          setOpen(false);
+        }}
+        className="flex size-11 shrink-0 items-center justify-center rounded-control text-fg-muted hover:text-fg sm:hidden"
+      >
+        <X aria-hidden="true" className="size-5" />
+      </button>
       <ul
         id={listId}
         role="listbox"
@@ -267,5 +312,6 @@ export function SearchBox({ className }: { className?: string }) {
         </li>
       </ul>
     </div>
+    </>
   );
 }

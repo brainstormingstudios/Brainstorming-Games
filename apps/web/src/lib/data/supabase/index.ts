@@ -332,7 +332,11 @@ const player: PlayerRepo = {
     if (!me) guestFavourites.set(gameId, on);
     else {
       const db = getSupabase().from('favorites');
-      const { error } = on ? await db.upsert({ user_id: me, game_id: gameId }) : await db.delete().eq('game_id', gameId);
+      // Players may add and remove favourites but never update them, so a repeat add must be
+      // "insert unless it is there" (ON CONFLICT DO NOTHING), not an upsert that updates.
+      const { error } = on
+        ? await db.upsert({ user_id: me, game_id: gameId }, { onConflict: 'user_id,game_id', ignoreDuplicates: true })
+        : await db.delete().eq('game_id', gameId);
       if (error) throw toRepoError(error);
     }
     emitTopic('favourites');

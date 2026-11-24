@@ -518,3 +518,29 @@
 @media (prefers-reduced-motion: reduce) {
   .nav-progress--loading { animation: none; transform: scaleX(0.6); }
 }
+
+/*
+ * Phones. iOS zooms the whole page in when a text field under 16 px gets focus, and players then
+ * have to pinch back out: every field is 16 px on small screens. Disclosure rows (FAQs) get a
+ * finger-sized tap area.
+ */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  summary {
+    padding-block: 10px;
+  }
+}
+
+/* Long text in articles and docs (links, code) wraps or scrolls inside its box, never the page. */
+.prose-bg {
+  overflow-wrap: anywhere;
+}
+.prose-bg pre {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-wrap: normal;
+}

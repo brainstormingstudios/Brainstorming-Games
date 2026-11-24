@@ -116,7 +116,7 @@ function TagInput({ value, onChange }: { value: string[]; onChange: (tags: strin
           onBlur={() => text.trim() && add(text)}
           placeholder={value.length ? '' : t('tagsPlaceholder')}
           aria-label={t('tags')}
-          className="min-w-32 flex-1 bg-transparent py-1 text-sm outline-none"
+          className="min-h-9 min-w-32 flex-1 bg-transparent py-1.5 text-sm outline-none"
           data-testid="wiz-tags"
         />
       </div>

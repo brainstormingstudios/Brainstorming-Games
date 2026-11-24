@@ -49,7 +49,7 @@ export default async function DocPage({ params }: { params: Params }) {
   return (
     <div className="page" data-testid="dev-docs">
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <nav aria-label="Developer docs" className="lg:sticky lg:top-20 lg:h-fit">
+        <nav aria-label="Developer docs" className="min-w-0 lg:sticky lg:top-20 lg:h-fit">
           <ul className="flex gap-1 overflow-x-auto lg:flex-col">
             {DOCS.map((d) => (
               <li key={d.slug}>

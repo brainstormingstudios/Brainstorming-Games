@@ -52,7 +52,8 @@
     "menu": "Menu",
     "greetingTitle": "Hi, I'm {name}!",
     "greetingBody": "Pick any game and it starts in your browser. No downloads, no login.",
-    "greetingCta": "Let's play"
+    "greetingCta": "Let's play",
+    "searchClose": "Close search"
   },
   "nav": {
     "primary": "Main",
@@ -73,7 +74,10 @@
     "premium": "Premium",
     "brain": "Brain Profile",
     "discover": "Early Access",
-    "daily": "Daily challenge"
+    "daily": "Daily challenge",
+    "tab": {
+      "recent": "Recent"
+    }
   },
   "categories": {
     "action": {
