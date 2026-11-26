@@ -120,6 +120,12 @@ const src = {
   frame: [PLAY_ORIGIN],
   font: ["'self'"],
 };
+// The player site loads its Google Tag Manager container from the shared root shell.
+if (IS_PLAY) {
+  src.script.push('https://www.googletagmanager.com');
+  src.connect.push('https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://analytics.google.com');
+  src.img.push('https://www.google-analytics.com', 'https://analytics.google.com');
+}
 // Game frames: every game origin (a wildcard such as https://*.bgplay.net).
 if (validPattern(GAME_PATTERN)) src.frame.push(GAME_PATTERN.replace('{game}', '*'));
 if (supabaseHost) {
