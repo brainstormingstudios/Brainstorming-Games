@@ -184,6 +184,7 @@ export function GameView({ game, related }: GameViewProps) {
               onStats={setStats}
               requestClip={(seconds) => frame.current?.clip(seconds) ?? Promise.reject(new Error('no-sdk'))}
               canClip={() => frame.current?.canClip() ?? false}
+              controls={game.controls}
             />
             <PlaytestCard game={game} />
 

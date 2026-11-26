@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Play, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Mascot, cn } from '@brainstorming/ui';
 import { GameCover } from '@/components/catalogue/GameCover';
 import { MASCOT_NAME } from '@/lib/config';
@@ -146,7 +147,22 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       track('loading_start', ids);
       void getRepo().then((repo) => repo.player.recordPlay(game, 0, true));
     }
-    if (!preview && window.matchMedia('(max-width: 639px)').matches) setImmersive(true);
+    // Phones play full screen. Real full screen must be asked for inside this tap (Android;
+    // iPhones do not offer it to websites, so there the game simply fills the screen), and a
+    // landscape game turns the phone sideways where the browser allows it.
+    if (!preview && window.matchMedia('(max-width: 639px), (pointer: coarse) and (max-height: 500px)').matches) {
+      setImmersive(true);
+      const root = document.documentElement;
+      if (root.requestFullscreen && !document.fullscreenElement) {
+        void root
+          .requestFullscreen({ navigationUI: 'hide' })
+          .then(() => {
+            const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+            if (game.orientation === 'landscape' && o?.lock) return o.lock('landscape').catch(() => {});
+          })
+          .catch(() => {});
+      }
+    }
     void loadHost().then(() => setPhase('loading'));
   };
 
@@ -272,7 +288,17 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     [toggleFullscreen, phase],
   );
 
-  return (
+  const closeImmersive = () => {
+    setImmersive(false);
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    try {
+      screen.orientation?.unlock?.();
+    } catch {
+      // not supported
+    }
+  };
+
+  const frameUi = (
     <div
       ref={stage}
       data-testid="game-frame"
@@ -282,7 +308,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
         // Only one position utility at a time: with both, `relative` would win and collapse the
         // immersive (phone) frame to zero height.
         immersive
-          ? 'fixed inset-0 z-[90] rounded-none'
+          ? 'fixed inset-0 z-[300] h-[100dvh] w-screen rounded-none'
           : 'relative aspect-video w-full rounded-card border border-border shadow-card',
       )}
     >
@@ -365,13 +391,18 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       {immersive ? (
         <button
           type="button"
-          onClick={() => setImmersive(false)}
+          onClick={closeImmersive}
           aria-label={t('closeGame')}
-          className="absolute top-2 left-2 z-10 flex size-10 items-center justify-center rounded-full bg-navy-950/80 text-white"
+          className="absolute top-[max(0.5rem,env(safe-area-inset-top))] left-2 z-10 flex size-11 items-center justify-center rounded-full bg-navy-950/80 text-white"
         >
           <X aria-hidden="true" className="size-5" />
         </button>
       ) : null}
     </div>
   );
+  // While playing full screen the frame is drawn at the top of the page, above the header, the
+  // tab bar and any pop-up, at the exact screen size. (Inside the page layout, an ancestor's
+  // styles could trap it and size the game wrongly.) It is chosen before the game loads, so the
+  // game never reloads because of it.
+  return immersive && typeof document !== 'undefined' ? createPortal(frameUi, document.body) : frameUi;
 });

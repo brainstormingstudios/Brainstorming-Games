@@ -52,7 +52,7 @@ describe('play history', () => {
 
 describe('sign-in hand-over', () => {
   it('makes a single-use code that only the server can spend, once, for its site', async () => {
-    const [{ code }] = await as(db, 'authenticated', other, (q) => q<{ code: string }>(`select public.create_signin_handover('https://brainstorming-games-dev.pages.dev') as code`));
+    const code = (await as(db, 'authenticated', other, (q) => q<{ code: string }>(`select public.create_signin_handover('https://brainstorming-games-dev.pages.dev') as code`)))[0]!.code;
     expect(code).toMatch(/^[0-9a-f]{64}$/);
     await expect(as(db, 'authenticated', other, (q) => q(`select public.redeem_signin_handover($1, 'https://brainstorming-games-dev.pages.dev')`, [code]))).rejects.toThrow(/permission denied|not_allowed/);
     const spend = (origin: string) => as(db, 'service_role', null, async (q) => (await q<{ u: string }>(`select public.redeem_signin_handover($1, $2) as u`, [code, origin]))[0]!.u);

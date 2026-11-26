@@ -1,5 +1,6 @@
 'use client';
 
+import { parseControls } from '@/lib/domain/controlsParse';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Check, Plus, Trash2, X } from 'lucide-react';
@@ -154,6 +155,32 @@ function InputPicker({ label, options, value, onChange, testId }: { label: strin
   );
 }
 
+/** Paste every control at once ("Move: Arrow keys | Swipe", one per line); they fill the rows below. */
+function PasteControls({ onRows }: { onRows: (rows: ControlRow[]) => void }) {
+  const t = useTranslations('dev.wizard');
+  const [text, setText] = useState('');
+  const found = parseControls(text);
+  return (
+    <details className="rounded-control border border-dashed border-border px-3" data-testid="wiz-controls-paste">
+      <summary className="cursor-pointer text-sm font-bold">{t('controlsPasteTitle')}</summary>
+      <div className="flex flex-col gap-2 pb-3">
+        <p className="text-xs text-fg-muted">{t('controlsPasteHint')}</p>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={5}
+          placeholder={['Move: Arrow keys / WASD | Swipe', 'Jump: Space | Tap', 'Pause: Esc | Two-finger tap'].join(String.fromCharCode(10))}
+          className="w-full rounded-control border border-border bg-surface-3 p-2 font-mono text-sm"
+          data-testid="wiz-controls-paste-text"
+        />
+        <Button size="sm" className="self-start" disabled={found.length === 0} onClick={() => { onRows(found); setText(''); }} data-testid="wiz-controls-paste-apply">
+          {t('controlsPasteApply', { count: found.length })}
+        </Button>
+      </div>
+    </details>
+  );
+}
+
 function ControlsEditor({ rows, onChange }: { rows: ControlRow[]; onChange: (rows: ControlRow[]) => void }) {
   const t = useTranslations('dev.wizard');
   const set = (i: number, patch: Partial<ControlRow>) => onChange(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -163,6 +190,7 @@ function ControlsEditor({ rows, onChange }: { rows: ControlRow[]; onChange: (row
         <Need required>{t('controls')}</Need>
       </legend>
       <p className="text-xs text-fg-muted">{t('controlsHint')}</p>
+      <PasteControls onRows={(pasted) => onChange(pasted)} />
       {rows.map((row, i) => (
         <div key={i} className="grid gap-2 rounded-control border border-border p-2 sm:grid-cols-[1.2fr_1fr_1fr_auto]" data-testid="wiz-control-row">
           <TextField hideLabel label={t('controlAction')} placeholder={t('controlActionPlaceholder')} value={row.action} maxLength={60} onChange={(e) => set(i, { action: e.target.value })} data-testid="wiz-control-action" />

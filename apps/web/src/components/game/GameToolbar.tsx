@@ -1,5 +1,7 @@
 'use client';
 
+import { ControlsPanel } from './ControlsPanel';
+import type { ControlRow } from '@/lib/data/types';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
@@ -9,7 +11,7 @@ import {
   Maximize,
   MessageCircle,
   Minimize,
-  PartyPopper,
+  PartyPopper, UserPlus,
   RectangleHorizontal,
   Send,
   Share2,
@@ -58,9 +60,11 @@ export interface GameToolbarProps {
   /** Clip & share through the SDK, when the game uses it. */
   requestClip?: (seconds: number) => Promise<ClipVideo>;
   canClip?: () => boolean;
+  /** The game's controls, shown in the toolbar's Controls card. */
+  controls?: ControlRow[];
 }
 
-export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, onStats, requestClip, canClip }: GameToolbarProps) {
+export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, onStats, requestClip, canClip, controls = [] }: GameToolbarProps) {
   const t = useTranslations('game');
   const tc = useTranslations('common');
   const toast = useToast();
@@ -172,20 +176,39 @@ export function GameToolbar({ game, fullscreen, onToggleFullscreen, getContext, 
         </IconButton>
         {!schoolSafe ? <ClipButton title={game.title} slug={game.slug} requestClip={requestClip} canClip={canClip} /> : null}
         {!schoolSafe ? (
-          <IconButton
-            label={t('invite')}
-            data-testid="party-button"
-            onClick={() =>
-              void getRepo()
-                .then((repo) => repo.party.create(game.id))
-                .then((party) => window.location.assign(localizePath(`/party/${party.code}`, locale)))
-                .catch(fail)
-            }
-          >
-            <PartyPopper aria-hidden="true" className="size-5" />
-          </IconButton>
+          game.isMultiplayer ? (
+            // Multiplayer: a clear, labelled invite (a party room with a link to share).
+            <button
+              type="button"
+              data-testid="party-button"
+              onClick={() =>
+                void getRepo()
+                  .then((repo) => repo.party.create(game.id))
+                  .then((party) => window.location.assign(localizePath(`/party/${party.code}`, locale)))
+                  .catch(fail)
+              }
+              className="flex h-11 shrink-0 items-center gap-1.5 rounded-control bg-primary px-3 text-sm font-bold text-primary-fg transition-colors hover:bg-primary/90"
+            >
+              <UserPlus aria-hidden="true" className="size-5" />
+              <span>{t('inviteFriends')}</span>
+            </button>
+          ) : (
+            <IconButton
+              label={t('invite')}
+              data-testid="party-button"
+              onClick={() =>
+                void getRepo()
+                  .then((repo) => repo.party.create(game.id))
+                  .then((party) => window.location.assign(localizePath(`/party/${party.code}`, locale)))
+                  .catch(fail)
+              }
+            >
+              <PartyPopper aria-hidden="true" className="size-5" />
+            </IconButton>
+          )
         ) : null}
         <span className="ml-auto flex items-center gap-1">
+          <ControlsPanel controls={controls} />
           <IconButton label={t('report')} data-testid="report-button" onClick={() => setReportOpen(true)}>
             <Bug aria-hidden="true" className="size-5" />
           </IconButton>
