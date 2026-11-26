@@ -345,8 +345,37 @@ export const mockGrowth: GrowthRepo = {
     emitTopic('admin');
     emitTopic('session');
   },
+  async deleteStudio(studioId, reason) {
+    const staff = requireStaff();
+    if (staff.role !== 'admin') fail('not_allowed', 'Only an admin can delete studios.');
+    if (reason.trim().length < 5) fail('invalid', 'Write why (at least a few words).');
+    const s = readTable('studios').find((x) => x.id === studioId);
+    if (!s) fail('not_found');
+    if (s.isFirstParty) fail('invalid', 'The house studio cannot be deleted here.');
+    const games = new Set(readTable('games').filter((g) => g.studioId === studioId).map((g) => g.id));
+    mutateTable('versions', (rows) => rows.filter((v) => !games.has(v.gameId)));
+    mutateTable('games', (rows) => rows.filter((g) => g.studioId !== studioId));
+    mutateTable('studios', (rows) => rows.filter((x) => x.id !== studioId));
+    audit(staff.id, 'delete_studio', 'studio', studioId, { name: s.name, reason });
+    emitTopic('admin');
+    emitTopic('catalogue');
+  },
+  async transferStudio(studioId, email) {
+    const staff = requireStaff();
+    if (staff.role !== 'admin') fail('not_allowed');
+    const user = readTable('users').find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!user) fail('not_found', 'No account with that e-mail. Ask them to sign up first.');
+    if (readTable('studios').some((x) => x.ownerId === user.id && x.id !== studioId)) fail('conflict', 'That account already has a studio.');
+    mutateTable('studios', (rows) => {
+      const s = rows.find((x) => x.id === studioId);
+      if (s) s.ownerId = user.id;
+    });
+    audit(staff.id, 'transfer_studio', 'studio', studioId, { to: user.id });
+    emitTopic('admin');
+  },
   async deleteUser(userId, reason) {
     const staff = requireStaff();
+    if (readTable('studios').some((x) => x.ownerId === userId)) fail('conflict', 'This account owns a studio. Hand the studio over or delete it first (Moderation > Studios).');
     if (staff.role !== 'admin') fail('not_allowed', 'Only an admin can delete accounts.');
     if (userId === staff.id) fail('not_allowed', 'You cannot delete your own account here.');
     if (reason.trim().length < 5) fail('invalid', 'Write why (at least a few words).');
@@ -402,7 +431,7 @@ export const mockGrowth: GrowthRepo = {
     return readTable('studios')
       .filter((s) => !q || s.slug.includes(q) || s.name.toLowerCase().includes(q))
       .slice(0, 20)
-      .map((s) => ({ id: s.id, slug: s.slug, name: s.name, verified: s.verified, suspended: Boolean(s.suspendedAt) }));
+      .map((s) => ({ id: s.id, slug: s.slug, name: s.name, verified: s.verified, suspended: Boolean(s.suspendedAt), isFirstParty: s.isFirstParty }));
   },
   async setStudio(studioId, patch) {
     const staff = requireStaff();

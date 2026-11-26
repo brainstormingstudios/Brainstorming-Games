@@ -12,11 +12,14 @@ import { getRepo } from '@/lib/data';
 import { creatorRef, referral } from '@/lib/data/local';
 import { track } from '@/lib/events/client';
 import { getPrefs, setPrefs } from '@/lib/prefs';
+import { consumeHandover } from '@/lib/auth/handover';
 
 /** Registers the service worker (production only) and records page views and referral links. */
 function AppEffects() {
   const pathname = usePathname();
   useEffect(() => {
+    // Signed in on another of our sites: finish the one-click sign-in here.
+    void consumeHandover();
     const before = referral.current();
     referral.capture(window.location.search);
     const after = referral.current();

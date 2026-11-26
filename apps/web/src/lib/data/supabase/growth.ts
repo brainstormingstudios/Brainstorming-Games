@@ -343,7 +343,23 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       emitTopic('admin');
     },
     async deleteUser(userId_, reason) {
-      check(await getSupabase().rpc('admin_delete_user', { p_user: userId_, p_reason: reason }));
+      const { error } = await getSupabase().rpc('admin_delete_user', { p_user: userId_, p_reason: reason });
+      if (error?.message.includes('owns_studio')) {
+        throw new RepoError('conflict', 'This account owns a studio. Hand the studio over or delete it first (Moderation > Studios).');
+      }
+      check({ data: null, error });
+      emitTopic('admin');
+    },
+    async deleteStudio(studioId, reason) {
+      check(await getSupabase().rpc('admin_delete_studio', { p_studio: studioId, p_reason: reason }));
+      emitTopic('admin');
+      emitTopic('catalogue');
+    },
+    async transferStudio(studioId, email) {
+      const { error } = await getSupabase().rpc('admin_transfer_studio', { p_studio: studioId, p_email: email });
+      if (error?.message.includes('not_found')) throw new RepoError('not_found', 'No account with that e-mail. Ask them to sign up first.');
+      if (error?.message.includes('conflict')) throw new RepoError('conflict', 'That account already has a studio.');
+      check({ data: null, error });
       emitTopic('admin');
     },
     async allGames(query) {
@@ -371,10 +387,10 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
     },
     async findStudios(query) {
       const q = query.trim().replace(/[%,()]/g, '');
-      let req = getSupabase().from('studios').select('id, slug, name, verified, suspended_at');
+      let req = getSupabase().from('studios').select('id, slug, name, verified, suspended_at, is_first_party');
       if (q) req = req.or(`slug.ilike.%${q}%,name.ilike.%${q}%`);
       const rows = (check(await req.order('created_at', { ascending: false }).limit(20)) ?? []) as Row[];
-      return rows.map((r) => ({ id: String(r.id), slug: String(r.slug), name: String(r.name), verified: Boolean(r.verified), suspended: Boolean(r.suspended_at) }));
+      return rows.map((r) => ({ id: String(r.id), slug: String(r.slug), name: String(r.name), verified: Boolean(r.verified), suspended: Boolean(r.suspended_at), isFirstParty: Boolean(r.is_first_party) }));
     },
     async setStudio(studioId, patch) {
       check(await getSupabase().rpc('admin_set_studio', { p_studio: studioId, p_suspended: patch.suspended ?? null, p_verified: patch.verified ?? null }));

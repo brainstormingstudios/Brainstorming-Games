@@ -58,22 +58,25 @@ export function SiteOverview() {
         ))}
       </div>
 
-      <dl className="stat-grid">
-        {[
-          ['players7d', count(s.players7d)],
-          ['plays7d', count(s.plays7d)],
-          ['playsToday', count(s.playsToday)],
-          ['impressions7d', count(s.impressions7d)],
-          ['gamesLive', count(live)],
-          ['studios', count(s.studios)],
-          ['accounts', count(s.accounts)],
-        ].map(([key, value]) => (
-          <div key={key} className="stat" data-stat={key}>
-            <dt>{t(`stats.${key}`)}</dt>
-            <dd>{value}</dd>
-          </div>
+      {/* Every number opens the page where it can be acted on. */}
+      <div className="stat-grid">
+        {(
+          [
+            ['players7d', count(s.players7d), '/admin/games'],
+            ['plays7d', count(s.plays7d), '/admin/games'],
+            ['playsToday', count(s.playsToday), '/admin/games'],
+            ['impressions7d', count(s.impressions7d), '/admin/games'],
+            ['gamesLive', count(live), '/admin/games'],
+            ['studios', count(s.studios), '/admin/moderation?tab=studios'],
+            ['accounts', count(s.accounts), '/admin/moderation?tab=users'],
+          ] as const
+        ).map(([key, value, href]) => (
+          <Link key={key} href={href} className="stat block transition-colors hover:border-primary/70" data-stat={key}>
+            <span className="block text-xs font-extrabold tracking-wide text-fg-muted uppercase">{t(`stats.${key}`)}</span>
+            <span className="block font-display text-2xl font-extrabold tabular-nums">{value}</span>
+          </Link>
         ))}
-      </dl>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="p-4">

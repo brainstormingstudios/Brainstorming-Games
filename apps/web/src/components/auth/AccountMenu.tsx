@@ -1,5 +1,7 @@
 'use client';
 
+import { openSignedIn } from '@/lib/auth/handover';
+import { DEVELOPERS_URL } from '@/lib/config';
 import { useTranslations } from 'next-intl';
 import { LogIn } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -106,13 +108,26 @@ export function AccountMenu() {
               ['/friends', tp('friends'), false],
               ['/party', tparty('title'), false],
               ['/settings', tp('settings'), false],
-              ['/dev', t('devPortal'), false],
             ] as const
           ).map(([href, label, hard]) => (
             <Link key={href} role="menuitem" href={href} hard={hard} className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2" onClick={() => setOpen(false)}>
               {label}
             </Link>
           ))}
+          {/* The developer portal is another address: open it already signed in. */}
+          <a
+            role="menuitem"
+            href={`${DEVELOPERS_URL}/`}
+            className="block rounded-control px-3 py-2 text-sm font-bold hover:bg-surface-2"
+            onClick={(e) => {
+              setOpen(false);
+              if (e.button !== 0 || e.metaKey || e.ctrlKey) return;
+              e.preventDefault();
+              void openSignedIn(`${DEVELOPERS_URL}/`);
+            }}
+          >
+            {t('devPortal')}
+          </a>
           <button
             type="button"
             role="menuitem"

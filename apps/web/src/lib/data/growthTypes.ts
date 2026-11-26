@@ -176,6 +176,8 @@ export interface AdminStudioRow {
   name: string;
   verified: boolean;
   suspended: boolean;
+  /** The house studio (BS Official): never deleted from the portal. */
+  isFirstParty: boolean;
 }
 
 export interface AdminDevlogRow {

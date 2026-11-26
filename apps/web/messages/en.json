@@ -28,7 +28,8 @@
     "next": "Next",
     "yes": "Yes",
     "no": "No",
-    "optional": "optional"
+    "optional": "optional",
+    "ownerCodeAgain": "This needs your owner code again. Sign out and back in to the management portal, then enter the 6-digit code."
   },
   "shell": {
     "logoHome": "Brainstorming Games home",
@@ -1367,7 +1368,9 @@
       "deleteBody": "This cannot be undone. Write why; the reason is kept in the audit log.",
       "deleteReason": "Reason",
       "deleteConfirm": "Delete for good",
-      "deleted": "Deleted."
+      "deleted": "Deleted.",
+      "transfer": "Hand over",
+      "transferPrompt": "Hand {name} to which account? Type their e-mail (they must have signed up)."
     },
     "progression": {
       "title": "Quests & locker",
@@ -2400,5 +2403,6 @@
     "buy": "Get the tick",
     "extend": "Add time",
     "indiaOnly": "Payments are available in India only for now."
-  }
+  },
+  "errors": {}
 }

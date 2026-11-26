@@ -620,6 +620,10 @@ export interface GrowthRepo {
   setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean; role?: UserRole }): Promise<void>;
   /** Admins: delete an account for good (not your own). */
   deleteUser(userId: string, reason: string): Promise<void>;
+  /** Admins: delete a studio with its games for good (not the house studio). */
+  deleteStudio(studioId: string, reason: string): Promise<void>;
+  /** Admins: hand a studio to another signed-up account, by e-mail. */
+  transferStudio(studioId: string, email: string): Promise<void>;
   /** Every game on the site with its studio and status, for game moderation. */
   allGames(query: string): Promise<{ id: string; slug: string; title: string; studioName: string; status: GameStatus; autoReviewStatus: AutoReviewReport['status'] | null; updatedAt: string }[]>;
   /** Admins: delete a game for good. */

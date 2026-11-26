@@ -27,9 +27,11 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { ToastProvider, cn } from '@brainstorming/ui';
 import { NavProgress } from '@/components/shell/NavProgress';
+import { consumeHandover, openSignedIn } from '@/lib/auth/handover';
+import { SITE_URL } from '@/lib/config';
 import { AccountMenu, LoginDialog } from '@/components/auth/AccountMenu';
 import { Logo } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/SettingsToggles';
@@ -119,6 +121,9 @@ function PortalNav({ kind }: { kind: PortalKind }) {
  * separate websites with their own job.
  */
 export function PortalFrame({ kind, dismissLabel, children }: { kind: PortalKind; dismissLabel: string; children: ReactNode }) {
+  useEffect(() => {
+    void consumeHandover();
+  }, []);
   const t = useTranslations('portal');
   const tc = useTranslations('common');
   return (
@@ -131,10 +136,20 @@ export function PortalFrame({ kind, dismissLabel, children }: { kind: PortalKind
         <header className="portal-bar">
           <Logo label={t(`${kind}.home`)} href={ROOT[kind]} tag={t(`${kind}.name`)} />
           <span className="ml-auto flex items-center gap-1.5">
-            <Link href="/" className="portal-site-link" data-testid="open-player-site">
+            <a
+              href={`${SITE_URL}/`}
+              className="portal-site-link"
+              data-testid="open-player-site"
+              onClick={(e) => {
+                // Carry the sign-in to the player site (separate address, separate sign-in).
+                if (e.button !== 0 || e.metaKey || e.ctrlKey) return;
+                e.preventDefault();
+                void openSignedIn(`${SITE_URL}/`);
+              }}
+            >
               <ExternalLink aria-hidden="true" className="size-4" />
               <span className="hidden sm:inline">{t('playerSite')}</span>
-            </Link>
+            </a>
             <ThemeToggle />
             <AccountMenu />
           </span>

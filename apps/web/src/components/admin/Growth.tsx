@@ -500,6 +500,20 @@ function Studios() {
                 >
                   {s.suspended ? t('unsuspend') : t('suspend')}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-testid="studio-transfer"
+                  onClick={() => {
+                    const email = window.prompt(t('transferPrompt', { name: s.name }))?.trim();
+                    if (email) void act(async () => (await getRepo()).growth.transferStudio(s.id, email), t('studioSaved'));
+                  }}
+                >
+                  {t('transfer')}
+                </Button>
+                {s.isFirstParty ? null : (
+                  <DeleteWithReason what={s.name} testId="studio-delete" onDelete={async (reason) => (await getRepo()).growth.deleteStudio(s.id, reason)} />
+                )}
               </span>
             </Card>
           </li>
@@ -545,7 +559,8 @@ function Devlogs() {
 /** Reports from players, plus the tools to act on them: games, accounts, studios and devlogs. */
 export function Moderation() {
   const t = useTranslations('admin.moderation');
-  const [tab, setTab] = useState('reports');
+  // ?tab=studios / players opens that tab (the overview's tiles link here).
+  const [tab, setTab] = useState(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null) ?? 'reports');
   return (
     <div className="flex flex-col gap-4" data-testid="moderation">
       <div>

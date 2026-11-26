@@ -78,6 +78,11 @@ export function useAct() {
       if (done) toast(done, { tone: 'success' });
       return true;
     } catch (err) {
+      // Staff actions need a session that passed the owner code; an older session may not have.
+      if (err instanceof RepoError && err.code === 'not_allowed' && err.message === err.code) {
+        toast(tc('ownerCodeAgain'), { tone: 'error' });
+        return false;
+      }
       toast(err instanceof RepoError && err.message !== err.code ? err.message : tc('errorBody'), { tone: 'error' });
       return false;
     }
