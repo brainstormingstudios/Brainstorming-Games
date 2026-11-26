@@ -88,6 +88,12 @@ test('developer upload → pre-QA → submit → approve → Spark → play → 
   await page.getByTestId('zip-input').setInputFiles({ name: 'probe.zip', mimeType: 'application/zip', buffer: await probeZip() });
   await expect(page.getByTestId('build-status')).toHaveAttribute('data-qa', 'uploaded', { timeout: 120_000 });
   await expect(page.getByTestId('pre-qa-report')).toHaveCount(0);
+  // The preview is a required step: play the build there, then Continue back to submitting.
+  await expect(page.getByTestId('wiz-check').and(page.locator('[data-ok="false"]')).first()).toBeVisible();
+  await page.getByTestId('wiz-open-preview').click();
+  await expect(page.getByTestId('game-frame')).toHaveAttribute('data-phase', 'playing', { timeout: 60_000 });
+  await page.locator('[data-testid="preview-continue"]:visible').first().click();
+  await expect(page.getByTestId('wiz-open-preview')).toHaveCount(0, { timeout: 20_000 });
 
   // 4. Submit for review: only once the rights boxes are ticked.
   await expect(page.getByTestId('wiz-submit')).toBeDisabled();

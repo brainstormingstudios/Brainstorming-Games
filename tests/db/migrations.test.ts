@@ -124,6 +124,8 @@ describe('developer flow', () => {
       q(`insert into public.game_media (game_id, kind, url, widths, width, height) values ($1, 'preview_landscape', 'https://example.test/v.mp4', '{}', 1280, 720)`, [gameId]),
     );
     await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, '{"ownsRights":false}')`, [gameId]))).rejects.toThrow(/invalid/);
+    await expect(as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]))).rejects.toThrow(/preview_required/);
+    await as(db, 'authenticated', dev, (q) => q(`select public.mark_version_previewed($1)`, [versionId]));
     await as(db, 'authenticated', dev, (q) => q(`select public.submit_for_review($1, $2)`, [gameId, declaration]));
 
     // A player cannot approve; an admin can.

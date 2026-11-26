@@ -23,7 +23,7 @@ import type {
 } from '../devTypes';
 import type { DevRepo } from '../repo';
 import { readCatalogueTables, statsFor } from './catalogue';
-import { requireUser } from './auth';
+import { currentMockUser, requireUser } from './auth';
 import { sendMail } from './mail';
 import {
   audit,
@@ -119,6 +119,7 @@ export function toDevVersion(v: MockVersion, currentId: string | null): DevVersi
     createdAt: v.createdAt,
     submittedAt: v.submittedAt ?? null,
     reviewedAt: v.reviewedAt ?? null,
+    previewedAt: v.previewedAt ?? null,
     isCurrent: v.id === currentId,
   };
 }
@@ -766,6 +767,7 @@ export const mockDev: DevRepo = {
     const missing = submissionGaps(g, readTable('media').filter((m) => m.gameId === gameId && m.isActive));
     if (missing.length) fail('invalid', `Still needed: ${missing.join(', ')}.`);
     if (!declaration?.ownsRights || !declaration.noCopies) fail('invalid', 'Confirm that you own or have licensed everything in the game.');
+    if (!latest.previewedAt) fail('invalid', 'Play your build in the preview first.');
     const review = autoReviewFor(g, latest, declaration);
     updateVersionRow(latest.id, { qaStatus: 'in_review', submittedAt: nowIso(), reviewedAt: null, declaration, autoReview: review });
     if (['draft', 'changes_requested', 'paused'].includes(g.status)) updateGameRow(gameId, { status: 'in_review' });
@@ -884,6 +886,15 @@ export const mockDev: DevRepo = {
       visits30d: new Set(events.map((e) => e.anonId)).size,
       adImpressions30d: events.filter((e) => e.type === 'ad_started').length,
     };
+  },
+  async markPreviewed(versionId) {
+    const v = readTable('versions').find((x) => x.id === versionId);
+    const g = v && readTable('games').find((x) => x.id === v.gameId);
+    const me = currentMockUser();
+    const owner = g && readTable('studios').find((s) => s.id === g.studioId)?.ownerId;
+    if (!v || !me || owner !== me.id) return;
+    if (!v.previewedAt) updateVersionRow(versionId, { previewedAt: nowIso() });
+    emitTopic('dev-games');
   },
   async preview(versionId, token): Promise<PreviewInfo | null> {
     const v = readTable('versions').find((x) => x.id === versionId && x.previewToken === token);

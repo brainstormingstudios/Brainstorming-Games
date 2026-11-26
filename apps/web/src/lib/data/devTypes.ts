@@ -115,6 +115,8 @@ export interface DevVersion {
   /** When it was sent for review, and when a person decided (the 72-hour promise). */
   submittedAt: string | null;
   reviewedAt: string | null;
+  /** When the developer played this build in the preview (required before submitting). */
+  previewedAt: string | null;
   isCurrent: boolean;
 }
 

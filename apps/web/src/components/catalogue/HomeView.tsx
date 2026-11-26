@@ -3,7 +3,7 @@
 import { isHeroActive } from '@/lib/domain/premium';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Play, Rocket } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { IconButton, Mascot, buttonClass, cn } from '@brainstorming/ui';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { CATEGORY_ICONS } from '@/components/shell/nav';
@@ -56,7 +56,14 @@ function PublishBanner() {
   );
 }
 
-/** Three featured games. The active slide's silent preview plays unless low-data mode is on. */
+const HERO_MS = 7000;
+
+/**
+ * Featured games, cinematic: slides cross-fade while the artwork slowly zooms (a gentle camera
+ * move), the title and Play button rise in after it, and bars show the time to the next game.
+ * Only the active slide's silent preview plays (none in low-data mode). Swipe on phones; hover
+ * or focus pauses; reduced motion keeps a plain fade.
+ */
 function HeroCarousel({ games }: { games: GameSummary[] }) {
   const t = useTranslations('home');
   const tc = useTranslations('common');
@@ -64,71 +71,120 @@ function HeroCarousel({ games }: { games: GameSummary[] }) {
   const { lowData } = usePrefs();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [cycle, setCycle] = useState(0);
+  const swipe = useRef<number | null>(null);
   const count = games.length;
+  const go = (next: number) => {
+    setIndex(((next % count) + count) % count);
+    setCycle((c) => c + 1);
+  };
   useEffect(() => {
     if (paused || count < 2) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = window.setInterval(() => setIndex((i) => (i + 1) % count), 7000);
-    return () => window.clearInterval(id);
-  }, [paused, count]);
-  const game = games[index % count]!;
+    const id = window.setTimeout(() => go(index + 1), HERO_MS);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restarts on every slide change
+  }, [paused, count, index, cycle]);
   return (
     <section
       aria-roledescription="carousel"
       aria-label={t('heroLabel')}
       data-testid="hero-carousel"
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setPaused(true)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="relative overflow-hidden rounded-card border border-border bg-surface"
+      onTouchStart={(e) => (swipe.current = e.touches[0]?.clientX ?? null)}
+      onTouchEnd={(e) => {
+        const from = swipe.current;
+        const to = e.changedTouches[0]?.clientX;
+        swipe.current = null;
+        if (from == null || to == null || Math.abs(to - from) < 45) return;
+        go(to < from ? index + 1 : index - 1);
+      }}
+      className="hero relative overflow-hidden rounded-card border border-border bg-navy-950"
     >
-      <div
-        role="group"
-        aria-roledescription="slide"
-        aria-label={t('heroSlide', { index: index + 1, total: count })}
-        className="relative aspect-[16/10] max-h-[26rem] w-full sm:aspect-[21/9]"
-      >
-        <GameCover game={game} priority sizes="(min-width: 64rem) 70vw, 100vw" />
-        {game.preview && !lowData ? (
-          <video
-            key={game.id}
-            src={game.preview.url}
-            muted
-            loop
-            playsInline
-            autoPlay
-            preload="none"
-            aria-hidden="true"
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-linear-to-t from-navy-950/95 via-navy-950/35 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-4 sm:p-6">
-          <div className="min-w-0 text-white">
-            <h2 className="truncate text-2xl font-bold sm:text-4xl">{game.title}</h2>
-            <p className="mt-1 line-clamp-2 max-w-xl text-sm text-white/90 sm:text-base">{game.shortDescription}</p>
-          </div>
-          <Link
-            href={gameHref(game.slug)}
-            hard={!isPrebuilt(game)}
-            className={buttonClass({ size: 'lg' })}
-            aria-label={tg('playLabel', { title: game.title })}
-          >
-            <Play aria-hidden="true" className="size-5 fill-current" />
-            {tc('play')}
-          </Link>
-        </div>
+      <div className="relative aspect-[16/10] max-h-[26rem] w-full sm:aspect-[21/9]">
+        {games.map((game, i) => {
+          const active = i === index;
+          return (
+            <div
+              key={game.id}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={t('heroSlide', { index: i + 1, total: count })}
+              aria-hidden={active ? undefined : true}
+              data-active={active || undefined}
+              className={cn('hero-slide absolute inset-0', active ? 'z-10 opacity-100' : 'pointer-events-none z-0 opacity-0')}
+            >
+              <div key={active ? `on-${cycle}` : 'off'} className={cn('absolute inset-0', active && 'hero-kenburns')}>
+                <GameCover game={game} priority={i === 0} sizes="(min-width: 64rem) 70vw, 100vw" />
+                {active && game.preview && !lowData ? (
+                  <video
+                    src={game.preview.url}
+                    muted
+                    loop
+                    playsInline
+                    autoPlay
+                    preload="none"
+                    aria-hidden="true"
+                    className="hero-video absolute inset-0 size-full object-cover"
+                  />
+                ) : null}
+              </div>
+              <div className="absolute inset-0 bg-linear-to-t from-navy-950 via-navy-950/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-r from-navy-950/70 via-transparent to-transparent" />
+              {active ? (
+                <div key={`text-${cycle}`} className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-4 pb-7 sm:p-6 sm:pb-9">
+                  <div className="min-w-0 text-white">
+                    <h2 className="hero-rise truncate text-2xl font-bold drop-shadow-lg sm:text-4xl">{game.title}</h2>
+                    <p className="hero-rise hero-rise-2 mt-1 line-clamp-2 max-w-xl text-sm text-white/90 sm:text-base">{game.shortDescription}</p>
+                  </div>
+                  <Link
+                    href={gameHref(game.slug)}
+                    hard={!isPrebuilt(game)}
+                    className={cn(buttonClass({ size: 'lg' }), 'hero-rise hero-rise-3')}
+                    aria-label={tg('playLabel', { title: game.title })}
+                  >
+                    <Play aria-hidden="true" className="size-5 fill-current" />
+                    {tc('play')}
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
       {count > 1 ? (
-        <div className="absolute top-3 right-3 flex gap-1">
-          <IconButton size="sm" variant="secondary" label={tc('previous')} onClick={() => setIndex((i) => (i - 1 + count) % count)}>
-            <ChevronLeft aria-hidden="true" className="size-4" />
-          </IconButton>
-          <IconButton size="sm" variant="secondary" label={tc('next')} onClick={() => setIndex((i) => (i + 1) % count)}>
-            <ChevronRight aria-hidden="true" className="size-4" />
-          </IconButton>
-        </div>
+        <>
+          <div className="absolute top-3 right-3 z-20 flex gap-1">
+            <IconButton size="sm" variant="secondary" label={tc('previous')} onClick={() => go(index - 1)}>
+              <ChevronLeft aria-hidden="true" className="size-4" />
+            </IconButton>
+            <IconButton size="sm" variant="secondary" label={tc('next')} onClick={() => go(index + 1)}>
+              <ChevronRight aria-hidden="true" className="size-4" />
+            </IconButton>
+          </div>
+          <div className="absolute inset-x-4 bottom-2.5 z-20 flex gap-1.5 sm:inset-x-6">
+            {games.map((g, i) => (
+              <button
+                key={g.id}
+                type="button"
+                aria-label={t('heroSlide', { index: i + 1, total: count })}
+                aria-current={i === index || undefined}
+                onClick={() => go(i)}
+                className="relative h-4 flex-1"
+              >
+                <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-white/25">
+                  <span
+                    key={i === index ? `bar-${cycle}` : 'bar'}
+                    className={cn('block h-full rounded-full bg-white', i === index ? (paused ? 'hero-bar hero-bar-paused' : 'hero-bar') : i < index ? 'w-full' : 'w-0')}
+                  />
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       ) : null}
     </section>
   );

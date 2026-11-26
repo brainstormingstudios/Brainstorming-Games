@@ -544,3 +544,70 @@
   overflow-x: auto;
   overflow-wrap: normal;
 }
+
+/* Home hero (HomeView HeroCarousel): cross-fade, slow camera zoom, text rising in, progress bars. */
+.hero-slide {
+  transition: opacity 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hero-kenburns {
+  animation: hero-kenburns 7600ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  transform-origin: 60% 45%;
+}
+@keyframes hero-kenburns {
+  from { transform: scale(1.1) translate3d(-1.5%, 1%, 0); }
+  to { transform: scale(1) translate3d(0, 0, 0); }
+}
+.hero-video {
+  animation: hero-fade-in 900ms ease both;
+}
+.hero-rise {
+  animation: hero-rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 250ms both;
+}
+.hero-rise-2 { animation-delay: 380ms; }
+.hero-rise-3 { animation-delay: 500ms; }
+@keyframes hero-rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes hero-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.hero-bar {
+  width: 0;
+  animation: hero-bar 7000ms linear forwards;
+}
+.hero-bar-paused { animation-play-state: paused; }
+@keyframes hero-bar {
+  to { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-kenburns, .hero-rise, .hero-video { animation: none; }
+  .hero-bar { animation: none; width: 100%; }
+}
+
+/*
+ * Dropdowns everywhere: our own arrow and colours instead of the grey system box (Android and
+ * iPhone draw a plain one). The list itself still opens as the phone's own picker, which is the
+ * easiest to use with a thumb.
+ */
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300c0f0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem;
+  padding-right: 2.25rem !important;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+select option {
+  background-color: var(--surface);
+  color: var(--fg);
+}
+@media (max-width: 767px) {
+  select:not([multiple]) {
+    min-height: 44px;
+  }
+}

@@ -53,6 +53,8 @@ async function readyGame(): Promise<{ gameId: string; versionId: string }> {
          ($1, 'preview_landscape', 'https://example.test/v.mp4', '{}', 1280, 720)`,
       [g!.id],
     );
+    // The developer plays the build in the preview before submitting (migration 0031).
+    await q(`select public.mark_version_previewed($1)`, [v!.v.version_id]);
     return { gameId: g!.id, versionId: v!.v.version_id };
   });
 }
@@ -70,6 +72,32 @@ const state = async (versionId: string) =>
   ).rows[0]!;
 const autoReviews = async (versionId: string) =>
   (await db.query<{ reviewer_id: string | null; checklist: { automatic?: boolean }; notes: string }>(`select reviewer_id, checklist, notes from public.qa_reviews where version_id = $1`, [versionId])).rows;
+
+describe('the preview step', () => {
+  it('refuses a submission whose build was never previewed, and only the owner can mark it', async () => {
+    n += 1;
+    const ids = await as(db, 'authenticated', dev, async (q) => {
+      const [g] = await q<{ id: string }>(
+        `insert into public.games (studio_id, slug, title, short_description, description_md, tags, controls)
+         values ($1, $2, $2, 'A test', 'About', '{logic,fixture,puzzle}', '[{"action":"Move","keyboard":"Arrows","touch":"Swipe"}]') returning id`,
+        [studio, `nopreview-${n}`],
+      );
+      const [v] = await q<{ v: { version_id: string } }>(`select public.add_game_version($1, '1', 3, 20000, 'index.html', true, false) as v`, [g!.id]);
+      await q(
+        `insert into public.game_media (game_id, kind, url, widths, width, height) values
+           ($1, 'cover_landscape', 'https://example.test/c.webp', '{1920}', 1920, 1080), ($1, 'cover_portrait', 'https://example.test/p.webp', '{800}', 800, 1200),
+           ($1, 'cover_square', 'https://example.test/s.webp', '{800}', 800, 800), ($1, 'preview_landscape', 'https://example.test/v.mp4', '{}', 1280, 720)`,
+        [g!.id],
+      );
+      return { gameId: g!.id, versionId: v!.v.version_id };
+    });
+    await expect(submit(ids.gameId)).rejects.toThrow(/preview_required/);
+    const stranger = await createUser(db, 'not_the_owner');
+    await expect(as(db, 'authenticated', stranger, (q) => q(`select public.mark_version_previewed($1)`, [ids.versionId]))).rejects.toThrow(/not_allowed/);
+    await as(db, 'authenticated', dev, (q) => q(`select public.mark_version_previewed($1)`, [ids.versionId]));
+    await submit(ids.gameId);
+  });
+});
 
 describe('submitting with no checks on the developer side', () => {
   it('accepts a build as soon as it is uploaded, and closes its uploads', async () => {

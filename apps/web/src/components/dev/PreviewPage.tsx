@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Card, EmptyState, IconButton, Skeleton, Switch, Tabs, buttonClass, cn } from '@brainstorming/ui';
 import { GameFrame } from '@/components/game/GameFrame';
 import { Link } from '@/i18n/navigation';
+import { getRepo } from '@/lib/data';
 import type { PreviewInfo } from '@/lib/data/devTypes';
 import type { GameSummary } from '@/lib/data/types';
 import type { PreQaCheck } from '@/lib/domain/preqa';
@@ -303,6 +304,7 @@ export function PreviewPage() {
             autoStart
             previewOptions={{ limitMidgame, testAds }}
             onSdkLog={(entry) => setLog((l) => [...l.slice(-199), entry])}
+            onPlaying={() => void getRepo().then((repo) => repo.dev.markPreviewed(p.versionId)).catch(() => {})}
           />
           <Card className="grid gap-3 p-3 md:grid-cols-[1fr_auto]" data-testid="preview-qa-bar">
             <div className="flex flex-col gap-2">
@@ -357,6 +359,14 @@ export function PreviewPage() {
                     { id: 'warnings', label: t('tabWarnings', { count: warnings.length }), content: <WarningsTab items={warnings} /> },
                   ]}
                 />
+                {/* Back to submitting, like a store's QA preview: the preview is a required step. */}
+                <Link
+                  href={`/dev/games/edit?id=${p.gameId}&step=build`}
+                  className={cn(buttonClass({ size: 'lg' }), 'mt-3 w-full justify-center')}
+                  data-testid="preview-continue"
+                >
+                  {t('continue')}
+                </Link>
               </div>
             </div>
           </Card>

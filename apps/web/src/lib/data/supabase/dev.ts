@@ -110,6 +110,7 @@ function toVersion(r: Row, currentId: string | null): DevVersion {
     createdAt: String(r.created_at),
     submittedAt: (r.submitted_at as string | null) ?? null,
     reviewedAt: (r.reviewed_at as string | null) ?? null,
+    previewedAt: (r.previewed_at as string | null) ?? null,
     isCurrent: r.id === currentId,
   };
 }
@@ -525,6 +526,11 @@ export const supabaseDev: DevRepo = {
     const kpi = check(await getSupabase().from('daily_game_kpis').select('ref_ad_impressions, games!inner(studio_id)').eq('games.studio_id', String(studio.id)).gte('day', since.slice(0, 10)));
     const impressions = (kpi ?? []).reduce((n, r) => n + Number((r as Row).ref_ad_impressions ?? 0), 0);
     return { link: `${SITE_URL}/?ref=${String(studio.slug)}`, visits30d: count ?? 0, adImpressions30d: impressions };
+  },
+  async markPreviewed(versionId) {
+    // Only the owner can mark it; a shared preview link opened by someone else changes nothing.
+    const { error } = await getSupabase().rpc('mark_version_previewed', { p_version: versionId });
+    if (!error) emitTopic('dev-games');
   },
   async preview(versionId, token) {
     const data = check(await getSupabase().rpc('preview_version', { p_version_id: versionId, p_token: token })) as Row | null;

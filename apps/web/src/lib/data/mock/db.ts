@@ -103,6 +103,7 @@ export interface MockVersion {
   previewToken: string;
   minorUpdate?: boolean;
   submittedAt?: string | null;
+  previewedAt?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
 }

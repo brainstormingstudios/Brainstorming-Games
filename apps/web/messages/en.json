@@ -620,7 +620,10 @@
       "skillsHint": "Pick up to {count}. Players' Brain Profiles grow in these skills when they play your game, and your game shows up for players who want to train them.",
       "controlsPasteTitle": "Paste all controls at once",
       "controlsPasteHint": "One control per line: the action, then the keys, then the touch gesture. For example \"Jump: Space | Tap\". Lines copied from a spreadsheet work too.",
-      "controlsPasteApply": "{count, plural, =0 {Use these controls} one {Use this control} other {Use these # controls}}"
+      "controlsPasteApply": "{count, plural, =0 {Use these controls} one {Use this control} other {Use these # controls}}",
+      "checkPreview": "Build played in the preview",
+      "whyPreview": "Open the preview and let your game load once. It shows what players will see and checks the SDK.",
+      "openPreview": "Next: preview your game"
     },
     "media": {
       "intro": "Covers show the game title only: no \"Play now\" or \"New\" badges, no borders, no store logos.",
@@ -808,7 +811,7 @@
       "totalSize": "Total size:",
       "notSent": "This build has not been sent for review yet.",
       "sentState": "Review: {state}",
-      "continue": "Continue to submit",
+      "continue": "Continue",
       "rules": "Read the SDK rules",
       "noWarnings": "No warnings. 🎉",
       "rowStatus": {

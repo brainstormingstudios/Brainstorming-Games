@@ -1,5 +1,6 @@
 'use client';
 
+import { getPreviewToken } from '@/lib/dev/previewTokens';
 import { parseControls } from '@/lib/domain/controlsParse';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -17,6 +18,7 @@ import {
   chipClass,
   cn,
   useToast,
+  buttonClass,
 } from '@brainstorming/ui';
 import { MAX_SKILLS_PER_GAME, SKILLS } from '@/lib/domain/brain';
 import { localizePath } from '@/i18n/config';
@@ -152,6 +154,22 @@ function InputPicker({ label, options, value, onChange, testId }: { label: strin
       />
       {other ? <TextField label={label} hideLabel placeholder={t('otherPlaceholder')} value={value} maxLength={60} onChange={(e) => onChange(e.target.value)} /> : null}
     </div>
+  );
+}
+
+/** The required preview step: opens the build in the preview page (same tab; it has a Continue button back). */
+function OpenPreview({ versionId, label }: { versionId: string; label: string }) {
+  const locale = useLocale();
+  const [href, setHref] = useState<string | null>(null);
+  useEffect(() => {
+    const token = getPreviewToken(versionId);
+    setHref(token ? `${localizePath(`/dev/preview?v=${versionId}`, locale)}&t=${token}` : null);
+  }, [versionId, locale]);
+  if (!href) return null;
+  return (
+    <a href={href} className={cn(buttonClass({ size: 'lg' }), 'self-start')} data-testid="wiz-open-preview">
+      {label}
+    </a>
   );
 }
 
@@ -329,6 +347,7 @@ export function GameWizard() {
     { key: 'checkCovers', ok: Boolean(media('cover_landscape') && media('cover_portrait') && media('cover_square')), step: 'media' },
     { key: 'checkVideo', ok: Boolean(media('preview_landscape')), step: 'media' },
     { key: 'checkPreQa', ok: preQaOk, why: preQaWhy },
+    { key: 'checkPreview', ok: Boolean(latest?.previewedAt), why: 'whyPreview' },
     { key: 'checkRights', ok: ownsRights && noCopies, why: 'whyRights' },
   ];
   const ready = checklist.every((c) => c.ok);
@@ -527,6 +546,7 @@ export function GameWizard() {
             {t('buildReceived')}
           </p>
         ) : null}
+        {latest && preQaOk && !latest.previewedAt ? <OpenPreview versionId={latest.id} label={t('openPreview')} /> : null}
 
         <section className="flex flex-col gap-3 rounded-card border border-border p-4" aria-labelledby="rights">
           <h2 id="rights" className="font-display text-lg font-bold">

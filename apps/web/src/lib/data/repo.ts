@@ -450,6 +450,8 @@ export interface DevRepo {
   deleteDevlog(id: string): Promise<void>;
   referralStats(): Promise<ReferralStats | null>;
   preview(versionId: string, token: string): Promise<PreviewInfo | null>;
+  /** The developer played this build in the preview: required before submitting. */
+  markPreviewed(versionId: string): Promise<void>;
 }
 
 export interface AdminRepo {

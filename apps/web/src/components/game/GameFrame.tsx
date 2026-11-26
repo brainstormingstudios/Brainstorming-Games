@@ -36,6 +36,8 @@ export interface GameFrameProps {
   /** Private preview: mock ads with the normal rules, and every SDK call is logged. */
   preview?: boolean;
   onSdkLog?: (entry: HostLogEntry) => void;
+  /** Called once the game has loaded and is showing (the preview records this). */
+  onPlaying?: () => void;
   /** Preview test settings (see HostContext). */
   previewOptions?: { limitMidgame: boolean; testAds: boolean };
   /** Start without the Play button (previews and the QA console). */
@@ -53,7 +55,7 @@ const HEARTBEAT_MS = 15_000;
  * Display ads are never placed over or inside this element.
  */
 export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function GameFrame(
-  { game, onFullscreenChange, src, preview, onSdkLog, previewOptions, autoStart },
+  { game, onFullscreenChange, src, preview, onSdkLog, onPlaying, previewOptions, autoStart },
   ref,
 ) {
   const t = useTranslations('game');
@@ -204,6 +206,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
     }
     s.visibleSince = Date.now();
     setPhase('playing');
+    onPlaying?.();
     frame.current?.focus();
   };
 
