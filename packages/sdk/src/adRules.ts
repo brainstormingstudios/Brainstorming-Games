@@ -26,12 +26,18 @@ export interface AdRulesOptions {
   /** When the player last saw a midgame ad (any game), e.g. restored from storage. */
   lastMidgameAt?: number;
   /** The player's membership, if any. */
-  premium?: 'plus' | 'max' | null;
+  premium?: PremiumTier | null;
   /** Developer preview only: break ads may run without the 3-minute gap and 60 s of play. */
   ignoreMidgameLimits?: boolean;
 }
 
-const PREMIUM_MIDGAME = { cooldownMs: 10 * 60_000, minGameplayMs: 3 * 60_000 } as const;
+export type PremiumTier = 'lite' | 'plus' | 'max';
+
+/** Midgame ad gaps per plan (the same numbers as PLANS in the site's lib/domain/premium.ts). Max has none. */
+const PREMIUM_MIDGAME = {
+  lite: { cooldownMs: 6 * 60_000, minGameplayMs: 2 * 60_000 },
+  plus: { cooldownMs: 15 * 60_000, minGameplayMs: 5 * 60_000 },
+} as const;
 
 export class AdRules {
   private readonly now: () => number;
@@ -42,7 +48,7 @@ export class AdRules {
   private gameplaySinceRewarded = true;
   private readonly banners = new Set<string>();
   private adActive = false;
-  private premium: 'plus' | 'max' | null;
+  private premium: PremiumTier | null;
   /** True once the game has reported gameplay through the SDK. */
   usedGameplayEvents = false;
 
@@ -53,13 +59,13 @@ export class AdRules {
   }
 
   /** The player's plan can change while a game is open (they sign in, or buy). */
-  setPremium(plan: 'plus' | 'max' | null): void {
+  setPremium(plan: PremiumTier | null): void {
     this.premium = plan;
   }
 
-  /** Max members get the reward of a rewarded ad without watching one. */
+  /** Plus and Max members get the reward of a rewarded ad without watching one. */
   get instantRewards(): boolean {
-    return this.premium === 'max' && !this.options.spark;
+    return (this.premium === 'plus' || this.premium === 'max') && !this.options.spark;
   }
 
   get playing(): boolean {
@@ -106,7 +112,7 @@ export class AdRules {
     // Too early in the session and too soon after the last one both answer "cooldown".
     if (this.premium === 'max') return 'premium';
     if (this.options.ignoreMidgameLimits) return null;
-    const rule = this.premium === 'plus' ? PREMIUM_MIDGAME : { cooldownMs: AD_RULES.midgameCooldownMs, minGameplayMs: AD_RULES.midgameMinGameplayMs };
+    const rule = this.premium ? PREMIUM_MIDGAME[this.premium] : { cooldownMs: AD_RULES.midgameCooldownMs, minGameplayMs: AD_RULES.midgameMinGameplayMs };
     if (this.gameplayTime() < rule.minGameplayMs) return 'cooldown';
     if (this.now() - this.lastMidgameAt < rule.cooldownMs) return 'cooldown';
     return null;

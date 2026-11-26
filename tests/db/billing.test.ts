@@ -53,4 +53,12 @@ describe('billing', () => {
     expect(points.find((r) => r.id === maxMember)!.brain_points).toBe(20);
     expect(points.find((r) => r.id === stranger)!.brain_points).toBe(10);
   });
+
+  it('accepts the three plans and nothing else (migration 0032)', async () => {
+    const lite = await createUser(db, 'lite_member');
+    await db.query(`update public.profiles set premium_plan = 'lite', premium_until = now() + interval '30 days' where id = $1`, [lite]);
+    await expect(db.query(`update public.profiles set premium_plan = 'gold' where id = $1`, [lite])).rejects.toThrow(/check/);
+    // Lite members earn normal points and cannot hand out guest passes.
+    await expect(as(db, 'authenticated', lite, (q) => q(`select public.create_guest_pass()`))).rejects.toThrow(/not_allowed/);
+  });
 });

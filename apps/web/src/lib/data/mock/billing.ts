@@ -15,7 +15,7 @@ import { sendMail } from './mail';
  * so and no money moves. On the live site the same flows go through Razorpay (supabase/billing.ts).
  */
 const DAY = 86_400_000;
-const PLAN_NAME: Record<PremiumPlan, string> = { plus: 'Plus', max: 'Max' };
+const PLAN_NAME: Record<PremiumPlan, string> = { lite: 'Lite', plus: 'Plus', max: 'Max' };
 const BOOST_NAME = { spotlight: 'Spotlight', push: 'Push', launch: 'Launch' } as const;
 const dateText = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 const monthStart = () => `${new Date().toISOString().slice(0, 7)}-01T00:00:00.000Z`;

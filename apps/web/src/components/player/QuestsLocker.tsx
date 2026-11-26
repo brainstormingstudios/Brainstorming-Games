@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Check, Flame, Lock } from 'lucide-react';
+import { Check, Flame, Lock, Shuffle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Badge,
@@ -141,6 +141,9 @@ function Locker() {
   const [slot, setSlot] = useState<string>('colour');
   const [look, setLook] = useState<AvatarCosmetics>({});
   const [burst, setBurst] = useState(0);
+  // Try-on: hovering (or tapping) an item shows it on the big mascot before it is unlocked.
+  const [tryOn, setTryOn] = useState<{ slot: string; code: string } | null>(null);
+  const [mood, setMood] = useState<'happy' | 'wow' | 'sad'>('happy');
   useEffect(() => setLook(user?.avatar ?? {}), [user?.avatar]);
   const bySlot = useMemo(() => {
     const m = new Map<string, LockerItem[]>();
@@ -150,7 +153,20 @@ function Locker() {
   if (!user || !items.data) return <Skeleton className="h-96 w-full" />;
   const save = (next: AvatarCosmetics) => {
     setLook(next);
+    setTryOn(null);
     void act(async () => (await getRepo()).locker.equip(next), t('saved'));
+  };
+  const shown: AvatarCosmetics = tryOn ? { ...look, [tryOn.slot]: tryOn.code } : look;
+  // A random look from the items this player owns (each slot may also stay empty).
+  const shuffle = () => {
+    const next: AvatarCosmetics = {};
+    for (const s of SLOTS) {
+      const owned = (bySlot.get(s) ?? []).filter((i) => i.owned);
+      const pick = owned[Math.floor(Math.random() * (owned.length + (s === 'colour' ? 0 : 1)))];
+      if (pick) (next as Record<string, string>)[s] = pick.code;
+    }
+    save(next);
+    setBurst((b) => b + 1);
   };
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[280px_minmax(0,1fr)]" data-testid="locker-page">
@@ -158,9 +174,28 @@ function Locker() {
         <h1 className="text-2xl font-bold">{t('title')}</h1>
         <p className="text-center text-sm text-fg-muted">{t('intro')}</p>
         <div className="relative">
-          <MascotAvatar size={200} cosmetics={look} animated label={t('preview')} />
+          <MascotAvatar size={200} cosmetics={shown} mood={mood} animated label={t('preview')} />
           {burst ? <ConfettiBurst key={burst} /> : null}
         </div>
+        <p className="min-h-5 text-xs font-bold text-glow" aria-live="polite" data-testid="locker-tryon">
+          {tryOn ? t('tryingOn') : null}
+        </p>
+        <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label={t('moodLabel')}>
+          {(['happy', 'wow', 'sad'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={mood === m}
+              onClick={() => setMood(m)}
+              className={cn('h-9 rounded-full border border-border px-3 text-xs font-bold transition-colors', mood === m ? 'border-glow bg-glow/15 text-glow' : 'hover:bg-surface-2')}
+            >
+              {t(`mood.${m}`)}
+            </button>
+          ))}
+        </div>
+        <Button size="sm" variant="ghost" icon={<Shuffle aria-hidden="true" className="size-4" />} onClick={shuffle} data-testid="locker-shuffle">
+          {t('shuffle')}
+        </Button>
         <p className="font-display text-lg font-bold text-glow">{tp('points', { count: user.brainPoints })}</p>
       </Card>
       <Tabs
@@ -177,8 +212,20 @@ function Locker() {
                 const locked = !item.owned && (user.level < item.minLevel || user.brainPoints < item.cost);
                 return (
                   <li key={item.id}>
-                    <Card className={cn('flex flex-col items-center gap-2 p-3 text-center', equipped && 'ring-2 ring-glow')} data-testid="locker-item">
-                      <MascotAvatar size={96} cosmetics={{ ...look, [s]: item.code }} />
+                    <Card
+                      className={cn('flex flex-col items-center gap-2 p-3 text-center transition-transform hover:-translate-y-0.5', equipped && 'ring-2 ring-glow', tryOn?.code === item.code && tryOn.slot === s && !equipped && 'ring-2 ring-primary/60')}
+                      data-testid="locker-item"
+                      onPointerEnter={(e) => e.pointerType === 'mouse' && setTryOn({ slot: s, code: item.code })}
+                      onPointerLeave={(e) => e.pointerType === 'mouse' && setTryOn(null)}
+                    >
+                      <button
+                        type="button"
+                        className="rounded-full"
+                        aria-label={t('tryOn', { name: item.name })}
+                        onClick={() => setTryOn((cur) => (cur?.code === item.code && cur.slot === s ? null : { slot: s, code: item.code }))}
+                      >
+                        <MascotAvatar size={96} cosmetics={{ ...look, [s]: item.code }} />
+                      </button>
                       <p className="text-sm font-bold">{item.name}</p>
                       {item.owned ? (
                         <Button size="sm" variant={equipped ? 'outline' : 'primary'} onClick={() => save(equipped ? { ...look, [s]: '' } : { ...look, [s]: item.code })}>

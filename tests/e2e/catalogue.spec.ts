@@ -153,9 +153,10 @@ test.describe('catalogue', () => {
     await expect(page.locator('html')).toHaveAttribute('data-low-data', 'true');
   });
 
-  test('policy pages are marked as drafts and the developers page shows the share table', async ({ page }) => {
+  test('policy pages are final, carry the copyright, and the developers page shows the share table', async ({ page }) => {
     await page.goto('/privacy/');
-    await expect(page.getByTestId('draft-notice')).toContainText('Draft, pending legal review');
+    await expect(page.getByTestId('draft-notice')).toHaveCount(0);
+    await expect(page.getByTestId('policy-copyright')).toContainText('© 2026 Brainstorming Studios');
     await page.goto('/developers/');
     await expect(page.getByRole('cell', { name: '70% of net' })).toBeVisible();
     await expect(page.getByRole('cell', { name: '85% of net' })).toBeVisible();

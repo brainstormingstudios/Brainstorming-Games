@@ -191,7 +191,7 @@ Keep the address out of public places (posts, screenshots, the developer docs) a
 ## 9. Payments (Premium and Boost)
 
 1. Create a Razorpay account (no monthly fee) and complete its business verification.
-2. Subscriptions > Plans: create **Plus** at ₹99 monthly and **Max** at ₹199 monthly.
+2. Subscriptions > Plans: create **Lite** at ₹49 monthly, **Plus** at ₹99 monthly and **Max** at ₹179 monthly (secrets RAZORPAY_PLAN_LITE, RAZORPAY_PLAN_PLUS, RAZORPAY_PLAN_MAX). A plan with no secret is simply not on sale.
 3. Supabase secrets: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PLAN_PLUS`,
    `RAZORPAY_PLAN_MAX`, `RAZORPAY_WEBHOOK_SECRET`. GitHub variable: `NEXT_PUBLIC_RAZORPAY_KEY_ID`.
 4. Deploy `billing` and `razorpay-webhook` (the webhook with `--no-verify-jwt`).

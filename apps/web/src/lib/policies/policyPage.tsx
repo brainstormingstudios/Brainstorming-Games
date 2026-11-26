@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { TriangleAlert } from 'lucide-react';
 import { CookieChoicesButton } from '@/components/ads/ConsentBanner';
 import { defaultLocale, type Locale } from '@/i18n/config';
 import { initLocale, type RouteParams } from '@/i18n/server';
@@ -27,8 +26,6 @@ const REPO_DOCS: Partial<Record<PolicySlug, string>> = {
   'developer-terms': 'DEVELOPER_TERMS.md',
 };
 
-/** Legal text is a draft until a lawyer signs it off; the informational pages are not. */
-const DRAFT: PolicySlug[] = ['terms', 'privacy', 'developer-terms', 'cookies', 'parents', 'school-safe'];
 
 const WEB_ROOT = process.cwd();
 
@@ -83,20 +80,13 @@ export function createPolicyPage(slug: PolicySlug) {
       <article className="page max-w-3xl!" data-testid="policy-page">
         <h1 className="text-3xl font-bold sm:text-4xl">{t(`titles.${slug}`)}</h1>
         {updated ? <p className="mt-1 text-sm text-fg-muted">{t('updated', { date: updated })}</p> : null}
-        {DRAFT.includes(slug) ? (
-          <p
-            role="note"
-            data-testid="draft-notice"
-            className="mt-4 flex items-center gap-2 rounded-control border border-warning/70 bg-surface-3 px-3.5 py-2.5 text-sm font-bold"
-          >
-            <TriangleAlert aria-hidden="true" className="size-4 shrink-0 text-warning" />
-            {t('draft')}
-          </p>
-        ) : null}
         {!translated ? <p className="mt-3 text-sm text-fg-muted">{t('englishOnly')}</p> : null}
         <div className="prose-bg mt-2" lang={translated ? undefined : 'en'}>
           <Markdown source={body} baseHeading={2} />
         </div>
+        <p className="mt-8 border-t border-border pt-4 text-sm text-fg-muted" data-testid="policy-copyright">
+          {t('copyright')}
+        </p>
         {slug === 'cookies' ? (
           <div className="mt-6">
             <CookieChoicesButton />

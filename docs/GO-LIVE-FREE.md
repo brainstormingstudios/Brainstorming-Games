@@ -71,7 +71,7 @@ In the GitHub repository > Settings > Secrets and variables > Actions:
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the publishable key |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | the official address |
-| `NEXT_PUBLIC_INGAME_ADS` | `none` (until AdSense approves) |
+| `NEXT_PUBLIC_INGAME_ADS` | leave empty: our own promo plays in ad breaks; `adsense-h5` once Google approves |
 | `CF_PAGES_PROJECT`, `CF_PAGES_PROJECT_DEVELOPERS`, `CF_PAGES_PROJECT_MANAGE` | the three names from step 2 |
 
 **Secrets**: `CLOUDFLARE_API_TOKEN` (Cloudflare > My Profile > API Tokens > "Edit Cloudflare

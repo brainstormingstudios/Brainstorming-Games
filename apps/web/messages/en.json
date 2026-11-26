@@ -1396,7 +1396,37 @@
       "minLevel": "Level",
       "active": "Active",
       "save": "Save",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "questTitle": "Title",
+      "description": "Description",
+      "name": "Name",
+      "delete": "Delete",
+      "deleted": "Deleted.",
+      "added": "Added.",
+      "addQuest": "Add a quest",
+      "addItem": "Add a Locker item",
+      "period": "How often",
+      "rule": "What counts",
+      "category": "Category",
+      "anyCategory": "Any category",
+      "days": "Released within (days)",
+      "slot": "Slot",
+      "design": "Design",
+      "customColour": "New colour…",
+      "colourCode": "Colour",
+      "allDesignsUsed": "Every drawn design for this slot is already in the Locker.",
+      "confirmDeleteQuest": "Delete the quest \"{title}\"? Everyone's progress on it goes too. To pause it, switch it off instead.",
+      "confirmDeleteItem": "Delete \"{name}\"? Players who unlocked it lose it. To stop selling it, switch it off instead.",
+      "rules": {
+        "play_sessions": "Start games",
+        "play_distinct": "Play different games",
+        "play_new": "Play new releases",
+        "play_multiplayer": "Play multiplayer games",
+        "play_minutes": "Minutes played",
+        "rate": "Rate games",
+        "favourite": "Add favourites",
+        "custom": "Game event"
+      }
     },
     "site": {
       "title": "Site overview",
@@ -1701,7 +1731,16 @@
     "needsLevel": "Level {level}",
     "notEnough": "You need {cost} BP",
     "unlocked": "Unlocked!",
-    "saved": "Look saved."
+    "saved": "Look saved.",
+    "tryingOn": "Trying it on. Wear or unlock it to keep it.",
+    "tryOn": "Try on {name}",
+    "moodLabel": "Mood",
+    "mood": {
+      "happy": "Happy",
+      "wow": "Wow",
+      "sad": "Sad"
+    },
+    "shuffle": "Shuffle my look"
   },
   "friends": {
     "metaTitle": "Friends",
@@ -1916,7 +1955,6 @@
     "house": "Ad · Brainstorming Studios"
   },
   "policy": {
-    "draft": "Draft, pending legal review.",
     "updated": "Last updated {date}",
     "englishOnly": "This document is currently available in English only.",
     "titles": {
@@ -1928,7 +1966,8 @@
       "privacy": "Privacy policy",
       "developer-terms": "Developer terms",
       "cookies": "Cookie preferences"
-    }
+    },
+    "copyright": "© 2026 Brainstorming Studios. All rights reserved."
   },
   "growth": {
     "follow": "Follow",
@@ -2036,27 +2075,34 @@
     "metaTitle": "Brainstorming Premium",
     "eyebrow": "Brainstorming Premium",
     "title": "Play with fewer ads, or none",
-    "intro": "Two simple monthly plans. Cancel any time and keep your plan until the end of the month you paid for.",
+    "intro": "Three simple monthly plans. Cancel any time and keep your plan until the end of the month you paid for.",
     "best": "Best value",
     "perMonth": "a month",
+    "lite": {
+      "name": "Lite",
+      "tagline": "Fewer ads, for the price of a samosa a week."
+    },
     "plus": {
       "name": "Plus",
-      "tagline": "Most of the ads gone, for less than a chai a week."
+      "tagline": "No ads on the site, rare breaks in games, rewards without ads."
     },
     "max": {
       "name": "Max",
-      "tagline": "No ads at all, and the most perks."
+      "tagline": "No ads at all, double points and guest passes for friends."
     },
     "perks": {
       "fewerAds": "Far fewer ads on the site: one banner on the home page, none on game pages",
-      "shortBreaks": "In games, an ad break at most every 10 minutes, never in your first 3",
+      "shortBreaks": "In games, an ad break at most every 15 minutes, never in your first 5",
       "noAds": "No ads anywhere: not on the site, not in games",
       "instantRewards": "Rewards that normally need an ad are yours straight away",
       "doublePoints": "Double Brain Points from every quest",
       "wallpapers": "Member wallpapers from the BS Originals, for desktop and phone",
       "guestPasses": "2 guest passes a month: give a friend 7 days of Plus",
       "plusBadge": "A Plus badge next to your name",
-      "maxBadge": "A Max badge next to your name"
+      "maxBadge": "A Max badge next to your name",
+      "liteBreaks": "In games, an ad break at most every 6 minutes, never in your first 2",
+      "noSiteAds": "No ads anywhere on the site",
+      "liteBadge": "A Lite badge next to your name"
     },
     "choose": "Get {plan}",
     "switchTo": "Switch to {plan}",
@@ -2109,7 +2155,8 @@
       },
       "note": "Brain Points have no cash value. Up to {max} Premium days a month can come from points; the rest of Premium is a paid membership."
     },
-    "indiaOnly": "Memberships are available in India only for now. Everything else on the site stays free for you."
+    "indiaOnly": "Memberships are available in India only for now. Everything else on the site stays free for you.",
+    "popular": "Most popular"
   },
   "boost": {
     "title": "Boost",

@@ -67,8 +67,12 @@ export const MOCK_DB_URL =
   IS_MOCK && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(PLAY_ORIGIN) ? `${PLAY_ORIGIN}/__mock/db` : '';
 
 export const ADSENSE_CLIENT = (process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? '').trim();
-/** In-game ad provider: `mock` | `adsense-h5` | `none`. */
-export const INGAME_AD_PROVIDER = (process.env.NEXT_PUBLIC_INGAME_ADS ?? (IS_MOCK ? 'mock' : 'none')).trim();
+/**
+ * In-game ad provider: `house` (our own promo, the default on the live site) | `adsense-h5` (Google
+ * H5 games ads once approved, with the house ad filling any empty break) | `mock` | `none`.
+ * Adding another network later is one adapter in packages/sdk/src/ads and one line in makeProvider.
+ */
+export const INGAME_AD_PROVIDER = (process.env.NEXT_PUBLIC_INGAME_ADS || (IS_MOCK ? 'mock' : 'house')).trim();
 
 export const EVENTS_TRANSPORT: 'function' | 'rpc' =
   process.env.NEXT_PUBLIC_EVENTS_TRANSPORT === 'rpc' ? 'rpc' : 'function';
@@ -164,4 +168,4 @@ export const SOCIAL_LINKS = {
 export const CONTACT_EMAIL = (process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? '').trim() || 'brainstormingstudios26@gmail.com';
 
 /** Current version of the developer terms; recorded when a studio accepts them. */
-export const DEVELOPER_TERMS_VERSION = '2026-11-draft-1';
+export const DEVELOPER_TERMS_VERSION = '2026-11-1';

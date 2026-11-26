@@ -9,7 +9,7 @@ import { requestLogin } from '@/lib/auth/loginPrompt';
 import { getRepo, RepoError } from '@/lib/data';
 import type { SessionUser } from '@/lib/data/repo';
 import { isRestricted } from '@/lib/domain/ageGate';
-import { activePlan } from '@/lib/domain/premium';
+import { PLAN_LABEL, activePlan } from '@/lib/domain/premium';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
 import { usePrefs } from '@/lib/prefs';
@@ -57,10 +57,10 @@ export function HeaderChips() {
         href="/premium"
         data-testid="premium-chip"
         className={cn(chip, 'hidden lg:flex', plan ? 'text-primary' : 'text-fg-muted hover:text-fg')}
-        title={plan ? t('premiumMember', { plan: plan === 'max' ? 'Max' : 'Plus' }) : t('goPremium')}
+        title={plan ? t('premiumMember', { plan: PLAN_LABEL[plan] }) : t('goPremium')}
       >
         <Gem aria-hidden="true" className="size-5" />
-        <span>{plan ? (plan === 'max' ? 'Max' : 'Plus') : t('premiumShort')}</span>
+        <span>{plan ? PLAN_LABEL[plan] : t('premiumShort')}</span>
       </Link>
       <Link href="/quests" className={cn(chip, 'text-glow')} title={t('points', { count: user.brainPoints })} data-testid="points-chip">
         <Brain aria-hidden="true" className="size-5" />

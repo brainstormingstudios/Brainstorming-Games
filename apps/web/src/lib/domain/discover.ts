@@ -65,7 +65,7 @@ export type RedeemProblem = 'unknown' | 'points' | 'monthly_limit' | 'other_plan
 /** Whether a swap is allowed, and the new end of the membership if it is. */
 export function redeemCheck(
   optionId: string,
-  state: { points: number; daysThisMonth: number; plan: 'plus' | 'max' | null; until: string | null },
+  state: { points: number; daysThisMonth: number; plan: 'lite' | 'plus' | 'max' | null; until: string | null },
   now = new Date(),
 ): { ok: true; option: PointsOption; until: string } | { ok: false; problem: RedeemProblem } {
   const option = POINTS_OPTIONS.find((o) => o.id === optionId);

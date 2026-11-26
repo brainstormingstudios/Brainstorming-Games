@@ -46,6 +46,29 @@ export const COSMETIC_CODES: Record<CosmeticSlot, string[]> = {
   frame: ['ring-cyan', 'ring-gold', 'hex', 'sparkle'],
 };
 
+/** A colour code an admin added, like #1E90FF (colours and brain glows only). */
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Whether the mascot can draw this Locker item: one of the drawn designs, or a #RRGGBB colour or glow. */
+export function isDrawableCosmetic(slot: string, code: string): boolean {
+  const codes = COSMETIC_CODES[slot as CosmeticSlot];
+  if (!codes) return false;
+  return codes.includes(code) || ((slot === 'colour' || slot === 'glow') && HEX.test(code));
+}
+
+/** Mixes a #RRGGBB colour towards black (amount < 0) or white (amount > 0). */
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c: number) => Math.round(amount < 0 ? c * (1 + amount) : c + (255 - c) * amount);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(mix);
+  return `#${((1 << 24) | (r! << 16) | (g! << 8) | b!).toString(16).slice(1)}`;
+}
+
+function paletteFor(code: string | undefined): Palette {
+  if (code && HEX.test(code)) return { body: code, dark: shade(code, -0.6), light: shade(code, 0.35) };
+  return MASCOT_COLOURS[code ?? 'classic'] ?? MASCOT_COLOURS.classic!;
+}
+
 const FACE = '#FCFCFC';
 const GOLD = '#FFD24A';
 
@@ -192,9 +215,9 @@ function HeadphonesBack({ code, p, glow }: { code?: string; p: Palette; glow: st
     default:
       return (
         <g>
-          <ellipse cx="40" cy="136" rx="19" ry="31" fill={p.light} {...outline} />
-          <path d="M30 118 C26 130 26 142 30 154" stroke="#FCFCFC" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.35" />
-          <ellipse cx="208" cy="132" rx="15" ry="28" fill={p.light} {...outline} />
+          <ellipse cx="43" cy="134" rx="22" ry="35" fill={p.light} {...outline} />
+          <path d="M31 114 C26 128 26 142 31 156" stroke="#FCFCFC" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.35" />
+          <ellipse cx="212" cy="132" rx="12" ry="31" fill={p.light} {...outline} />
         </g>
       );
   }
@@ -266,8 +289,8 @@ export function MascotAvatar({
   className,
   style,
 }: MascotAvatarProps) {
-  const p = MASCOT_COLOURS[cosmetics?.colour ?? 'classic'] ?? MASCOT_COLOURS.classic!;
-  const glow = MASCOT_GLOWS[cosmetics?.glow ?? 'cyan'] ?? MASCOT_GLOWS.cyan!;
+  const p = paletteFor(cosmetics?.colour);
+  const glow = cosmetics?.glow && HEX.test(cosmetics.glow) ? cosmetics.glow : (MASCOT_GLOWS[cosmetics?.glow ?? 'cyan'] ?? MASCOT_GLOWS.cyan!);
   const sad = mood === 'sad';
   return (
     <svg
@@ -291,63 +314,72 @@ export function MascotAvatar({
           <path d="M201 52 L188 86" stroke={p.dark} strokeWidth="23" />
           <path d="M201 52 L188 86" stroke={p.body} strokeWidth="15" />
         </g>
-        {/* speech-bubble head with its tail */}
+        {/* speech-bubble head (traced from the logo): a round head with the tail at its lower left */}
         <path
-          d="M62.3 162.1 L58 226 L101.8 187.3 A78 78 0 1 0 62.3 162.1 Z"
+          d="M73.8 179.8 L67 217 L108.4 194.3 A86 86 0 1 0 73.8 179.8 Z"
           fill={p.body}
           stroke={p.dark}
           strokeWidth="5"
           strokeLinejoin="round"
         />
-        <ellipse cx="128" cy="76" rx="60" ry="42" fill={p.dark} />
+        {/* glossy rim, as on the logo */}
+        <path d="M46.7 88.8 A78 78 0 0 1 92.8 36.7 M151.2 36.7 A78 78 0 0 1 196.2 84.9" fill="none" stroke={p.light} strokeWidth="5" strokeLinecap="round" opacity="0.5" />
+        <ellipse cx="124" cy="80" rx="62" ry="45" fill={p.dark} />
         <HeadphonesBack code={cosmetics?.headphones} p={p} glow={glow} />
-        {/* brain */}
+        {/* brain: two glowing hemispheres of curls */}
         <g
           className="bgm__brain"
           fill="none"
           stroke={glow}
-          strokeWidth="7"
+          strokeWidth="6.8"
           strokeLinecap="round"
           strokeLinejoin="round"
+          transform="translate(126 74) scale(1.06) translate(-126 -74)"
           opacity={sad ? 0.55 : 1}
-          style={{ filter: `drop-shadow(0 0 5px ${glow})` }}
+          style={{ filter: `drop-shadow(0 0 3px ${glow})` }}
         >
           <path d="M78 96 C66 84 72 64 90 62 C90 46 112 38 124 48 C134 34 162 38 164 54 C182 52 192 72 182 88" />
           <path d="M104 96 C96 84 104 70 118 74" />
           <path d="M124 48 C128 60 120 68 112 66" />
           <path d="M140 96 C130 80 144 62 160 70 C170 76 166 90 154 90" />
           <path d="M164 54 C160 62 152 64 146 60" />
+          <path d="M90 62 C96 66 98 72 96 78" />
         </g>
-        {/* visor and controller face */}
-        <rect x="54" y="92" width="166" height="94" rx="46" fill={p.body} stroke={p.dark} strokeWidth="5" />
-        <rect x="70" y="104" width="134" height="70" rx="34" fill={FACE} />
-        <path d="M76 150 C92 176 182 176 198 150 C196 166 184 174 170 174 L104 174 C90 174 78 166 76 150 Z" fill="#DCE6F2" />
-        {/* eyes: a d-pad and four buttons that blink */}
-        <g className="bgm__eyes-open" fill={p.dark}>
-          <rect x="94" y="132" width="36" height="12" rx="3.5" />
-          <rect x="106" y="120" width="12" height="36" rx="3.5" />
-          <circle cx="176" cy="122" r="6" />
-          <circle cx="165" cy="136" r="6" />
-          <circle cx="187" cy="135" r="6" />
-          <circle cx="177" cy="148" r="6" />
+        {/* visor and controller face, tilted a little like the logo */}
+        <g transform="rotate(-3 134 139)">
+          <rect x="55" y="92" width="158" height="94" rx="46" fill={p.body} stroke={p.dark} strokeWidth="5" />
+          <path d="M66 112 C70 102 84 98 100 98" fill="none" stroke={p.light} strokeWidth="3.5" strokeLinecap="round" opacity="0.6" />
+          <rect x="70" y="104" width="128" height="70" rx="34" fill={FACE} />
+          <path d="M76 150 C92 176 176 176 192 150 C190 166 178 174 164 174 L104 174 C90 174 78 166 76 150 Z" fill="#DCE6F2" />
+          {/* eyes: a d-pad and four buttons that blink */}
+          <g className="bgm__eyes-open" fill={p.dark}>
+            <rect x="92" y="128" width="38" height="13" rx="3.5" />
+            <rect x="104.5" y="115.5" width="13" height="38" rx="3.5" />
+            <circle cx="174.5" cy="119" r="6.2" />
+            <circle cx="163.5" cy="130.5" r="6.2" />
+            <circle cx="185.5" cy="130.5" r="6.2" />
+            <circle cx="175.5" cy="142" r="6.2" />
+          </g>
+          <g className="bgm__eyes-closed" stroke={p.dark} strokeWidth="6" strokeLinecap="round">
+            <path d="M95 134.5 L127 134.5" />
+            <path d="M161 130.5 L188 130.5" />
+          </g>
+          {mood === 'wow' ? (
+            <ellipse cx="147" cy="154" rx="6" ry="7.5" fill={p.dark} />
+          ) : (
+            <path
+              d={sad ? 'M134 160 Q147 148 160 160' : 'M134 149 Q147 162 160 149'}
+              fill="none"
+              stroke={p.dark}
+              strokeWidth="5.5"
+              strokeLinecap="round"
+            />
+          )}
+          {sad ? <path d="M92 150 q-5 9 0 13 q5 -4 0 -13 Z" fill="#00C0F0" /> : null}
+          <g transform="translate(-2.5 -4)">
+            <Glasses code={cosmetics?.glasses} p={p} />
+          </g>
         </g>
-        <g className="bgm__eyes-closed" stroke={p.dark} strokeWidth="6" strokeLinecap="round">
-          <path d="M97 138 L127 138" />
-          <path d="M163 136 L190 136" />
-        </g>
-        {mood === 'wow' ? (
-          <ellipse cx="148" cy="158" rx="6" ry="7.5" fill={p.dark} />
-        ) : (
-          <path
-            d={sad ? 'M136 162 Q148 151 161 162' : 'M136 154 Q148 165 161 153'}
-            fill="none"
-            stroke={p.dark}
-            strokeWidth="5.5"
-            strokeLinecap="round"
-          />
-        )}
-        {sad ? <path d="M92 150 q-5 9 0 13 q5 -4 0 -13 Z" fill="#00C0F0" /> : null}
-        <Glasses code={cosmetics?.glasses} p={p} />
         <Hat code={cosmetics?.hat} p={p} />
       </g>
     </svg>

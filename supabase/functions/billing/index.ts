@@ -1,5 +1,5 @@
 // POST /functions/v1/billing
-//   { action: 'subscribe', plan: 'plus' | 'max' }       → a Razorpay subscription for Checkout
+//   { action: 'subscribe', plan: 'lite' | 'plus' | 'max' }→ a Razorpay subscription for Checkout
 //   { action: 'cancel' }                                → stop renewal at the end of the period
 //   { action: 'boost', gameId, pkg }                    → a Razorpay order for a Boost
 //   { action: 'verify', plan: 'month' | 'year' }        → a Razorpay order for the Verified tick
@@ -9,9 +9,11 @@
 import { adminClient, json, preflight, requireUser } from '../_shared/http.ts';
 import { razorpay, razorpayKeyId } from '../_shared/razorpay.ts';
 
-const PRICES = { plus: 9900, max: 19900 } as const;
+const PRICES = { lite: 4900, plus: 9900, max: 17900 } as const;
+const PLAN_NAME = { lite: 'Lite', plus: 'Plus', max: 'Max' } as const;
 const BOOSTS = { spotlight: 49900, push: 149900, launch: 399900 } as const;
-const PLAN_ENV = { plus: 'RAZORPAY_PLAN_PLUS', max: 'RAZORPAY_PLAN_MAX' } as const;
+// Razorpay plans: Lite 49, Plus 99, Max 179 rupees a month (one Razorpay plan id per secret).
+const PLAN_ENV = { lite: 'RAZORPAY_PLAN_LITE', plus: 'RAZORPAY_PLAN_PLUS', max: 'RAZORPAY_PLAN_MAX' } as const;
 /** The Verified tick for studios: ₹49 a month or ₹399 a year (migration 0027). */
 const VERIFIED = { month: { paise: 4900, days: 30 }, year: { paise: 39900, days: 365 } } as const;
 
@@ -43,8 +45,9 @@ Deno.serve(async (req) => {
 
   try {
     if (body.action === 'subscribe') {
-      const plan = body.plan === 'max' ? 'max' : body.plan === 'plus' ? 'plus' : null;
+      const plan = body.plan === 'lite' || body.plan === 'plus' || body.plan === 'max' ? body.plan : null;
       if (!plan) return json(req, 400, { error: 'invalid' });
+      if (!Deno.env.get(PLAN_ENV[plan])) return json(req, 503, { error: 'unavailable', message: 'This plan is not on sale yet.' });
       if (profile.is_minor) return json(req, 403, { error: 'not_allowed', message: 'Memberships are for adults.' });
       const sub = await razorpay<{ id: string }>('subscriptions', {
         plan_id: Deno.env.get(PLAN_ENV[plan]),
@@ -52,8 +55,8 @@ Deno.serve(async (req) => {
         customer_notify: 1,
         notes: { user_id: user.id, plan },
       });
-      await db.from('payments').insert({ user_id: user.id, kind: 'premium', what: `Brainstorming ${plan === 'max' ? 'Max' : 'Plus'}`, amount_paise: PRICES[plan], status: 'pending', provider_ref: sub.id });
-      return json(req, 200, { mode: 'razorpay', keyId: razorpayKeyId(), subscriptionId: sub.id, amount: PRICES[plan], description: `Brainstorming ${plan === 'max' ? 'Max' : 'Plus'}, monthly`, prefill });
+      await db.from('payments').insert({ user_id: user.id, kind: 'premium', what: `Brainstorming ${PLAN_NAME[plan]}`, amount_paise: PRICES[plan], status: 'pending', provider_ref: sub.id });
+      return json(req, 200, { mode: 'razorpay', keyId: razorpayKeyId(), subscriptionId: sub.id, amount: PRICES[plan], description: `Brainstorming ${PLAN_NAME[plan]}, monthly`, prefill });
     }
     if (body.action === 'cancel') {
       if (!profile.razorpay_subscription_id) return json(req, 404, { error: 'not_found' });

@@ -2,7 +2,7 @@
 
 _Last updated: 12 November 2026_
 
-> Draft, pending legal review.
+> © 2026 Brainstorming Studios. All rights reserved.
 
 These terms apply when you use Brainstorming Games, a service run by Brainstorming Studios. By playing a game or creating an account you agree to them.
 

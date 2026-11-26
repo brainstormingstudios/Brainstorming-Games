@@ -2,7 +2,7 @@
 
 _Last updated: 12 November 2026_
 
-> Draft, pending legal review. This describes how the product is built to work. It is not yet a binding legal document.
+> © 2026 Brainstorming Studios. All rights reserved.
 
 Brainstorming Games is run by Brainstorming Studios ("we", "us"). This policy explains what we collect when you use the site, why, and the choices you have. We built the site to work with as little personal data as possible.
 

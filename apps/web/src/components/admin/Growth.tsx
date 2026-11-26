@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, Dialog, EmptyState, IconButton, SelectField, Skeleton, Switch, Tabs, TextAreaField, TextField } from '@brainstorming/ui';
+import { Badge, Button, COSMETIC_CODES, Card, Dialog, EmptyState, IconButton, MascotAvatar, SelectField, Skeleton, Switch, Tabs, TextAreaField, TextField } from '@brainstorming/ui';
+import { CATEGORY_SLUGS } from '@/lib/catalogue/categories';
 import { useLocale } from '@/i18n/navigation';
 import { getRepo } from '@/lib/data';
 import type { AdminCosmetic, AdminQuest, Jam, JamInput, JamStatus } from '@/lib/data/growthTypes';
@@ -586,63 +587,198 @@ export function Moderation() {
 function QuestRow({ quest }: { quest: AdminQuest }) {
   const t = useTranslations('admin.progression');
   const act = useAct();
+  const [title, setTitle] = useState(quest.title);
+  const [description, setDescription] = useState(quest.description);
   const [target, setTarget] = useState(String(quest.target));
   const [reward, setReward] = useState(String(quest.reward));
   const [active, setActive] = useState(quest.active);
-  const dirty = Number(target) !== quest.target || Number(reward) !== quest.reward || active !== quest.active;
+  const dirty =
+    title !== quest.title || description !== quest.description || Number(target) !== quest.target || Number(reward) !== quest.reward || active !== quest.active;
   return (
     <li>
       <Card className="flex flex-wrap items-end gap-3 p-3 text-sm" data-testid="quest-row">
-        <span className="min-w-40 flex-1">
-          <span className="block font-bold">{quest.title}</span>
-          <span className="text-fg-muted">
-            {quest.code} · {t(quest.period)}
+        <div className="flex min-w-56 flex-1 flex-col gap-2">
+          <TextField label={t('questTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <TextField label={t('description')} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <span className="text-xs text-fg-muted">
+            {t(quest.period)} · {t(`rules.${quest.rule.kind}`)}
+            {quest.rule.category ? ` · ${quest.rule.category}` : ''}
           </span>
-        </span>
+        </div>
         <TextField label={t('target')} type="number" min={1} className="w-24" value={target} onChange={(e) => setTarget(e.target.value)} />
         <TextField label={t('reward')} type="number" min={1} max={1000} className="w-24" value={reward} onChange={(e) => setReward(e.target.value)} data-testid="quest-reward" />
         <Switch compact label={t('active')} checked={active} onChange={(e) => setActive(e.target.checked)} />
         <Button
           size="sm"
           disabled={!dirty}
-          onClick={() => void act(async () => (await getRepo()).growth.saveQuest(quest.code, { target: Number(target), reward: Number(reward), active }), t('saved'))}
+          onClick={() =>
+            void act(async () => (await getRepo()).growth.saveQuest(quest.code, { title, description, target: Number(target), reward: Number(reward), active }), t('saved'))
+          }
           data-testid="quest-save"
         >
           {t('save')}
         </Button>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label={t('delete')}
+          data-testid="quest-delete"
+          onClick={() => {
+            if (window.confirm(t('confirmDeleteQuest', { title: quest.title }))) void act(async () => (await getRepo()).growth.deleteQuest(quest.code), t('deleted'));
+          }}
+        >
+          <Trash2 aria-hidden="true" className="size-4 text-danger" />
+        </IconButton>
       </Card>
     </li>
+  );
+}
+
+const RULE_KINDS = ['play_sessions', 'play_distinct', 'play_new', 'play_multiplayer', 'play_minutes', 'rate', 'favourite'] as const;
+
+function AddQuest() {
+  const t = useTranslations('admin.progression');
+  const act = useAct();
+  const [form, setForm] = useState({ period: 'daily', title: '', description: '', kind: 'play_sessions', category: '', days: '7', target: '1', reward: '10' });
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const add = () =>
+    void act(async () => {
+      await (await getRepo()).growth.addQuest({
+        period: form.period as 'daily' | 'weekly',
+        title: form.title,
+        description: form.description,
+        rule: { kind: form.kind as (typeof RULE_KINDS)[number], category: form.category || undefined, days: Number(form.days) },
+        target: Number(form.target),
+        reward: Number(form.reward),
+      });
+      setForm((f) => ({ ...f, title: '', description: '' }));
+    }, t('added'));
+  return (
+    <details className="rounded-card border border-dashed border-border p-3" data-testid="quest-add">
+      <summary className="flex cursor-pointer items-center gap-2 font-bold">
+        <Plus aria-hidden="true" className="size-4" />
+        {t('addQuest')}
+      </summary>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <TextField label={t('questTitle')} value={form.title} onChange={set('title')} data-testid="quest-add-title" />
+        <TextField label={t('description')} value={form.description} onChange={set('description')} />
+        <SelectField label={t('period')} value={form.period} onChange={set('period')} options={[{ value: 'daily', label: t('daily') }, { value: 'weekly', label: t('weekly') }]} />
+        <SelectField label={t('rule')} value={form.kind} onChange={set('kind')} options={RULE_KINDS.map((k) => ({ value: k, label: t(`rules.${k}`) }))} />
+        {form.kind === 'play_distinct' ? (
+          <SelectField label={t('category')} value={form.category} onChange={set('category')} options={[{ value: '', label: t('anyCategory') }, ...CATEGORY_SLUGS.map((c) => ({ value: c, label: c }))]} />
+        ) : null}
+        {form.kind === 'play_new' ? <TextField label={t('days')} type="number" min={1} value={form.days} onChange={set('days')} /> : null}
+        <TextField label={t('target')} type="number" min={1} value={form.target} onChange={set('target')} />
+        <TextField label={t('reward')} type="number" min={1} max={1000} value={form.reward} onChange={set('reward')} />
+      </div>
+      <Button className="mt-3" size="sm" onClick={add} disabled={form.title.trim().length < 3} data-testid="quest-add-save">
+        {t('addQuest')}
+      </Button>
+    </details>
   );
 }
 
 function CosmeticRow({ item }: { item: AdminCosmetic }) {
   const t = useTranslations('admin.progression');
   const act = useAct();
+  const [name, setName] = useState(item.name);
   const [cost, setCost] = useState(String(item.cost));
   const [minLevel, setMinLevel] = useState(String(item.minLevel));
   const [active, setActive] = useState(item.active);
-  const dirty = Number(cost) !== item.cost || Number(minLevel) !== item.minLevel || active !== item.active;
+  const dirty = name !== item.name || Number(cost) !== item.cost || Number(minLevel) !== item.minLevel || active !== item.active;
   return (
     <li>
       <Card className="flex flex-wrap items-end gap-3 p-3 text-sm" data-testid="cosmetic-row">
-        <span className="min-w-40 flex-1">
-          <span className="block font-bold">{item.name}</span>
-          <span className="text-fg-muted">
+        <MascotAvatar size={56} cosmetics={{ [item.slot]: item.code }} />
+        <div className="flex min-w-40 flex-1 flex-col gap-1">
+          <TextField label={t('name')} value={name} onChange={(e) => setName(e.target.value)} />
+          <span className="text-xs text-fg-muted">
             {item.slot} · {item.code}
           </span>
-        </span>
+        </div>
         <TextField label={t('cost')} type="number" min={0} className="w-24" value={cost} onChange={(e) => setCost(e.target.value)} />
         <TextField label={t('minLevel')} type="number" min={1} className="w-24" value={minLevel} onChange={(e) => setMinLevel(e.target.value)} />
         <Switch compact label={t('active')} checked={active} onChange={(e) => setActive(e.target.checked)} />
         <Button
           size="sm"
           disabled={!dirty}
-          onClick={() => void act(async () => (await getRepo()).growth.saveCosmetic(item.id, { cost: Number(cost), minLevel: Number(minLevel), active }), t('saved'))}
+          onClick={() => void act(async () => (await getRepo()).growth.saveCosmetic(item.id, { name, cost: Number(cost), minLevel: Number(minLevel), active }), t('saved'))}
         >
           {t('save')}
         </Button>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label={t('delete')}
+          data-testid="cosmetic-delete"
+          onClick={() => {
+            if (window.confirm(t('confirmDeleteItem', { name: item.name }))) void act(async () => (await getRepo()).growth.deleteCosmetic(item.id), t('deleted'));
+          }}
+        >
+          <Trash2 aria-hidden="true" className="size-4 text-danger" />
+        </IconButton>
       </Card>
     </li>
+  );
+}
+
+const SLOT_LIST = ['colour', 'hat', 'glasses', 'headphones', 'glow', 'frame'] as const;
+
+function AddCosmetic({ existing }: { existing: AdminCosmetic[] }) {
+  const t = useTranslations('admin.progression');
+  const act = useAct();
+  const [slot, setSlot] = useState<(typeof SLOT_LIST)[number]>('colour');
+  const free = COSMETIC_CODES[slot].filter((c) => !existing.some((e) => e.slot === slot && e.code === c));
+  const custom = slot === 'colour' || slot === 'glow';
+  const [code, setCode] = useState('');
+  const [hex, setHex] = useState('#1e90ff');
+  const [name, setName] = useState('');
+  const [cost, setCost] = useState('60');
+  const [minLevel, setMinLevel] = useState('1');
+  const chosen = code === 'custom' || (!code && free.length === 0 && custom) ? hex : code || free[0] || '';
+  const add = () =>
+    void act(async () => {
+      await (await getRepo()).growth.addCosmetic({ slot, code: chosen, name, cost: Number(cost), minLevel: Number(minLevel) });
+      setName('');
+      setCode('');
+    }, t('added'));
+  const designs = [...free.map((c) => ({ value: c, label: c })), ...(custom ? [{ value: 'custom', label: t('customColour') }] : [])];
+  return (
+    <details className="rounded-card border border-dashed border-border p-3" data-testid="cosmetic-add">
+      <summary className="flex cursor-pointer items-center gap-2 font-bold">
+        <Plus aria-hidden="true" className="size-4" />
+        {t('addItem')}
+      </summary>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <MascotAvatar size={72} cosmetics={chosen ? { [slot]: chosen } : {}} />
+        <SelectField
+          label={t('slot')}
+          value={slot}
+          onChange={(e) => {
+            setSlot(e.target.value as (typeof SLOT_LIST)[number]);
+            setCode('');
+          }}
+          options={SLOT_LIST.map((x) => ({ value: x, label: x }))}
+        />
+        {designs.length ? (
+          <SelectField label={t('design')} value={code || designs[0]!.value} onChange={(e) => setCode(e.target.value)} options={designs} />
+        ) : (
+          <p className="text-sm text-fg-muted">{t('allDesignsUsed')}</p>
+        )}
+        {custom && (code === 'custom' || free.length === 0) ? (
+          <label className="flex flex-col gap-1 text-sm font-bold">
+            {t('colourCode')}
+            <input type="color" value={hex} onChange={(e) => setHex(e.target.value)} className="h-11 w-20 rounded-control border border-border bg-surface-3" />
+          </label>
+        ) : null}
+        <TextField label={t('name')} value={name} onChange={(e) => setName(e.target.value)} data-testid="cosmetic-add-name" />
+        <TextField label={t('cost')} type="number" min={0} className="w-24" value={cost} onChange={(e) => setCost(e.target.value)} />
+        <TextField label={t('minLevel')} type="number" min={1} className="w-24" value={minLevel} onChange={(e) => setMinLevel(e.target.value)} />
+        <Button size="sm" onClick={add} disabled={!chosen || name.trim().length < 2} data-testid="cosmetic-add-save">
+          {t('addItem')}
+        </Button>
+      </div>
+    </details>
   );
 }
 
@@ -668,8 +804,11 @@ export function ProgressionEditor() {
             label: t('tabQuests'),
             content: quests.data ? (
               <ul className="flex flex-col gap-2">
+                <li>
+                  <AddQuest />
+                </li>
                 {quests.data.map((q) => (
-                  <QuestRow key={`${q.code}:${q.target}:${q.reward}:${q.active}`} quest={q} />
+                  <QuestRow key={`${q.code}:${q.title}:${q.description}:${q.target}:${q.reward}:${q.active}`} quest={q} />
                 ))}
               </ul>
             ) : (
@@ -681,8 +820,11 @@ export function ProgressionEditor() {
             label: t('tabCosmetics'),
             content: cosmetics.data ? (
               <ul className="flex flex-col gap-2">
+                <li>
+                  <AddCosmetic existing={cosmetics.data} />
+                </li>
                 {cosmetics.data.map((c) => (
-                  <CosmeticRow key={`${c.id}:${c.cost}:${c.minLevel}:${c.active}`} item={c} />
+                  <CosmeticRow key={`${c.id}:${c.name}:${c.cost}:${c.minLevel}:${c.active}`} item={c} />
                 ))}
               </ul>
             ) : (

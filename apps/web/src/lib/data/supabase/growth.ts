@@ -1,6 +1,7 @@
 import { emitTopic } from '../bus';
 import { rankScore, type RankInputs } from '@/lib/domain/ranking';
-import type { DevlogPost, DiscoveryReport, DiscoveryRow, Jam, ReportKind, ReportRecord, SiteStats } from '../growthTypes';
+import { isDrawableCosmetic } from '@brainstorming/ui';
+import { questCode, type AdminQuest, type DevlogPost, type DiscoveryReport, type DiscoveryRow, type Jam, type ReportKind, type ReportRecord, type SiteStats } from '../growthTypes';
 import { getAnonId } from '../local';
 import { RepoError, type GrowthRepo } from '../repo';
 import type { GameStatus, GameSummary } from '../types';
@@ -413,18 +414,47 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       emitTopic('admin');
     },
     async adminQuests() {
-      const rows = (check(await getSupabase().from('quests').select('code, period, title, target, reward_points, active').order('sort')) ?? []) as Row[];
+      const rows = (check(await getSupabase().from('quests').select('code, period, title, description, rule, target, reward_points, active').order('period').order('sort')) ?? []) as Row[];
       return rows.map((r) => ({
         code: String(r.code),
         period: r.period as 'daily' | 'weekly',
         title: String((r.title as { en?: string } | null)?.en ?? r.code),
+        description: String((r.description as { en?: string } | null)?.en ?? ''),
+        rule: (r.rule ?? { kind: 'play_sessions' }) as AdminQuest['rule'],
         target: Number(r.target),
         reward: Number(r.reward_points),
         active: Boolean(r.active),
       }));
     },
     async saveQuest(code, patch) {
-      check(await getSupabase().from('quests').update({ target: Math.round(patch.target), reward_points: Math.round(patch.reward), active: patch.active }).eq('code', code));
+      const update: Row = { target: Math.round(patch.target), reward_points: Math.round(patch.reward), active: patch.active };
+      if (patch.title?.trim()) update.title = { en: patch.title.trim(), hi: patch.title.trim() };
+      if (patch.description != null) update.description = { en: patch.description.trim(), hi: patch.description.trim() };
+      check(await getSupabase().from('quests').update(update).eq('code', code));
+      emitTopic('quests');
+    },
+    async addQuest(q) {
+      const title = q.title.trim();
+      if (title.length < 3 || !(q.target > 0) || !(q.reward >= 1 && q.reward <= 1000)) throw new RepoError('invalid', 'Give it a title, a target above 0 and a reward between 1 and 1,000 points.');
+      const { data: last } = await getSupabase().from('quests').select('sort').eq('period', q.period).order('sort', { ascending: false }).limit(1);
+      const rule: Row = { kind: q.rule.kind };
+      if (q.rule.kind === 'play_distinct' && q.rule.category) rule.category = q.rule.category;
+      if (q.rule.kind === 'play_new') rule.days = Math.max(1, Math.round(q.rule.days ?? 7));
+      const res = await getSupabase().from('quests').insert({
+        code: `${questCode(q.period, title)}_${Date.now().toString(36).slice(-4)}`,
+        period: q.period,
+        title: { en: title, hi: title },
+        description: { en: q.description.trim(), hi: q.description.trim() },
+        rule,
+        target: Math.round(q.target),
+        reward_points: Math.round(q.reward),
+        sort: Number((last?.[0] as Row | undefined)?.sort ?? 0) + 1,
+      });
+      check(res);
+      emitTopic('quests');
+    },
+    async deleteQuest(code) {
+      check(await getSupabase().from('quests').delete().eq('code', code));
       emitTopic('quests');
     },
     async adminCosmetics() {
@@ -440,7 +470,30 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       }));
     },
     async saveCosmetic(id, patch) {
-      check(await getSupabase().from('cosmetics').update({ cost_points: Math.round(patch.cost), min_level: Math.round(patch.minLevel), active: patch.active }).eq('id', id));
+      const update: Row = { cost_points: Math.round(patch.cost), min_level: Math.round(patch.minLevel), active: patch.active };
+      if (patch.name?.trim()) update.name = { en: patch.name.trim(), hi: patch.name.trim() };
+      check(await getSupabase().from('cosmetics').update(update).eq('id', id));
+      emitTopic('profile');
+    },
+    async addCosmetic(item) {
+      if (!isDrawableCosmetic(item.slot, item.code) || item.name.trim().length < 2 || !(item.cost >= 0) || !(item.minLevel >= 1)) {
+        throw new RepoError('invalid', 'Pick a design (or a colour code like #1E90FF), a name, a cost of 0 or more and a level from 1.');
+      }
+      const { data: last } = await getSupabase().from('cosmetics').select('sort').eq('slot', item.slot).order('sort', { ascending: false }).limit(1);
+      const res = await getSupabase().from('cosmetics').insert({
+        slot: item.slot,
+        code: item.code.trim(),
+        name: { en: item.name.trim(), hi: item.name.trim() },
+        cost_points: Math.round(item.cost),
+        min_level: Math.round(item.minLevel),
+        sort: Number((last?.[0] as Row | undefined)?.sort ?? 0) + 1,
+      });
+      if (res.error?.code === '23505') throw new RepoError('conflict', 'That design is already in the Locker. Turn it on instead.');
+      check(res);
+      emitTopic('profile');
+    },
+    async deleteCosmetic(id) {
+      check(await getSupabase().from('cosmetics').delete().eq('id', id));
       emitTopic('profile');
     },
   };

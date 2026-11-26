@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AdRules } from '@brainstorming/sdk/host';
+import { AdRules, noneProvider, withFallback, type AdProvider } from '@brainstorming/sdk/host';
 import { parseRequest } from '@brainstorming/sdk/host';
 import { computeDailyKpis, grade, percentRank, sparkVerdict, summarise, type KpiEvent } from '@/lib/domain/kpis';
 import { isAdNetwork, scorePreQa, type PreQaRun } from '@/lib/domain/preqa';
@@ -78,6 +78,24 @@ describe('ad rules', () => {
     rules.gameplayStart();
     expect(rules.checkBanner('a')).toBe('gameplay-active');
     expect(rules.bannersToHide().sort()).toEqual(['a', 'b']);
+  });
+
+  it('spaces breaks by plan: Lite 6 minutes, Plus 15, Max none; Plus and Max skip rewarded ads', () => {
+    const gap = (premium: 'lite' | 'plus' | 'max') => {
+      const c = clock();
+      const rules = new AdRules({ spark: false, enabled: true, now: c.now, premium });
+      rules.gameplayStart();
+      for (let minutes = 1; minutes <= 30; minutes++) {
+        c.advance(60_000);
+        const r = rules.checkMidgame();
+        if (r === 'premium') return { first: null, instant: rules.instantRewards };
+        if (r === null) return { first: minutes, instant: rules.instantRewards };
+      }
+      return { first: Infinity, instant: rules.instantRewards };
+    };
+    expect(gap('lite')).toEqual({ first: 2, instant: false });
+    expect(gap('plus')).toEqual({ first: 5, instant: true });
+    expect(gap('max')).toEqual({ first: null, instant: true });
   });
 });
 
@@ -193,5 +211,17 @@ describe('pre-QA scoring', () => {
   it('recognises ad networks', () => {
     expect(isAdNetwork('https://securepubads.g.doubleclick.net/tag/js/gpt.js')).toBe(true);
     expect(isAdNetwork('https://cdn.example.com/game.js')).toBe(false);
+  });
+});
+
+describe('ad fallback', () => {
+  it('shows our own ad when the network has nothing, and the network ad when it has one', async () => {
+    const house: AdProvider = { ...noneProvider, name: 'house', showMidgame: async () => 'finished', showRewarded: async () => 'finished' };
+    const empty = withFallback(noneProvider, house);
+    expect(await empty.showMidgame()).toBe('finished');
+    expect(await empty.showRewarded()).toBe('finished');
+    const network: AdProvider = { ...noneProvider, name: 'adsense-h5', showMidgame: async () => 'skipped' };
+    // A player who skips the network ad is not shown a second ad.
+    expect(await withFallback(network, house).showMidgame()).toBe('skipped');
   });
 });

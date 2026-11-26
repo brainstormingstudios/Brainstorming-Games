@@ -3,6 +3,7 @@
  * It starts with no games. Each read parses the stored JSON so a write from another tab is seen
  * straight away.
  */
+import type { CosmeticDef, QuestDef } from '@/lib/domain/progression';
 import type { Creator, CreatorMonthRow, CreatorPayoutRow } from '../creatorTypes';
 import { MOCK_DB_URL } from '@/lib/config';
 import type { BoostStatus } from '@/lib/domain/premium';
@@ -190,7 +191,7 @@ export interface MockUser {
   locale: string;
   lastActive: string | null;
   bannedAt: string | null;
-  premiumPlan?: 'plus' | 'max' | null;
+  premiumPlan?: 'lite' | 'plus' | 'max' | null;
   premiumUntil?: string | null;
   premiumAutoRenew?: boolean;
   premiumFromPass?: boolean;
@@ -345,8 +346,11 @@ export interface MockTables {
   playtests: { gameId: string; userId: string; fun: number; clarity: number; playAgain: boolean; createdAt: string }[];
   reports: { id: string; kind: string; targetType: string; targetId: string; reporterKey: string; reason: string; status: 'open' | 'actioned' | 'dismissed'; createdAt: string }[];
   /** Admin edits to the built-in quest and cosmetic lists. */
-  questOverrides: { code: string; target: number; reward: number; active: boolean }[];
-  cosmeticOverrides: { id: string; cost: number; minLevel: number; active: boolean }[];
+  questOverrides: { code: string; target: number; reward: number; active: boolean; title?: string; description?: string; deleted?: boolean }[];
+  cosmeticOverrides: { id: string; cost: number; minLevel: number; active: boolean; name?: string; deleted?: boolean }[];
+  /** Quests and Locker items admins added on top of the built-in lists. */
+  customQuests: QuestDef[];
+  customCosmetics: CosmeticDef[];
   creators: Creator[];
   creatorVisits: { handle: string; anonId: string; at: string }[];
   creatorMonths: CreatorMonthRow[];

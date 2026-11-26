@@ -50,3 +50,39 @@ export async function detectAdblock(doc: Document = document): Promise<boolean> 
     return true;
   }
 }
+
+/**
+ * Tries `primary` first and falls back to `backup` when it has nothing to show (no fill, blocked,
+ * not approved yet). Used so a real ad network can be switched on later without ever leaving an
+ * ad break empty: our own house ad fills the gap.
+ */
+export function withFallback(primary: AdProvider, backup: AdProvider): AdProvider {
+  const filled = new WeakMap<HTMLElement, AdProvider>();
+  return {
+    name: primary.name,
+    init: async () => {
+      await Promise.allSettled([primary.init(), backup.init()]);
+    },
+    showMidgame: async () => {
+      const r = await primary.showMidgame().catch(() => 'error' as const);
+      return r === 'error' ? backup.showMidgame() : r;
+    },
+    showRewarded: async () => {
+      const r = await primary.showRewarded().catch(() => 'error' as const);
+      return r === 'error' ? backup.showRewarded() : r;
+    },
+    showBanner: async (slot, size) => {
+      if (await primary.showBanner(slot, size).catch(() => false)) {
+        filled.set(slot, primary);
+        return true;
+      }
+      const ok = await backup.showBanner(slot, size);
+      if (ok) filled.set(slot, backup);
+      return ok;
+    },
+    hideBanner: (slot) => {
+      (filled.get(slot) ?? primary).hideBanner(slot);
+      filled.delete(slot);
+    },
+  };
+}

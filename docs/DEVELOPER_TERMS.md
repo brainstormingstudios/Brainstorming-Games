@@ -2,7 +2,7 @@
 
 _Last updated: 12 November 2026_
 
-> Draft, pending legal review. Version `2026-11-draft-1`. The version you accept is recorded with your studio.
+> Version `2026-11-1`. The version you accept is recorded with your studio. © 2026 Brainstorming Studios. All rights reserved.
 
 These terms apply between Brainstorming Studios ("we") and you, the studio or individual who publishes a game on Brainstorming Games ("you").
 

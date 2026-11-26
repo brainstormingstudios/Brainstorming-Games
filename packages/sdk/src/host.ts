@@ -10,7 +10,7 @@ export { AdRules, AD_RULES } from './adRules';
 export { createMockProvider } from './ads/mock';
 export { createHouseProvider, type HouseAd } from './ads/house';
 export { createAdsenseH5Provider } from './ads/adsenseH5';
-export { detectAdblock, noneProvider, type AdOutcome, type AdProvider } from './ads/provider';
+export { detectAdblock, noneProvider, withFallback, type AdOutcome, type AdProvider } from './ads/provider';
 export * from './protocol';
 
 const empty = z.object({}).strict();

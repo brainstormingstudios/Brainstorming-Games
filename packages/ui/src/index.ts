@@ -38,7 +38,7 @@ export { Tabs, type TabItem } from './Tabs';
 export { ToastProvider, useToast, type ToastOptions, type ToastTone } from './Toast';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { ConfettiBurst, Mascot, type MascotProps } from './mascot/Mascot';
-export {
+export { isDrawableCosmetic,
   COSMETIC_CODES,
   MASCOT_COLOURS,
   MASCOT_GLOWS,

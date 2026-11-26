@@ -24,13 +24,15 @@ Deno.serve(async (req) => {
     // Notes are set by our billing function; a subscription must also be one we created.
     const { data: known } = await db.from('payments').select('id').eq('provider_ref', sub.id).eq('user_id', userId ?? '').limit(1);
     if (!known?.length) return ok();
-    const plan = sub.notes?.plan === 'max' ? 'max' : 'plus';
+    const plan: 'lite' | 'plus' | 'max' = sub.notes?.plan === 'max' ? 'max' : sub.notes?.plan === 'lite' ? 'lite' : 'plus';
+    const planName = { lite: 'Lite', plus: 'Plus', max: 'Max' }[plan];
+    const planPrice = { lite: '₹49 a month', plus: '₹99 a month', max: '₹179 a month' }[plan];
     if (!userId) return ok();
     const until = new Date((sub.current_end ?? Math.floor(Date.now() / 1000) + 30 * 86400) * 1000).toISOString();
     await db.from('profiles').update({ premium_plan: plan, premium_until: until, premium_auto_renew: true, premium_from_pass: false, razorpay_subscription_id: sub.id }).eq('id', userId);
     if (payment) {
       await db.from('payments').upsert(
-        { user_id: userId, kind: 'premium', what: `Brainstorming ${plan === 'max' ? 'Max' : 'Plus'}`, amount_paise: payment.amount, status: 'paid', provider_ref: sub.id, provider_payment_id: payment.id },
+        { user_id: userId, kind: 'premium', what: `Brainstorming ${planName}`, amount_paise: payment.amount, status: 'paid', provider_ref: sub.id, provider_payment_id: payment.id },
         { onConflict: 'provider,provider_ref,provider_payment_id' },
       );
       await db.from('payments').delete().eq('provider_ref', sub.id).eq('status', 'pending');
@@ -40,7 +42,7 @@ Deno.serve(async (req) => {
       await db.from('email_outbox').insert({
         to_email: u.user?.email,
         template: 'premium_welcome',
-        data: { plan: plan === 'max' ? 'Max' : 'Plus', price: plan === 'max' ? '₹199 a month' : '₹99 a month', until: until.slice(0, 10) },
+        data: { plan: planName, price: planPrice, until: until.slice(0, 10) },
       });
     }
     return ok();

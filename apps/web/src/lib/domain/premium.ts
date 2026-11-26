@@ -3,7 +3,12 @@
  * Money is in paise (₹1 = 100). Every number the site uses lives here.
  */
 
-export type PremiumPlan = 'plus' | 'max';
+export type PremiumPlan = 'lite' | 'plus' | 'max';
+
+/** The order the plans are shown in, cheapest first. Plus is the one we point people to. */
+export const PLAN_ORDER: PremiumPlan[] = ['lite', 'plus', 'max'];
+export const POPULAR_PLAN: PremiumPlan = 'plus';
+export const PLAN_LABEL: Record<PremiumPlan, string> = { lite: 'Lite', plus: 'Plus', max: 'Max' };
 
 export interface PlanDef {
   id: PremiumPlan;
@@ -22,18 +27,27 @@ export interface PlanDef {
 }
 
 export const PLANS: Record<PremiumPlan, PlanDef> = {
+  lite: {
+    id: 'lite',
+    price: 4900,
+    displayAds: 'some',
+    midgame: { cooldownMs: 6 * 60_000, minGameplayMs: 2 * 60_000 },
+    instantRewards: false,
+    pointsMultiplier: 1,
+    guestPasses: 0,
+  },
   plus: {
     id: 'plus',
     price: 9900,
-    displayAds: 'some',
-    midgame: { cooldownMs: 10 * 60_000, minGameplayMs: 3 * 60_000 },
-    instantRewards: false,
+    displayAds: 'none',
+    midgame: { cooldownMs: 15 * 60_000, minGameplayMs: 5 * 60_000 },
+    instantRewards: true,
     pointsMultiplier: 1,
     guestPasses: 0,
   },
   max: {
     id: 'max',
-    price: 19900,
+    price: 17900,
     displayAds: 'none',
     midgame: null,
     instantRewards: true,
@@ -60,7 +74,7 @@ export function activePlan(p: PremiumState | null | undefined, now: Date = new D
   return p && p.until > now.toISOString() ? p.plan : null;
 }
 
-/** Display-ad placements a player on this plan still sees. Plus keeps one, between homepage rails. */
+/** Display-ad placements a player on this plan still sees. Lite keeps one, between homepage rails. */
 export function showsDisplayAd(plan: PremiumPlan | null, placement: string): boolean {
   if (!plan) return true;
   if (PLANS[plan].displayAds === 'none') return false;

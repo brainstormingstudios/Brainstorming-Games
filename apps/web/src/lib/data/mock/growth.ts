@@ -1,7 +1,8 @@
 import { pickWinner } from '@/lib/domain/abTest';
 import { COSMETICS, QUESTS, type CosmeticDef, type QuestDef } from '@/lib/domain/progression';
 import { emitTopic } from '../bus';
-import { REPORT_KINDS, type Jam, type ReportKind, type ReportRecord } from '../growthTypes';
+import { isDrawableCosmetic } from '@brainstorming/ui';
+import { REPORT_KINDS, questCode, type AdminQuest, type Jam, type ReportKind, type ReportRecord } from '../growthTypes';
 import { getAnonId } from '../local';
 import type { GrowthRepo } from '../repo';
 import { PUBLIC_STATUSES } from '../types';
@@ -17,19 +18,29 @@ const SLUG = /^[a-z0-9][a-z0-9-]{1,39}$/;
 /** The built-in quests with the admin's edits applied; switched-off quests are left out. */
 export function effectiveQuests(includeInactive = false): (QuestDef & { active: boolean })[] {
   const edits = new Map(readTable('questOverrides').map((o) => [o.code, o]));
-  return QUESTS.map((q) => {
-    const e = edits.get(q.code);
-    return e ? { ...q, target: e.target, reward: e.reward, active: e.active } : { ...q, active: true };
-  }).filter((q) => includeInactive || q.active);
+  return [...QUESTS, ...readTable('customQuests')]
+    .filter((q) => !edits.get(q.code)?.deleted)
+    .map((q) => {
+      const e = edits.get(q.code);
+      if (!e) return { ...q, active: true };
+      const title = e.title ? { en: e.title, hi: e.title } : q.title;
+      const description = e.description != null ? { en: e.description, hi: e.description } : q.description;
+      return { ...q, title, description, target: e.target, reward: e.reward, active: e.active };
+    })
+    .filter((q) => includeInactive || q.active);
 }
 
 /** The built-in cosmetics with the admin's edits applied; switched-off items are left out. */
 export function effectiveCosmetics(includeInactive = false): (CosmeticDef & { active: boolean })[] {
   const edits = new Map(readTable('cosmeticOverrides').map((o) => [o.id, o]));
-  return COSMETICS.map((c) => {
-    const e = edits.get(`${c.slot}:${c.code}`);
-    return e ? { ...c, cost: e.cost, minLevel: e.minLevel, active: e.active } : { ...c, active: true };
-  }).filter((c) => includeInactive || c.active);
+  return [...COSMETICS, ...readTable('customCosmetics')]
+    .filter((c) => !edits.get(`${c.slot}:${c.code}`)?.deleted)
+    .map((c) => {
+      const e = edits.get(`${c.slot}:${c.code}`);
+      if (!e) return { ...c, active: true };
+      return { ...c, name: e.name ? { en: e.name, hi: e.name } : c.name, cost: e.cost, minLevel: e.minLevel, active: e.active };
+    })
+    .filter((c) => includeInactive || c.active);
 }
 
 const toJam = (j: MockTables['jams'][number], entries: MockTables['jamEntries']): Jam => ({
@@ -467,25 +478,83 @@ export const mockGrowth: GrowthRepo = {
   },
   async adminQuests() {
     requireStaff();
-    return effectiveQuests(true).map((q) => ({ code: q.code, period: q.period, title: q.title.en, target: q.target, reward: q.reward, active: q.active }));
+    return effectiveQuests(true).map((q) => ({ code: q.code, period: q.period, title: q.title.en, description: q.description.en, rule: q.rule as AdminQuest['rule'], target: q.target, reward: q.reward, active: q.active }));
   },
   async saveQuest(code, patch) {
     const staff = requireStaff();
-    if (!QUESTS.some((q) => q.code === code)) fail('not_found');
+    const current = effectiveQuests(true).find((q) => q.code === code);
+    if (!current) fail('not_found');
     if (!(patch.target > 0) || !(patch.reward >= 1 && patch.reward <= 1000)) fail('invalid', 'Target must be above 0 and the reward between 1 and 1,000 points.');
-    mutateTable('questOverrides', (rows) => [...rows.filter((r) => r.code !== code), { code, target: Math.round(patch.target), reward: Math.round(patch.reward), active: patch.active }]);
+    const title = patch.title?.trim() || current.title.en;
+    const description = patch.description != null ? patch.description.trim() : current.description.en;
+    mutateTable('questOverrides', (rows) => [...rows.filter((r) => r.code !== code), { code, target: Math.round(patch.target), reward: Math.round(patch.reward), active: patch.active, title, description }]);
     audit(staff.id, 'save_quest', 'quest', code, patch);
+    emitTopic('quests');
+  },
+  async addQuest(q) {
+    const staff = requireStaff();
+    const title = q.title.trim();
+    if (title.length < 3 || !(q.target > 0) || !(q.reward >= 1 && q.reward <= 1000)) fail('invalid', 'Give it a title, a target above 0 and a reward between 1 and 1,000 points.');
+    const code = `${questCode(q.period, title)}_${Date.now().toString(36).slice(-4)}`;
+    const rule = (q.rule.kind === 'play_distinct'
+      ? { kind: 'play_distinct', ...(q.rule.category ? { category: q.rule.category } : {}) }
+      : q.rule.kind === 'play_new'
+        ? { kind: 'play_new', days: Math.max(1, Math.round(q.rule.days ?? 7)) }
+        : { kind: q.rule.kind }) as QuestDef['rule'];
+    mutateTable('customQuests', (rows) => [...rows, { code, period: q.period, title: { en: title, hi: title }, description: { en: q.description.trim(), hi: q.description.trim() }, rule, target: Math.round(q.target), reward: Math.round(q.reward) }]);
+    audit(staff.id, 'add_quest', 'quest', code, {});
+    emitTopic('quests');
+  },
+  async deleteQuest(code) {
+    const staff = requireStaff();
+    const current = effectiveQuests(true).find((q) => q.code === code);
+    if (!current) fail('not_found');
+    mutateTable('customQuests', (rows) => rows.filter((r) => r.code !== code));
+    mutateTable('questOverrides', (rows) => [...rows.filter((r) => r.code !== code), { code, target: current.target, reward: current.reward, active: false, deleted: true }]);
+    audit(staff.id, 'delete_quest', 'quest', code, {});
     emitTopic('quests');
   },
   async adminCosmetics() {
     requireStaff();
     return effectiveCosmetics(true).map((c) => ({ id: `${c.slot}:${c.code}`, slot: c.slot, code: c.code, name: c.name.en, cost: c.cost, minLevel: c.minLevel, active: c.active }));
   },
+  async addCosmetic(item) {
+    const staff = requireStaff();
+    const code = item.code.trim();
+    if (!isDrawableCosmetic(item.slot, code) || item.name.trim().length < 2 || !(item.cost >= 0) || !(item.minLevel >= 1)) {
+      fail('invalid', 'Pick a design (or a colour code like #1E90FF), a name, a cost of 0 or more and a level from 1.');
+    }
+    const id = `${item.slot}:${code}`;
+    if (effectiveCosmetics(true).some((c) => `${c.slot}:${c.code}` === id)) fail('conflict', 'That design is already in the Locker. Turn it on instead.');
+    const name = { en: item.name.trim(), hi: item.name.trim() };
+    if (COSMETICS.some((c) => `${c.slot}:${c.code}` === id)) {
+      // A built-in item that was deleted comes back.
+      mutateTable('cosmeticOverrides', (rows) => [...rows.filter((r) => r.id !== id), { id, cost: Math.round(item.cost), minLevel: Math.round(item.minLevel), active: true, name: name.en }]);
+    } else {
+      mutateTable('customCosmetics', (rows) => [...rows, { slot: item.slot, code, name, cost: Math.round(item.cost), minLevel: Math.round(item.minLevel) }]);
+    }
+    audit(staff.id, 'add_cosmetic', 'cosmetic', id, {});
+    emitTopic('profile');
+  },
+  async deleteCosmetic(id) {
+    const staff = requireStaff();
+    const current = effectiveCosmetics(true).find((c) => `${c.slot}:${c.code}` === id);
+    if (!current) fail('not_found');
+    mutateTable('customCosmetics', (rows) => rows.filter((r) => `${r.slot}:${r.code}` !== id));
+    mutateTable('cosmeticOverrides', (rows) => [...rows.filter((r) => r.id !== id), { id, cost: current.cost, minLevel: current.minLevel, active: false, deleted: true }]);
+    audit(staff.id, 'delete_cosmetic', 'cosmetic', id, {});
+    emitTopic('profile');
+  },
   async saveCosmetic(id, patch) {
     const staff = requireStaff();
-    if (!COSMETICS.some((c) => `${c.slot}:${c.code}` === id)) fail('not_found');
+    const current = effectiveCosmetics(true).find((c) => `${c.slot}:${c.code}` === id);
+    if (!current) fail('not_found');
     if (!(patch.cost >= 0) || !(patch.minLevel >= 1)) fail('invalid', 'Cost cannot be negative and the level starts at 1.');
-    mutateTable('cosmeticOverrides', (rows) => [...rows.filter((r) => r.id !== id), { id, cost: Math.round(patch.cost), minLevel: Math.round(patch.minLevel), active: patch.active }]);
+    const name = patch.name?.trim() || current.name.en;
+    if (!COSMETICS.some((c) => `${c.slot}:${c.code}` === id)) {
+      mutateTable('customCosmetics', (rows) => rows.map((r) => (`${r.slot}:${r.code}` === id ? { ...r, name: { en: name, hi: name } } : r)));
+    }
+    mutateTable('cosmeticOverrides', (rows) => [...rows.filter((r) => r.id !== id), { id, cost: Math.round(patch.cost), minLevel: Math.round(patch.minLevel), active: patch.active, name }]);
     audit(staff.id, 'save_cosmetic', 'cosmetic', id, patch);
     emitTopic('profile');
   },

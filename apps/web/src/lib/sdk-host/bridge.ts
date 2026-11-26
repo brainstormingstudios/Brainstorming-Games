@@ -4,6 +4,7 @@ import {
   AdRules,
   createAdsenseH5Provider,
   createHouseProvider,
+  withFallback,
   createMockProvider,
   detectAdblock,
   noneProvider,
@@ -107,7 +108,8 @@ function inviteParams(): Record<string, string> {
 function makeProvider(layer: () => HTMLElement, preview: boolean): AdProvider {
   if (preview || INGAME_AD_PROVIDER === 'mock') return createMockProvider({ container: layer });
   if (INGAME_AD_PROVIDER === 'adsense-h5' && ADSENSE_CLIENT) {
-    return createAdsenseH5Provider({ client: ADSENSE_CLIENT, personalised: canPersonaliseAds() });
+    // A break Google cannot fill shows our own promo instead of nothing.
+    return withFallback(createAdsenseH5Provider({ client: ADSENSE_CLIENT, personalised: canPersonaliseAds() }), createHouseProvider({ container: layer, ad: HOUSE_AD }));
   }
   // Our own promo in ad breaks, until an ad network is approved.
   if (INGAME_AD_PROVIDER === 'house') return createHouseProvider({ container: layer, ad: HOUSE_AD });

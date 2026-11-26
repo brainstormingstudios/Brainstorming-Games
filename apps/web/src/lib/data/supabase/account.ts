@@ -18,7 +18,7 @@ interface ProfileRow {
   avatar_cosmetics: Record<string, string>;
   profile_public: boolean;
   playtest_opt_in: boolean;
-  premium_plan: 'plus' | 'max' | null;
+  premium_plan: 'lite' | 'plus' | 'max' | null;
   premium_until: string | null;
   premium_auto_renew: boolean | null;
   premium_from_pass: boolean | null;

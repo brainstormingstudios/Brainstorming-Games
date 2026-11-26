@@ -2,14 +2,14 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Check, Copy, Crown, Download, Gift, Sparkles } from 'lucide-react';
+import { Check, Copy, Crown, Download, Feather, Gift, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, Card, Skeleton, cn, useToast } from '@brainstorming/ui';
 import { useAction } from '@/components/player/common';
 import { useLocale } from '@/i18n/navigation';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import { getRepo } from '@/lib/data';
-import { PLANS, activePlan, formatInr, type PremiumPlan } from '@/lib/domain/premium';
+import { PLANS, PLAN_ORDER, POPULAR_PLAN, activePlan, formatInr, type PremiumPlan } from '@/lib/domain/premium';
 import { formatDate } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
@@ -20,20 +20,21 @@ import { PAYMENTS_LIVE } from '@/lib/config';
 import { PointsSwap } from './PointsSwap';
 
 const PERKS: Record<PremiumPlan, string[]> = {
-  plus: ['fewerAds', 'shortBreaks', 'wallpapers', 'plusBadge'],
+  lite: ['fewerAds', 'liteBreaks', 'wallpapers', 'liteBadge'],
+  plus: ['noSiteAds', 'shortBreaks', 'instantRewards', 'wallpapers', 'plusBadge'],
   max: ['noAds', 'instantRewards', 'doublePoints', 'wallpapers', 'guestPasses', 'maxBadge'],
 };
 
 function PlanCard({ plan, current, onBuy, busy, canBuy }: { plan: PremiumPlan; current: PremiumPlan | null; onBuy: () => void; busy: boolean; canBuy: boolean }) {
   const t = useTranslations('premium');
-  const highlight = plan === 'max';
+  const highlight = plan === POPULAR_PLAN;
   const owned = current === plan;
   return (
-    <Card className={cn('relative flex flex-col gap-4 p-5', highlight && 'border-primary')} data-testid={`plan-${plan}`}>
-      {highlight ? <Badge tone="primary" className="absolute -top-3 left-5">{t('best')}</Badge> : null}
+    <Card className={cn('relative flex flex-col gap-4 p-5', highlight && 'border-2 border-primary shadow-glow md:-my-3 md:py-8')} data-testid={`plan-${plan}`}>
+      {highlight ? <Badge tone="primary" className="absolute -top-3 left-5">{t('popular')}</Badge> : null}
       <div>
         <h2 className="flex items-center gap-2 font-display text-2xl font-extrabold">
-          {plan === 'max' ? <Crown aria-hidden="true" className="size-6 text-primary" /> : <Sparkles aria-hidden="true" className="size-6 text-primary" />}
+          {plan === 'max' ? <Crown aria-hidden="true" className="size-6 text-primary" /> : plan === 'plus' ? <Sparkles aria-hidden="true" className="size-6 text-primary" /> : <Feather aria-hidden="true" className="size-6 text-primary" />}
           {t(`${plan}.name`)}
         </h2>
         <p className="mt-1 text-sm text-fg-muted">{t(`${plan}.tagline`)}</p>
@@ -57,7 +58,7 @@ function PlanCard({ plan, current, onBuy, busy, canBuy }: { plan: PremiumPlan; c
   );
 }
 
-/** Brainstorming Premium: the two plans, your membership, the member wallpapers and guest passes. */
+/** Brainstorming Premium: the three plans, your membership, the member wallpapers and guest passes. */
 export function PremiumPage() {
   const t = useTranslations('premium');
   const locale = useLocale();
@@ -135,10 +136,10 @@ export function PremiumPage() {
       ) : null}
 
       {status.loading && !s ? (
-        <Skeleton className="mx-auto h-96 max-w-4xl" />
+        <Skeleton className="mx-auto h-96 max-w-5xl" />
       ) : (
-        <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
-          {(['plus', 'max'] as const).map((p) => (
+        <div className="mx-auto grid max-w-5xl items-stretch gap-5 md:grid-cols-3">
+          {PLAN_ORDER.map((p) => (
             <PlanCard key={p} plan={p} current={plan} busy={buying === p} canBuy={sellsHere && (!user?.username || Boolean(s?.canBuy))} onBuy={() => void buy(p)} />
           ))}
         </div>

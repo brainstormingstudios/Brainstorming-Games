@@ -53,6 +53,8 @@ import type {
   Jam,
   JamDetail,
   JamInput,
+  NewCosmetic,
+  NewQuest,
   PlaytestAnswers,
   PlaytestSummary,
   ReportInput,
@@ -635,9 +637,15 @@ export interface GrowthRepo {
   adminDevlogs(): Promise<AdminDevlogRow[]>;
   hideDevlog(id: string, hidden: boolean): Promise<void>;
   adminQuests(): Promise<AdminQuest[]>;
-  saveQuest(code: string, patch: { target: number; reward: number; active: boolean }): Promise<void>;
+  saveQuest(code: string, patch: { target: number; reward: number; active: boolean; title?: string; description?: string }): Promise<void>;
+  addQuest(quest: NewQuest): Promise<void>;
+  /** Deletes a quest and everyone's progress on it. */
+  deleteQuest(code: string): Promise<void>;
   adminCosmetics(): Promise<AdminCosmetic[]>;
-  saveCosmetic(id: string, patch: { cost: number; minLevel: number; active: boolean }): Promise<void>;
+  saveCosmetic(id: string, patch: { cost: number; minLevel: number; active: boolean; name?: string }): Promise<void>;
+  addCosmetic(item: NewCosmetic): Promise<void>;
+  /** Deletes a Locker item; players who unlocked it lose it. */
+  deleteCosmetic(id: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -748,7 +756,7 @@ export interface DiscoverRepo {
   daily(): Promise<DailyChallenge | null>;
   pointDaysThisMonth(): Promise<number>;
   /** Swaps Brain Points for Premium days. */
-  redeemPoints(option: PointsOptionId): Promise<{ plan: 'plus' | 'max'; until: string }>;
+  redeemPoints(option: PointsOptionId): Promise<{ plan: 'lite' | 'plus' | 'max'; until: string }>;
 }
 
 export interface Repo {

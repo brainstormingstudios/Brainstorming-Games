@@ -192,6 +192,9 @@ export interface AdminQuest {
   code: string;
   period: 'daily' | 'weekly';
   title: string;
+  description: string;
+  /** What counts, e.g. play_distinct (with a category) or play_new (with days). */
+  rule: { kind: string; category?: string; days?: number };
   target: number;
   reward: number;
   active: boolean;
@@ -205,6 +208,31 @@ export interface AdminCosmetic {
   cost: number;
   minLevel: number;
   active: boolean;
+}
+
+/** A new Brain Quest from the management portal. */
+export interface NewQuest {
+  period: 'daily' | 'weekly';
+  title: string;
+  description: string;
+  rule: { kind: 'play_sessions' | 'play_distinct' | 'play_new' | 'play_multiplayer' | 'play_minutes' | 'rate' | 'favourite'; category?: string; days?: number };
+  target: number;
+  reward: number;
+}
+
+/** A new Locker item: one of the drawn codes, or a new colour or glow as #RRGGBB. */
+export interface NewCosmetic {
+  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+  code: string;
+  name: string;
+  cost: number;
+  minLevel: number;
+}
+
+/** A quest code from its period and title: daily_play_5_games. */
+export function questCode(period: string, title: string): string {
+  const slug = title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  return `${period}_${slug || 'quest'}`;
 }
 
 /** Whether entries can be added now. */
