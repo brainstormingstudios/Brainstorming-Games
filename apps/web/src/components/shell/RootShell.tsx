@@ -57,6 +57,12 @@ export async function RootShell({ locale, children }: { locale: Locale; children
     <html lang={localeTags[locale]} data-theme="dark" className={fontClasses} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#0d0e10" />
+        <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-TMBRHCHT" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());`,
+          }}
+        />
         <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT_SCRIPT }} />
       </head>
       <body>
