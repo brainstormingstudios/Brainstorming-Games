@@ -3,7 +3,11 @@ import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { fontClasses } from '@/app/fonts';
 import { localeTags, type Locale } from '@/i18n/config';
+import { IS_MOCK, SITE_URL } from '@/lib/config';
 import { PREFS_BOOT_SCRIPT } from '@/lib/prefsBoot';
+
+/** The real site only: a live build (not the local test database) on an https address. */
+const ANALYTICS_ON = !IS_MOCK && SITE_URL.startsWith('https://');
 import { Footer } from './Footer';
 import { Header } from './Header';
 import { Providers } from './Providers';
@@ -57,12 +61,18 @@ export async function RootShell({ locale, children }: { locale: Locale; children
     <html lang={localeTags[locale]} data-theme="dark" className={fontClasses} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#0d0e10" />
-        <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-TMBRHCHT" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());`,
-          }}
-        />
+        {/* Google Analytics (Tag Manager) on the live site only: test and local copies of the
+            site must not count as visitors. */}
+        {ANALYTICS_ON ? (
+          <>
+            <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-TMBRHCHT" />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());`,
+              }}
+            />
+          </>
+        ) : null}
         <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT_SCRIPT }} />
       </head>
       <body>
