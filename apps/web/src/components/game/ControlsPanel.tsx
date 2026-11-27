@@ -20,7 +20,7 @@ export function keyCaps(text: string): string[] {
  * down the page to find them. Opens on hover or keyboard focus (desktop) and on tap (phones,
  * where it is a sheet above the tab bar). Escape or a tap outside closes it.
  */
-export function ControlsPanel({ controls, className }: { controls: ControlRow[]; className?: string }) {
+export function ControlsPanel({ controls, className, below = false }: { controls: ControlRow[]; className?: string; below?: boolean }) {
   const t = useTranslations('game');
   const id = useId();
   const wrap = useRef<HTMLDivElement>(null);
@@ -79,7 +79,9 @@ export function ControlsPanel({ controls, className }: { controls: ControlRow[];
           className={cn(
             'z-[60] animate-pop-in overflow-hidden rounded-card border border-glow/40 bg-surface-3/95 shadow-glow backdrop-blur-xl',
             // Phones: a sheet above the tab bar. Larger screens: a card above the button.
-            'fixed inset-x-3 bottom-[calc(var(--tabs-h)+12px)] sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-[calc(100%+10px)] sm:w-[22rem]',
+            below
+              ? 'absolute top-[calc(100%+8px)] right-0 w-[min(22rem,calc(100vw-1.5rem))] text-fg'
+              : 'fixed inset-x-3 bottom-[calc(var(--tabs-h)+12px)] sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-[calc(100%+10px)] sm:w-[22rem]',
           )}
         >
           <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-glow/15 to-transparent px-4 py-3">

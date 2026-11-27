@@ -8,7 +8,7 @@ import { PROTOCOL, PROTOCOL_VERSION, type MethodName, type Methods } from './pro
 
 export { AdRules, AD_RULES } from './adRules';
 export { createMockProvider } from './ads/mock';
-export { createHouseProvider, type HouseAd } from './ads/house';
+export { createHouseProvider, type HouseAd, type HouseTiming } from './ads/house';
 export { createAdsenseH5Provider } from './ads/adsenseH5';
 export { detectAdblock, noneProvider, withFallback, type AdOutcome, type AdProvider } from './ads/provider';
 export * from './protocol';

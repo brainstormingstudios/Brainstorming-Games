@@ -2,20 +2,24 @@ import type { AdOutcome, AdProvider } from './provider';
 
 const STYLE_ID = 'bg-house-ad-style';
 const CSS = `
-.bg-house-ad{position:absolute;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(4,6,12,.96);font:600 15px/1.4 system-ui,sans-serif;color:#fcfcfc}
-.bg-house-ad video{max-width:100%;max-height:100%;height:100%;aspect-ratio:9/16;object-fit:contain;background:#000}
+.bg-house-ad{position:absolute;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(4,6,12,.96);font:600 15px/1.4 system-ui,sans-serif;color:#fcfcfc;animation:bg-house-in .25s ease both}
+@keyframes bg-house-in{from{opacity:0}to{opacity:1}}
+.bg-house-ad video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;background:#000}
 .bg-house-ad .bar{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 12px}
 .bg-house-ad a,.bg-house-ad button{border:0;border-radius:12px;padding:10px 16px;font:800 14px system-ui,sans-serif;cursor:pointer;text-decoration:none}
-.bg-house-ad a{background:#ff2a2a;color:#fff}
-.bg-house-ad button{background:rgba(255,255,255,.14);color:#fff}
+.bg-house-ad a{background:#00c0f0;color:#04131c}
+.bg-house-ad button{background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(6px)}
+.bg-house-ad button.claim{background:#22c55e;color:#04130a}
 .bg-house-ad button[disabled]{opacity:.6;cursor:default}
 .bg-house-ad .tag{position:absolute;top:12px;left:12px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.6);font-size:12px}
-.bg-house-banner{display:flex;align-items:center;gap:10px;box-sizing:border-box;padding:6px;border-radius:8px;background:#1a0608;color:#fff;font:700 12px system-ui,sans-serif;text-decoration:none;overflow:hidden}
-.bg-house-banner img{height:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px}
+.bg-house-ad .progress{position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.15)}
+.bg-house-ad .progress i{display:block;height:100%;width:0;background:#00c0f0;transition:width .25s linear}
+.bg-house-banner{display:flex;align-items:center;gap:10px;box-sizing:border-box;padding:6px;border-radius:8px;background:#0c1428;color:#fff;font:700 12px system-ui,sans-serif;text-decoration:none;overflow:hidden}
+.bg-house-banner img{height:100%;aspect-ratio:16/9;object-fit:cover;border-radius:4px}
 `;
 
 export interface HouseAd {
-  /** Vertical promo video (MP4) and a still for when it cannot play. */
+  /** Promo video (MP4, any shape) and a still for when it cannot play. */
   video: string;
   poster: string;
   /** Where a click goes (opens in a new tab). */
@@ -24,11 +28,20 @@ export interface HouseAd {
   cta: string;
 }
 
+/** How long a break lasts before it can be skipped, and before a rewarded break pays out. */
+export interface HouseTiming {
+  /** Seconds before a normal break can be skipped. */
+  skipAfter: number;
+  /** Seconds a rewarded break must play before the reward can be claimed (0: at once). */
+  rewardAfter: number;
+}
+
 export interface HouseProviderOptions {
   container: () => HTMLElement;
-  ad: HouseAd;
-  /** Seconds before a break can be skipped; rewarded breaks play to the end. */
-  skipAfter?: number;
+  /** The ads to rotate through; read at each break so the list can grow (for example BS Originals trailers). */
+  ads: HouseAd[] | (() => HouseAd[]);
+  /** Read at each break, so it follows the player's plan. Default: skip after 5 s, reward after 15 s. */
+  timing?: HouseTiming | (() => HouseTiming);
 }
 
 function ensureStyle(doc: Document) {
@@ -39,14 +52,32 @@ function ensureStyle(doc: Document) {
   doc.head.appendChild(style);
 }
 
+const DEFAULT_TIMING: HouseTiming = { skipAfter: 5, rewardAfter: 15 };
+
 /**
- * Our own ad: the Brainstorming Studios promo, shown in ad breaks while no ad network is set up
- * (NEXT_PUBLIC_INGAME_ADS=house). Breaks can be skipped after `skipAfter` seconds; a rewarded break
- * counts once the video has played to the end. Plays with sound, since the player chose the break.
+ * Our own ads: the Brainstorming Studios ad and BS Originals trailers, in rotation (never the same
+ * one twice in a row). A normal break can be skipped after `skipAfter` seconds; a rewarded break
+ * pays out once `rewardAfter` seconds have played (a Claim button appears) or the video ends.
+ * Plays with sound, since the player chose the break; falls back to muted if the browser refuses.
  */
-export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProviderOptions): AdProvider {
+export function createHouseProvider({ container, ads, timing = DEFAULT_TIMING }: HouseProviderOptions): AdProvider {
+  const list = () => (typeof ads === 'function' ? ads() : ads).filter((a) => a.video);
+  const when = () => (typeof timing === 'function' ? timing() : timing);
+  let last = -1;
+  const pick = (): HouseAd | null => {
+    const all = list();
+    if (all.length === 0) return null;
+    let i = Math.floor(Math.random() * all.length);
+    if (all.length > 1 && i === last) i = (i + 1) % all.length;
+    last = i;
+    return all[i]!;
+  };
+
   const show = (kind: 'midgame' | 'rewarded') =>
     new Promise<AdOutcome>((resolve) => {
+      const ad = pick();
+      if (!ad) return resolve('error');
+      const { skipAfter, rewardAfter } = when();
       const host = container();
       const doc = host.ownerDocument;
       ensureStyle(doc);
@@ -56,9 +87,14 @@ export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProvi
       el.setAttribute('role', 'dialog');
       el.setAttribute('aria-label', 'Advertisement');
       el.setAttribute('data-testid', 'house-ad');
+      el.setAttribute('data-kind', kind);
       const tag = doc.createElement('span');
       tag.className = 'tag';
-      tag.textContent = 'Ad';
+      tag.textContent = kind === 'rewarded' ? 'Ad · reward' : 'Ad';
+      const progress = doc.createElement('div');
+      progress.className = 'progress';
+      const fill = doc.createElement('i');
+      progress.append(fill);
       const video = doc.createElement('video');
       video.src = ad.video;
       video.poster = ad.poster;
@@ -75,11 +111,11 @@ export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProvi
       skip.type = 'button';
       skip.setAttribute('data-testid', 'house-ad-skip');
       bar.append(link, skip);
-      el.append(video, tag, bar);
+      el.append(video, progress, tag, bar);
       host.appendChild(el);
 
       let done = false;
-      let left = skipAfter;
+      let watched = 0;
       const finish = (outcome: AdOutcome) => {
         if (done) return;
         done = true;
@@ -88,16 +124,22 @@ export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProvi
         el.remove();
         resolve(outcome);
       };
+      const earned = () => kind === 'rewarded' && watched >= rewardAfter;
       const label = () => {
         if (kind === 'rewarded') {
-          skip.textContent = 'Close (no reward)';
+          const left = Math.max(0, Math.ceil(rewardAfter - watched));
+          skip.disabled = false;
+          skip.className = left === 0 ? 'claim' : '';
+          skip.textContent = left === 0 ? 'Claim reward' : `Reward in ${left} · Close`;
+          skip.setAttribute('data-testid', left === 0 ? 'house-ad-claim' : 'house-ad-skip');
           return;
         }
+        const left = Math.max(0, Math.ceil(skipAfter - watched));
         skip.disabled = left > 0;
         skip.textContent = left > 0 ? `Skip in ${left}` : 'Skip';
       };
       label();
-      skip.addEventListener('click', () => finish(kind === 'rewarded' ? 'skipped' : 'finished'));
+      skip.addEventListener('click', () => finish(kind === 'rewarded' ? (earned() ? 'finished' : 'skipped') : 'finished'));
       video.addEventListener('ended', () => finish('finished'));
       video.addEventListener('error', () => finish('error'));
       // Autoplay with sound can be refused; play muted instead of failing the break.
@@ -105,10 +147,12 @@ export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProvi
         video.muted = true;
         void video.play().catch(() => finish('error'));
       });
+      // Count time actually shown (paused or hidden tabs do not count).
       const timer = setInterval(() => {
-        left -= 1;
+        if (!video.paused && doc.visibilityState !== 'hidden') watched += 0.25;
+        if (video.duration > 0) fill.style.width = `${Math.min(100, (video.currentTime / video.duration) * 100)}%`;
         label();
-      }, 1000);
+      }, 250);
     });
 
   return {
@@ -117,6 +161,8 @@ export function createHouseProvider({ container, ad, skipAfter = 5 }: HouseProvi
     showMidgame: () => show('midgame'),
     showRewarded: () => show('rewarded'),
     async showBanner(slot) {
+      const ad = pick();
+      if (!ad) return false;
       ensureStyle(slot.ownerDocument);
       const a = slot.ownerDocument.createElement('a');
       a.className = 'bg-house-banner';

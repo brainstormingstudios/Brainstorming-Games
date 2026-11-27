@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Play, X } from 'lucide-react';
+import { ChevronUp, Clapperboard, Minimize2, Play, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Mascot, cn } from '@brainstorming/ui';
@@ -9,7 +9,8 @@ import { GameCover } from '@/components/catalogue/GameCover';
 import { MASCOT_NAME } from '@/lib/config';
 import { getRepo } from '@/lib/data';
 import { uuid } from '@/lib/data/local';
-import type { GameSummary } from '@/lib/data/types';
+import type { ControlRow, GameSummary } from '@/lib/data/types';
+import { ControlsPanel } from './ControlsPanel';
 import { track } from '@/lib/events/client';
 import { estimateLoadSeconds, formatBytes, playUrl } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
@@ -42,6 +43,8 @@ export interface GameFrameProps {
   previewOptions?: { limitMidgame: boolean; testAds: boolean };
   /** Start without the Play button (previews and the QA console). */
   autoStart?: boolean;
+  /** The game's controls, for the Controls button in the full-screen bar. */
+  controls?: ControlRow[];
 }
 
 type Phase = 'idle' | 'loading' | 'playing';
@@ -55,7 +58,7 @@ const HEARTBEAT_MS = 15_000;
  * Display ads are never placed over or inside this element.
  */
 export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function GameFrame(
-  { game, onFullscreenChange, src, preview, onSdkLog, onPlaying, previewOptions, autoStart },
+  { game, onFullscreenChange, src, preview, onSdkLog, onPlaying, previewOptions, autoStart, controls = [] },
   ref,
 ) {
   const t = useTranslations('game');
@@ -66,6 +69,11 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
   logRef.current = onSdkLog;
   const [phase, setPhase] = useState<Phase>('idle');
   const [immersive, setImmersive] = useState(false);
+  // Full screen: the frame itself, or the phone overlay. The bar on top can be hidden.
+  const [nativeFull, setNativeFull] = useState(false);
+  const [barHidden, setBarHidden] = useState(false);
+  const [trailer, setTrailer] = useState(false);
+  const full = nativeFull || immersive;
   const [notice, setNotice] = useState<string | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -262,7 +270,15 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
   }, []);
 
   useEffect(() => {
-    const onChange = () => onFullscreenChange?.(Boolean(document.fullscreenElement) || immersive);
+    const onChange = () => {
+      const on = document.fullscreenElement === stage.current;
+      setNativeFull(on);
+      if (!on && !immersive) {
+        setBarHidden(false);
+        setTrailer(false);
+      }
+      onFullscreenChange?.(Boolean(document.fullscreenElement) || immersive);
+    };
     document.addEventListener('fullscreenchange', onChange);
     onChange();
     return () => document.removeEventListener('fullscreenchange', onChange);
@@ -293,6 +309,8 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
 
   const closeImmersive = () => {
     setImmersive(false);
+    setBarHidden(false);
+    setTrailer(false);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     try {
       screen.orientation?.unlock?.();
@@ -307,7 +325,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       data-testid="game-frame"
       data-phase={phase}
       className={cn(
-        'flex items-center justify-center overflow-hidden bg-black',
+        'flex flex-col items-stretch justify-center overflow-hidden bg-black',
         // Only one position utility at a time: with both, `relative` would win and collapse the
         // immersive (phone) frame to zero height.
         immersive
@@ -315,10 +333,79 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
           : 'relative aspect-video w-full rounded-card border border-border shadow-card',
       )}
     >
+      {full && !barHidden ? (
+        <div
+          data-testid="fullscreen-bar"
+          className="relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-white/10 bg-navy-950 px-2 pt-[env(safe-area-inset-top)] text-white sm:px-3"
+        >
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <img src="/brand/logo-dark-48.webp" alt="" width={28} height={28} className="size-7 shrink-0" />
+            <span className="hidden truncate font-display text-sm font-bold sm:inline">Brainstorming Games</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setBarHidden(true)}
+            data-testid="fullscreen-hide-bar"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-bold transition-colors hover:bg-white/20"
+          >
+            <ChevronUp aria-hidden="true" className="size-4" />
+            {t('hideBar')}
+          </button>
+          <span className="flex flex-1 items-center justify-end gap-1">
+            {controls.length ? <ControlsPanel controls={controls} below className="[&>button]:h-9 [&>button]:text-white" /> : null}
+            {game.preview?.url ? (
+              <button
+                type="button"
+                onClick={() => setTrailer(true)}
+                aria-label={t('watchVideo')}
+                data-testid="fullscreen-video"
+                className="flex h-9 items-center gap-1.5 rounded-control px-2 text-sm font-bold hover:bg-white/10"
+              >
+                <Clapperboard aria-hidden="true" className="size-5" />
+                <span className="hidden md:inline">{t('videoButton')}</span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => (immersive ? closeImmersive() : void document.exitFullscreen().catch(() => {}))}
+              aria-label={t('exitFullscreen')}
+              data-testid="fullscreen-minimize"
+              className="flex size-9 items-center justify-center rounded-control hover:bg-white/10"
+            >
+              <Minimize2 aria-hidden="true" className="size-5" />
+            </button>
+          </span>
+        </div>
+      ) : null}
+      {full && barHidden ? (
+        <button
+          type="button"
+          onClick={() => (immersive ? closeImmersive() : void document.exitFullscreen().catch(() => {}))}
+          aria-label={t('exitFullscreen')}
+          data-testid="fullscreen-minimize"
+          className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 z-20 flex size-10 items-center justify-center rounded-full bg-navy-950/70 text-white opacity-70 transition-opacity hover:opacity-100"
+        >
+          <Minimize2 aria-hidden="true" className="size-5" />
+        </button>
+      ) : null}
+      {trailer && game.preview?.url ? (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/90 p-4" data-testid="fullscreen-trailer">
+          <video src={game.preview.url} controls autoPlay playsInline className="max-h-full max-w-full rounded-card" />
+          <button
+            type="button"
+            onClick={() => setTrailer(false)}
+            aria-label={t('closeVideo')}
+            className="absolute top-3 right-3 flex size-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+        </div>
+      ) : null}
       <div
         className={cn(
-          'relative h-full overflow-hidden',
-          portrait && !immersive ? 'aspect-[9/16]' : 'w-full',
+          'relative overflow-hidden',
+          full ? 'min-h-0 w-full flex-1' : 'h-full',
+          portrait && !full ? 'mx-auto aspect-[9/16]' : 'w-full',
         )}
       >
         {phase === 'idle' ? (
@@ -391,16 +478,6 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
           </>
         )}
       </div>
-      {immersive ? (
-        <button
-          type="button"
-          onClick={closeImmersive}
-          aria-label={t('closeGame')}
-          className="absolute top-[max(0.5rem,env(safe-area-inset-top))] left-2 z-10 flex size-11 items-center justify-center rounded-full bg-navy-950/80 text-white"
-        >
-          <X aria-hidden="true" className="size-5" />
-        </button>
-      ) : null}
     </div>
   );
   // While playing full screen the frame is drawn at the top of the page, above the header, the

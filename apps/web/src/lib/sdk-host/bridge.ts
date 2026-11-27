@@ -26,7 +26,8 @@ import { localizePath, type Locale } from '@/i18n/config';
 import { ADSENSE_CLIENT, INGAME_AD_PROVIDER, PLAY_ORIGIN } from '@/lib/config';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import { canPersonaliseAds } from '@/lib/ads/consent';
-import { HOUSE_AD } from '@/lib/ads/houseAd';
+import { AD_TIMING, houseAds, loadOriginalTrailers } from '@/lib/ads/houseAd';
+import type { PremiumPlan } from '@/lib/domain/premium';
 import { getRepo } from '@/lib/data';
 import { onTopic } from '@/lib/data/bus';
 import { local } from '@/lib/data/local';
@@ -105,14 +106,18 @@ function inviteParams(): Record<string, string> {
   return out;
 }
 
-function makeProvider(layer: () => HTMLElement, preview: boolean): AdProvider {
+function makeProvider(layer: () => HTMLElement, preview: boolean, plan: () => PremiumPlan | null): AdProvider {
+  const house = () => {
+    void loadOriginalTrailers();
+    return createHouseProvider({ container: layer, ads: houseAds, timing: () => AD_TIMING[plan() ?? 'free'] });
+  };
   if (preview || INGAME_AD_PROVIDER === 'mock') return createMockProvider({ container: layer });
   if (INGAME_AD_PROVIDER === 'adsense-h5' && ADSENSE_CLIENT) {
     // A break Google cannot fill shows our own promo instead of nothing.
-    return withFallback(createAdsenseH5Provider({ client: ADSENSE_CLIENT, personalised: canPersonaliseAds() }), createHouseProvider({ container: layer, ad: HOUSE_AD }));
+    return withFallback(createAdsenseH5Provider({ client: ADSENSE_CLIENT, personalised: canPersonaliseAds() }), house());
   }
   // Our own promo in ad breaks, until an ad network is approved.
-  if (INGAME_AD_PROVIDER === 'house') return createHouseProvider({ container: layer, ad: HOUSE_AD });
+  if (INGAME_AD_PROVIDER === 'house') return house();
   return noneProvider;
 }
 
@@ -132,7 +137,11 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     lastMidgameAt: testing ? Number.NEGATIVE_INFINITY : lastMidgame,
     ignoreMidgameLimits: testing ? !testing.limitMidgame : false,
   });
-  const applyPremium = (u: SessionUser | null) => rules.setPremium(activePlan(u?.premium));
+  let plan: PremiumPlan | null = null;
+  const applyPremium = (u: SessionUser | null) => {
+    plan = activePlan(u?.premium);
+    rules.setPremium(plan);
+  };
   const started = Date.now();
   let gameContext: Record<string, unknown> | null = null;
   let progress: number | null = null;
@@ -149,7 +158,7 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     layer.style.pointerEvents = 'auto';
     return layer;
   };
-  const provider = makeProvider(adLayer, Boolean(ctx.preview));
+  const provider = makeProvider(adLayer, Boolean(ctx.preview), () => plan);
   const banners = new Map<string, HTMLElement>();
 
   const log = (direction: HostLogEntry['direction'], method: string, detail: unknown) => {

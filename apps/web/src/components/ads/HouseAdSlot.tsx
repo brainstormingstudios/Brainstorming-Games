@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@brainstorming/ui';
-import { HOUSE_AD } from '@/lib/ads/houseAd';
+import { HOUSE_AD, VERTICAL_PROMO } from '@/lib/ads/houseAd';
 import type { AdPlacement } from './AdSlot';
 
 /**
@@ -27,13 +27,15 @@ export function HouseAdSlot({ placement, className, sizeClass }: { placement: Ad
     return () => io.disconnect();
   }, []);
 
+  const tall = placement === 'game-side';
+  // Tall slots show the vertical promo; wide ones the 16:9 channel ad.
+  const clip = tall ? VERTICAL_PROMO : HOUSE_AD;
   const media =
     near && !still ? (
-      <video src={HOUSE_AD.video} poster={HOUSE_AD.poster} muted loop autoPlay playsInline preload="none" className="size-full object-cover" aria-hidden="true" />
+      <video src={clip.video} poster={clip.poster} muted loop autoPlay playsInline preload="none" className="size-full object-cover" aria-hidden="true" />
     ) : (
-      <img src={HOUSE_AD.poster} alt="" className="size-full object-cover" loading="lazy" />
+      <img src={clip.poster} alt="" className="size-full object-cover" loading="lazy" />
     );
-  const tall = placement === 'game-side';
 
   return (
     <a

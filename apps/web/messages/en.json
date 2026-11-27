@@ -310,7 +310,7 @@
     "shareX": "Share on X",
     "shareText": "Play {title} free on Brainstorming Games",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit fullscreen",
+    "exitFullscreen": "Exit full screen",
     "theatre": "Theatre mode",
     "exitTheatre": "Exit theatre mode",
     "report": "Report a bug",
@@ -386,7 +386,11 @@
     "controlsTitle": "Controls",
     "controlsKeyboard": "Keyboard",
     "controlsTouch": "Touch",
-    "inviteFriends": "Invite friends"
+    "inviteFriends": "Invite friends",
+    "hideBar": "Hide this bar",
+    "watchVideo": "Watch the trailer",
+    "videoButton": "Video",
+    "closeVideo": "Close the video"
   },
   "studio": {
     "metaTitle": "{name} – games by this studio",

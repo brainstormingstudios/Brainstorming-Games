@@ -19,6 +19,7 @@ import { track } from '@/lib/events/client';
 import { formatBytes, formatCount, formatDate, gameHref } from '@/lib/format';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { usePrefs } from '@/lib/prefs';
+import { SITE_NAME } from '@/lib/config';
 import { GameFrame, type GameFrameHandle } from './GameFrame';
 import { GameToolbar } from './GameToolbar';
 
@@ -94,6 +95,15 @@ export function GameView({ game, related }: GameViewProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const [stats, setStats] = useState<GameStats>(game.stats);
   useEffect(() => setStats(game.stats), [game.stats]);
+
+  // The browser tab shows the game, like other game sites: "Game name – Brainstorming Games".
+  useEffect(() => {
+    const before = document.title;
+    document.title = `${game.title} – ${SITE_NAME}`;
+    return () => {
+      document.title = before;
+    };
+  }, [game.title]);
 
   useEffect(() => {
     track('page_view', { gameId: game.id, versionId: game.versionId, payload: { path: `/game/${game.slug}` } });
@@ -175,7 +185,7 @@ export function GameView({ game, related }: GameViewProps) {
 
         <div className={cn('grid gap-6', theatre ? 'grid-cols-1' : 'xl:grid-cols-[minmax(0,1fr)_300px]')}>
           <div className="min-w-0">
-            <GameFrame ref={frame} game={game} onFullscreenChange={setFullscreen} />
+            <GameFrame ref={frame} game={game} controls={game.controls} onFullscreenChange={setFullscreen} />
             <GameToolbar
               game={{ ...game, stats }}
               fullscreen={fullscreen}
