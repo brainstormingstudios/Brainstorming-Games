@@ -47,7 +47,7 @@ export const QUESTS: QuestDef[] = [
   { code: 'weekly_sessions_20', period: 'weekly', title: { en: 'Regular', hi: 'नियमित खिलाड़ी' }, description: { en: 'Start 20 play sessions this week.', hi: 'इस हफ़्ते 20 बार गेम शुरू करें।' }, rule: { kind: 'play_sessions' }, target: 20, reward: 70 },
 ];
 
-export type CosmeticSlot = 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+export type CosmeticSlot = 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame' | 'picture';
 
 export interface CosmeticDef {
   slot: CosmeticSlot;
@@ -59,7 +59,7 @@ export interface CosmeticDef {
 
 const c = (slot: CosmeticSlot, code: string, en: string, hi: string, cost: number, minLevel: number): CosmeticDef => ({ slot, code, name: { en, hi }, cost, minLevel });
 
-/** 30 avatar cosmetics. Codes match the art in packages/ui/src/mascot/MascotAvatar.tsx. */
+/** 30 mascot cosmetics and 12 profile pictures. Codes match the art in packages/ui/src/mascot/MascotAvatar.tsx. */
 export const COSMETICS: CosmeticDef[] = [
   c('colour', 'classic', 'Classic navy', 'क्लासिक नेवी', 0, 1),
   c('colour', 'ocean', 'Ocean', 'समुद्री', 60, 2),
@@ -91,6 +91,18 @@ export const COSMETICS: CosmeticDef[] = [
   c('frame', 'hex', 'Hex frame', 'षट्कोण फ़्रेम', 120, 3),
   c('frame', 'sparkle', 'Sparkle frame', 'चमकदार फ़्रेम', 220, 5),
   c('frame', 'ring-gold', 'Gold ring', 'सुनहरा घेरा', 500, 10),
+  c('picture', 'rocket', 'Rocket', 'रॉकेट', 0, 1),
+  c('picture', 'controller', 'Controller', 'कंट्रोलर', 0, 1),
+  c('picture', 'star', 'Star', 'सितारा', 0, 1),
+  c('picture', 'cat', 'Cat', 'बिल्ली', 80, 1),
+  c('picture', 'ghost', 'Ghost', 'भूत', 80, 2),
+  c('picture', 'planet', 'Planet', 'ग्रह', 120, 2),
+  c('picture', 'bolt', 'Lightning', 'बिजली', 120, 3),
+  c('picture', 'flame', 'Flame', 'ज्वाला', 160, 3),
+  c('picture', 'crown', 'Crown', 'ताज', 250, 4),
+  c('picture', 'dragon', 'Dragon', 'ड्रैगन', 300, 5),
+  c('picture', 'trophy', 'Trophy', 'ट्रॉफ़ी', 400, 6),
+  c('picture', 'brain', 'Big brain', 'बड़ा दिमाग', 500, 8),
 ];
 
 /** Level from lifetime points: 50 for level 2, 200 for level 3, 450 for level 4 ... */

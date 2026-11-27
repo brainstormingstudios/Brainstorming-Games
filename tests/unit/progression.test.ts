@@ -19,8 +19,8 @@ import { COSMETIC_CODES } from '@brainstorming/ui';
 const seed = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'supabase', 'seed.sql'), 'utf8');
 
 describe('seed data', () => {
-  it('has exactly 30 cosmetics, the same as seed.sql, all drawable', () => {
-    expect(COSMETICS).toHaveLength(30);
+  it('has exactly 42 cosmetics (12 are profile pictures), the same as seed.sql, all drawable', () => {
+    expect(COSMETICS).toHaveLength(42);
     for (const c of COSMETICS) {
       expect(seed).toContain(`('${c.slot}', '${c.code}'`);
       expect(COSMETIC_CODES[c.slot]).toContain(c.code);

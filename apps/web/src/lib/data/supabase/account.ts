@@ -1,3 +1,4 @@
+import { avatarOf } from './avatar';
 import { SITE_URL, SUPABASE_ANON_KEY } from '@/lib/config';
 import { emitTopic } from '../bus';
 import { local } from '../local';
@@ -67,7 +68,7 @@ export const supabaseAuth: AuthRepo = {
       brainPoints: profile?.brain_points ?? 0,
       level: profile?.level ?? 1,
       streakDays: profile?.streak_days ?? 0,
-      avatar: profile?.avatar_cosmetics ?? {},
+      avatar: avatarOf(profile?.avatar_cosmetics),
       profilePublic: profile?.profile_public ?? true,
       playtestOptIn: profile?.playtest_opt_in ?? false,
       premium:

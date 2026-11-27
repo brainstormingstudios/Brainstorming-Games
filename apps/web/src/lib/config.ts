@@ -157,8 +157,12 @@ export const COVER_WIDTHS = {
   cover_square: [200, 400, 800],
 } as const;
 
+/** The Brainstorming Studios science channel: only the channel ad links here. */
+export const STUDIOS_YOUTUBE = 'https://www.youtube.com/@BrainstormingStudios-Official';
+
 export const SOCIAL_LINKS = {
-  youtube: (process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE ?? '').trim() || 'https://www.youtube.com/@BrainstormingStudios-Official',
+  // The Brainstorming Games channel (Contact page, footer, "Follow us").
+  youtube: 'https://www.youtube.com/@thebrainstormingstudios',
   instagram: (process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM ?? '').trim(),
   x: (process.env.NEXT_PUBLIC_SOCIAL_X ?? '').trim(),
   discord: (process.env.NEXT_PUBLIC_SOCIAL_DISCORD ?? '').trim(),

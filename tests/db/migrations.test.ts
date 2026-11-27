@@ -30,11 +30,11 @@ describe('schema', () => {
     expect(rows.map((r) => r.relname)).toEqual([]);
   });
 
-  it('seeds quests and exactly 30 cosmetics, and no games', async () => {
+  it('seeds quests and exactly 42 cosmetics, and no games', async () => {
     const [{ n: cosmetics }] = (await db.query<{ n: number }>(`select count(*)::int as n from public.cosmetics`)).rows as [{ n: number }];
     const [{ n: games }] = (await db.query<{ n: number }>(`select count(*)::int as n from public.games`)).rows as [{ n: number }];
     const [{ n: quests }] = (await db.query<{ n: number }>(`select count(*)::int as n from public.quests`)).rows as [{ n: number }];
-    expect(cosmetics).toBe(30);
+    expect(cosmetics).toBe(42);
     expect(games).toBe(0);
     expect(quests).toBeGreaterThanOrEqual(8);
   });

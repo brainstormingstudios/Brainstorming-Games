@@ -9,6 +9,7 @@ import { Link } from '@/i18n/navigation';
 import { msUntilNextDay } from '@/lib/domain/discover';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
 import { useSession } from '@/lib/hooks/useSession';
+import { DailyPuzzles } from './DailyPuzzles';
 
 function Countdown() {
   const t = useTranslations('daily');
@@ -39,12 +40,14 @@ export function DailyPage() {
     return { ...d, game, board };
   }, [user?.id], { topics: ['catalogue', 'leaderboards'] });
 
-  if (today.loading && today.data === undefined) return <div className="page"><h1 className="sr-only">{t('title')}</h1><Skeleton className="h-96 w-full" /></div>;
+  const puzzles = <DailyPuzzles />;
+  if (today.loading && today.data === undefined) return <div className="page flex flex-col gap-6"><h1 className="sr-only">{t('title')}</h1>{puzzles}<Skeleton className="h-96 w-full" /></div>;
   const d = today.data;
-  if (!d) return <div className="page"><h1 className="sr-only">{t('title')}</h1><EmptyState title={t('none')} /></div>;
+  if (!d) return <div className="page flex flex-col gap-6"><h1 className="sr-only">{t('title')}</h1>{puzzles}<EmptyState title={t('none')} /></div>;
 
   return (
     <div className="page flex flex-col gap-5" data-testid="daily-page">
+      {puzzles}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Badge tone="glow" className="mb-2">

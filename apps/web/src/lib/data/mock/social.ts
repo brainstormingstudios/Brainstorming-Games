@@ -20,6 +20,7 @@ import type {
   PartyView,
   PresenceInfo,
   ProfilesRepo,
+  DailyPuzzleState,
   QuestsRepo,
   SocialRepo,
   Activity,
@@ -103,7 +104,55 @@ export function afterEvents(userId: string, types: string[]) {
   emitTopic('quests');
 }
 
+const dayShift = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
 export const mockQuestsRepo: Omit<QuestsRepo, 'track'> = {
+  async dailyPuzzles(day) {
+    const user = currentMockUser();
+    if (!user) return null;
+    const freezes = user.streakFreezes ?? 0;
+    const streaks: DailyPuzzleState['streaks'] = {};
+    for (const s of readTable('dailyStreaks').filter((x) => x.userId === user.id)) {
+      const alive = s.lastDay != null && (s.lastDay >= dayShift(day, -1) || (s.lastDay === dayShift(day, -2) && freezes > 0));
+      streaks[s.kind] = { streak: alive ? s.streak : 0, best: s.best, lastDay: s.lastDay };
+    }
+    const done: DailyPuzzleState['done'] = {};
+    for (const r of readTable('dailyResults').filter((x) => x.userId === user.id && x.day === day)) done[r.kind] = r.score;
+    return { freezes, streaks, done };
+  },
+  async completePuzzle(kind, day, score) {
+    const user = requireProfile();
+    if (readTable('dailyResults').some((r) => r.userId === user.id && r.kind === kind && r.day === day)) {
+      const s = readTable('dailyStreaks').find((x) => x.userId === user.id && x.kind === kind);
+      return { streak: s?.streak ?? 0, best: s?.best ?? 0, points: 0, freezeUsed: false };
+    }
+    mutateTable('dailyResults', (rows) => [...rows, { userId: user.id, kind, day, score }]);
+    const s = readTable('dailyStreaks').find((x) => x.userId === user.id && x.kind === kind);
+    let streak = 1;
+    let freezeUsed = false;
+    if (s?.lastDay === dayShift(day, -1)) streak = s.streak + 1;
+    else if (s?.lastDay === dayShift(day, -2) && (user.streakFreezes ?? 0) > 0) {
+      streak = s.streak + 1;
+      freezeUsed = true;
+      updateUser(user.id, { streakFreezes: (user.streakFreezes ?? 0) - 1 });
+    }
+    const best = Math.max(streak, s?.best ?? 0);
+    mutateTable('dailyStreaks', (rows) => [...rows.filter((x) => !(x.userId === user.id && x.kind === kind)), { userId: user.id, kind, streak, best, lastDay: day }]);
+    const points = 10 + Math.min(streak - 1, 10);
+    awardPoints(user.id, points, 'daily_puzzle', `${kind}:${day}`);
+    emitTopic('points');
+    return { streak, best, points, freezeUsed };
+  },
+  async buyStreakFreeze() {
+    const user = requireProfile();
+    const held = user.streakFreezes ?? 0;
+    if (held >= 3) fail('conflict', 'You already hold 3 streak freezes.');
+    if (user.brainPoints < 60) fail('invalid', 'A streak freeze costs 60 Brain Points.');
+    awardPoints(user.id, -60, 'streak_freeze', null);
+    updateUser(user.id, { streakFreezes: held + 1 });
+    emitTopic('points');
+    return held + 1;
+  },
   async mine(locale) {
     const user = currentMockUser();
     const done = user?.username ? refreshQuests(user.id) : [];
@@ -187,11 +236,31 @@ export const mockLocker: LockerRepo = {
     const owned = new Set([...freeItems().map((x) => `${x.slot}:${x.code}`), ...readTable('userCosmetics').filter((u) => u.userId === user.id).map((u) => `${u.slot}:${u.code}`)]);
     const next: Record<string, string> = {};
     for (const [slot, code] of Object.entries(cosmetics)) {
-      if (!code) continue;
+      if (!code || slot === 'pictureUrl') continue;
+      if (slot === 'picture' && code === 'upload') {
+        if (!user.avatar.pictureUrl) fail('not_allowed');
+        next.picture = 'upload';
+        next.pictureUrl = user.avatar.pictureUrl;
+        continue;
+      }
       if (!owned.has(`${slot}:${code}`)) fail('not_allowed');
       next[slot] = code;
     }
     updateUser(user.id, { avatar: next });
+    emitTopic('session', { local: true });
+    emitTopic('profile');
+  },
+  async uploadPicture(image) {
+    const user = requireProfile();
+    if (user.isMinor) fail('not_allowed', 'Pictures are for adults.');
+    if (image.size > 262_144) fail('invalid', 'That picture is too big.');
+    const url = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(new Error('read'));
+      r.readAsDataURL(image);
+    });
+    updateUser(user.id, { avatar: { ...user.avatar, picture: 'upload', pictureUrl: url } });
     emitTopic('session', { local: true });
     emitTopic('profile');
   },

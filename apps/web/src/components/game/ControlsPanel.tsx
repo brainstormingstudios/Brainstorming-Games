@@ -80,7 +80,7 @@ export function ControlsPanel({ controls, className, below = false }: { controls
             'z-[60] animate-pop-in overflow-hidden rounded-card border border-glow/40 bg-surface-3/95 shadow-glow backdrop-blur-xl',
             // Phones: a sheet above the tab bar. Larger screens: a card above the button.
             below
-              ? 'absolute top-[calc(100%+8px)] right-0 w-[min(22rem,calc(100vw-1.5rem))] text-fg'
+              ? 'absolute bottom-[calc(100%+8px)] right-0 w-[min(22rem,calc(100vw-1.5rem))] text-fg'
               : 'fixed inset-x-3 bottom-[calc(var(--tabs-h)+12px)] sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-[calc(100%+10px)] sm:w-[22rem]',
           )}
         >

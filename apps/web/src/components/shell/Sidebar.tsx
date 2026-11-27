@@ -3,12 +3,12 @@
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, cn } from '@brainstorming/ui';
 import { splitLocale } from '@/i18n/config';
 import { Link } from '@/i18n/navigation';
 import { NavList } from './NavList';
-import { SettingsToggles } from './SettingsToggles';
+import { OPEN_MENU_EVENT, SettingsToggles } from './SettingsToggles';
 import { TAB_NAV, isActivePath } from './nav';
 
 /** Desktop sidebar. Its width and label visibility are pure CSS driven by `data-sidebar`. */
@@ -29,6 +29,11 @@ export function BottomTabs() {
   const ts = useTranslations('shell');
   const { path } = splitLocale(usePathname() ?? '/');
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener(OPEN_MENU_EVENT, show);
+    return () => window.removeEventListener(OPEN_MENU_EVENT, show);
+  }, []);
   const tabClass = (active: boolean) =>
     cn(
       'flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold',
@@ -39,14 +44,22 @@ export function BottomTabs() {
       <nav aria-label={t('primary')} className="app-tabs" data-testid="bottom-tabs">
         {TAB_NAV.map((item) => {
           const active = isActivePath(path, item.href);
+          const middle = item.key === 'daily';
           return (
             <Link
               key={item.key}
               href={item.href}
               aria-current={active ? 'page' : undefined}
               className={tabClass(active)}
+              data-testid={`tab-${item.key}`}
             >
-              <item.icon aria-hidden="true" className="size-5" />
+              {middle ? (
+                <span className={cn('-mt-5 flex size-12 items-center justify-center rounded-full border-4 border-bg shadow-glow', active ? 'bg-primary text-primary-fg' : 'bg-primary/90 text-primary-fg')}>
+                  <item.icon aria-hidden="true" className="size-6" />
+                </span>
+              ) : (
+                <item.icon aria-hidden="true" className="size-5" />
+              )}
               {/* Short labels on the tab bar so each fits on one line. */}
               <span className="truncate">{t.has(`tab.${item.key}`) ? t(`tab.${item.key}`) : t(item.key)}</span>
             </Link>

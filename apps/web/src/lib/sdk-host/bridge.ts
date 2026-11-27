@@ -106,10 +106,10 @@ function inviteParams(): Record<string, string> {
   return out;
 }
 
-function makeProvider(layer: () => HTMLElement, preview: boolean, plan: () => PremiumPlan | null): AdProvider {
+function makeProvider(layer: () => HTMLElement, preview: boolean, plan: () => PremiumPlan | null, kid: () => boolean): AdProvider {
   const house = () => {
     void loadOriginalTrailers();
-    return createHouseProvider({ container: layer, ads: houseAds, timing: () => AD_TIMING[plan() ?? 'free'] });
+    return createHouseProvider({ container: layer, ads: () => houseAds({ kid: kid() }), timing: () => AD_TIMING[plan() ?? 'free'] });
   };
   if (preview || INGAME_AD_PROVIDER === 'mock') return createMockProvider({ container: layer });
   if (INGAME_AD_PROVIDER === 'adsense-h5' && ADSENSE_CLIENT) {
@@ -158,7 +158,8 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
     layer.style.pointerEvents = 'auto';
     return layer;
   };
-  const provider = makeProvider(adLayer, Boolean(ctx.preview), () => plan);
+  // Children (under-18 accounts) and school-safe mode only get kid-safe ads.
+  const provider = makeProvider(adLayer, Boolean(ctx.preview), () => plan, () => getPrefs().schoolSafe || Boolean(user?.isMinor));
   const banners = new Map<string, HTMLElement>();
 
   const log = (direction: HostLogEntry['direction'], method: string, detail: unknown) => {
@@ -277,6 +278,11 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
         return { rewarded: true, reason: 'premium' };
       }
       const reason = rules.checkRewarded();
+      // A game in its Basic Launch shows no ads; its reward buttons still work, with no ad.
+      if (reason === 'spark') {
+        event('rewarded_granted', { spark: true });
+        return { rewarded: true, reason: 'spark' };
+      }
       if (reason) return { rewarded: false, reason };
       event('ad_requested', { kind: 'rewarded' });
       rules.adStarted();

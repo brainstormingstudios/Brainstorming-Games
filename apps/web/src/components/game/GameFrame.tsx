@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ChevronUp, Clapperboard, Minimize2, Play, X } from 'lucide-react';
+import { ChevronDown, Clapperboard, Minimize2, Play, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Mascot, cn } from '@brainstorming/ui';
@@ -336,11 +336,10 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
       {full && !barHidden ? (
         <div
           data-testid="fullscreen-bar"
-          className="relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-white/10 bg-navy-950 px-2 pt-[env(safe-area-inset-top)] text-white sm:px-3"
+          className="relative z-20 order-last flex h-12 shrink-0 items-center gap-2 border-t border-white/10 bg-navy-950 px-2 pb-[env(safe-area-inset-bottom)] text-white sm:px-3"
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
-            <img src="/brand/logo-dark-48.webp" alt="" width={28} height={28} className="size-7 shrink-0" />
-            <span className="hidden truncate font-display text-sm font-bold sm:inline">Brainstorming Games</span>
+            <Mascot size={32} animated={false} className="shrink-0" />
           </span>
           <button
             type="button"
@@ -348,7 +347,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
             data-testid="fullscreen-hide-bar"
             className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-bold transition-colors hover:bg-white/20"
           >
-            <ChevronUp aria-hidden="true" className="size-4" />
+            <ChevronDown aria-hidden="true" className="size-4" />
             {t('hideBar')}
           </button>
           <span className="flex flex-1 items-center justify-end gap-1">
@@ -383,7 +382,7 @@ export const GameFrame = forwardRef<GameFrameHandle, GameFrameProps>(function Ga
           onClick={() => (immersive ? closeImmersive() : void document.exitFullscreen().catch(() => {}))}
           aria-label={t('exitFullscreen')}
           data-testid="fullscreen-minimize"
-          className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 z-20 flex size-10 items-center justify-center rounded-full bg-navy-950/70 text-white opacity-70 transition-opacity hover:opacity-100"
+          className="absolute right-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-20 flex size-10 items-center justify-center rounded-full bg-navy-950/70 text-white opacity-70 transition-opacity hover:opacity-100"
         >
           <Minimize2 aria-hidden="true" className="size-5" />
         </button>

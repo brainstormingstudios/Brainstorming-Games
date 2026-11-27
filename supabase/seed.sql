@@ -19,7 +19,7 @@ insert into public.quests (code, period, title, description, rule, target, rewar
   ('weekly_sessions_20', 'weekly', '{"en":"Regular","hi":"नियमित खिलाड़ी"}', '{"en":"Start 20 play sessions this week.","hi":"इस हफ़्ते 20 बार गेम शुरू करें।"}', '{"kind":"play_sessions"}', 20, 70, 8)
 on conflict (code) do nothing;
 
--- 30 avatar cosmetics. Codes match the art in packages/ui/src/mascot/MascotAvatar.tsx.
+-- 30 avatar cosmetics and 12 profile pictures (migration 0033). Codes match the art in packages/ui/src/mascot/MascotAvatar.tsx.
 insert into public.cosmetics (slot, code, name, cost_points, min_level, sort) values
   ('colour', 'classic', '{"en":"Classic navy","hi":"क्लासिक नेवी"}', 0, 1, 1),
   ('colour', 'ocean', '{"en":"Ocean","hi":"समुद्री"}', 60, 2, 2),
@@ -50,5 +50,17 @@ insert into public.cosmetics (slot, code, name, cost_points, min_level, sort) va
   ('frame', 'ring-cyan', '{"en":"Cyan ring","hi":"सियान घेरा"}', 50, 1, 1),
   ('frame', 'hex', '{"en":"Hex frame","hi":"षट्कोण फ़्रेम"}', 120, 3, 2),
   ('frame', 'sparkle', '{"en":"Sparkle frame","hi":"चमकदार फ़्रेम"}', 220, 5, 3),
-  ('frame', 'ring-gold', '{"en":"Gold ring","hi":"सुनहरा घेरा"}', 500, 10, 4)
+  ('frame', 'ring-gold', '{"en":"Gold ring","hi":"सुनहरा घेरा"}', 500, 10, 4),
+  ('picture', 'rocket', '{"en":"Rocket","hi":"रॉकेट"}', 0, 1, 1),
+  ('picture', 'controller', '{"en":"Controller","hi":"कंट्रोलर"}', 0, 1, 2),
+  ('picture', 'star', '{"en":"Star","hi":"सितारा"}', 0, 1, 3),
+  ('picture', 'cat', '{"en":"Cat","hi":"बिल्ली"}', 80, 1, 4),
+  ('picture', 'ghost', '{"en":"Ghost","hi":"भूत"}', 80, 2, 5),
+  ('picture', 'planet', '{"en":"Planet","hi":"ग्रह"}', 120, 2, 6),
+  ('picture', 'bolt', '{"en":"Lightning","hi":"बिजली"}', 120, 3, 7),
+  ('picture', 'flame', '{"en":"Flame","hi":"ज्वाला"}', 160, 3, 8),
+  ('picture', 'crown', '{"en":"Crown","hi":"ताज"}', 250, 4, 9),
+  ('picture', 'dragon', '{"en":"Dragon","hi":"ड्रैगन"}', 300, 5, 10),
+  ('picture', 'trophy', '{"en":"Trophy","hi":"ट्रॉफ़ी"}', 400, 6, 11),
+  ('picture', 'brain', '{"en":"Big brain","hi":"बड़ा दिमाग"}', 500, 8, 12)
 on conflict (slot, code) do nothing;

@@ -10,10 +10,18 @@ const ok = () => new Response('ok');
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
+  const secret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET') ?? '';
+  // Payments not set up yet: refuse everything (an empty key would also make the check throw).
+  if (!secret) return new Response('payments are not set up', { status: 503 });
   const raw = await req.text();
-  const expected = await hmacHex(Deno.env.get('RAZORPAY_WEBHOOK_SECRET') ?? '', raw);
+  const expected = await hmacHex(secret, raw);
   if (!sameHex(expected, req.headers.get('x-razorpay-signature') ?? '')) return new Response('bad signature', { status: 401 });
-  const event = JSON.parse(raw);
+  let event;
+  try {
+    event = JSON.parse(raw);
+  } catch {
+    return new Response('bad body', { status: 400 });
+  }
   const db = adminClient();
 
   // Memberships: a charge extends the paid period to the end of Razorpay's current cycle.

@@ -124,7 +124,17 @@ export function QuestsPage() {
   );
 }
 
-const SLOTS: LockerItem['slot'][] = ['colour', 'hat', 'glasses', 'headphones', 'glow', 'frame'];
+const SLOTS: LockerItem['slot'][] = ['picture', 'colour', 'hat', 'glasses', 'headphones', 'glow', 'frame'];
+
+/** Center-crops a photo to a 256 px square .webp (about 20 KB), so uploads stay small and private details in the file are dropped. */
+async function squarePicture(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, 256, 256);
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/webp', 0.85));
+}
 
 export function LockerPage() {
   return <RequireUser>{() => <Locker />}</RequireUser>;
@@ -156,11 +166,16 @@ function Locker() {
     setTryOn(null);
     void act(async () => (await getRepo()).locker.equip(next), t('saved'));
   };
-  const shown: AvatarCosmetics = tryOn ? { ...look, [tryOn.slot]: tryOn.code } : look;
+  // Trying on a mascot item shows the mascot even while a profile picture is worn.
+  const shown: AvatarCosmetics = tryOn
+    ? tryOn.slot === 'picture'
+      ? { picture: tryOn.code }
+      : { ...look, picture: undefined, pictureUrl: undefined, [tryOn.slot]: tryOn.code }
+    : look;
   // A random look from the items this player owns (each slot may also stay empty).
   const shuffle = () => {
     const next: AvatarCosmetics = {};
-    for (const s of SLOTS) {
+    for (const s of SLOTS.filter((x) => x !== 'picture')) {
       const owned = (bySlot.get(s) ?? []).filter((i) => i.owned);
       const pick = owned[Math.floor(Math.random() * (owned.length + (s === 'colour' ? 0 : 1)))];
       if (pick) (next as Record<string, string>)[s] = pick.code;
@@ -206,6 +221,34 @@ function Locker() {
           id: s,
           label: t(`slots.${s}`),
           content: (
+            <>
+            {s === 'picture' ? (
+              <Card className="mb-3 flex flex-wrap items-center gap-3 p-3 text-sm" data-testid="picture-upload">
+                <span className="min-w-48 flex-1 text-fg-muted">{user.isMinor ? t('uploadAdults') : t('uploadHint')}</span>
+                {look.picture ? (
+                  <Button size="sm" variant="ghost" onClick={() => save({ ...look, picture: '', pictureUrl: undefined })}>
+                    {t('useMascot')}
+                  </Button>
+                ) : null}
+                {!user.isMinor ? (
+                  <label className={buttonClass({ size: 'sm' })}>
+                    {t('upload')}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      data-testid="picture-input"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        void act(async () => (await getRepo()).locker.uploadPicture(await squarePicture(file)), t('uploaded'));
+                      }}
+                    />
+                  </label>
+                ) : null}
+              </Card>
+            ) : null}
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {(bySlot.get(s) ?? []).map((item) => {
                 const equipped = look[s] === item.code;
@@ -224,7 +267,7 @@ function Locker() {
                         aria-label={t('tryOn', { name: item.name })}
                         onClick={() => setTryOn((cur) => (cur?.code === item.code && cur.slot === s ? null : { slot: s, code: item.code }))}
                       >
-                        <MascotAvatar size={96} cosmetics={{ ...look, [s]: item.code }} />
+                        <MascotAvatar size={96} cosmetics={s === 'picture' ? { picture: item.code } : { ...look, picture: undefined, pictureUrl: undefined, [s]: item.code }} />
                       </button>
                       <p className="text-sm font-bold">{item.name}</p>
                       {item.owned ? (
@@ -252,6 +295,7 @@ function Locker() {
                 );
               })}
             </ul>
+            </>
           ),
         }))}
       />

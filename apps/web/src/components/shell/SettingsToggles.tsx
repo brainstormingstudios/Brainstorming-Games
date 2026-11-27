@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Gauge, Languages, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
+import { Gauge, Languages, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
 import { IconButton, cn, useToast } from '@brainstorming/ui';
 import { localeNames, locales, localizePath, splitLocale } from '@/i18n/config';
 import { useLocale } from '@/i18n/navigation';
@@ -78,23 +78,32 @@ export function LocaleSwitch({ className }: { className?: string }) {
   );
 }
 
+/** Opens the phone menu (BottomTabs listens). */
+export const OPEN_MENU_EVENT = 'bg-open-menu';
+
 export function SidebarToggle() {
   const t = useTranslations('shell');
   const { sidebarCollapsed } = usePrefs();
   return (
-    <IconButton
-      label={sidebarCollapsed ? t('expandSidebar') : t('collapseSidebar')}
-      aria-expanded={!sidebarCollapsed}
-      className="hidden lg:inline-flex"
-      data-testid="sidebar-toggle"
-      onClick={() => setPrefs({ sidebarCollapsed: !sidebarCollapsed })}
-    >
-      {sidebarCollapsed ? (
-        <PanelLeftOpen aria-hidden="true" className="size-5" />
-      ) : (
-        <PanelLeftClose aria-hidden="true" className="size-5" />
-      )}
-    </IconButton>
+    <>
+      {/* Desktop: collapses the sidebar. */}
+      <span className="hidden lg:contents">
+        <IconButton
+          label={sidebarCollapsed ? t('expandSidebar') : t('collapseSidebar')}
+          aria-expanded={!sidebarCollapsed}
+          data-testid="sidebar-toggle"
+          onClick={() => setPrefs({ sidebarCollapsed: !sidebarCollapsed })}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" className="size-5" /> : <PanelLeftClose aria-hidden="true" className="size-5" />}
+        </IconButton>
+      </span>
+      {/* Phones and tablets have no sidebar: the same spot opens the full menu. */}
+      <span className="contents lg:hidden">
+        <IconButton label={t('menu')} data-testid="menu-toggle" onClick={() => window.dispatchEvent(new Event(OPEN_MENU_EVENT))}>
+          <Menu aria-hidden="true" className="size-5" />
+        </IconButton>
+      </span>
+    </>
   );
 }
 

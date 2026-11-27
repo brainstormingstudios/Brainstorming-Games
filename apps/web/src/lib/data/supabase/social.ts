@@ -4,6 +4,7 @@ import { emitTopic } from '../bus';
 import { getAnonId } from '../local';
 import type { GameSummary } from '../types';
 import {
+  RepoError,
   type Activity,
   type LeaderboardsRepo,
   type LockerRepo,
@@ -12,9 +13,11 @@ import {
   type PartyView,
   type PresenceInfo,
   type ProfilesRepo,
+  type DailyPuzzleState,
   type QuestsRepo,
   type SocialRepo,
 } from '../repo';
+import { avatarOf } from './avatar';
 import { getSupabase } from './client';
 import { toRepoError } from './errors';
 
@@ -30,6 +33,22 @@ async function uid(): Promise<string | null> {
 }
 
 export const supabaseQuestsExtra: Omit<QuestsRepo, 'track'> = {
+  async dailyPuzzles(day) {
+    const { data: auth } = await getSupabase().auth.getSession();
+    if (!auth.session) return null;
+    const data = check(await getSupabase().rpc('my_daily_puzzles', { p_day: day })) as DailyPuzzleState | null;
+    return data ?? { freezes: 0, streaks: {}, done: {} };
+  },
+  async completePuzzle(kind, day, score) {
+    const r = check(await getSupabase().rpc('complete_daily_puzzle', { p_kind: kind, p_day: day, p_score: Math.round(score) })) as { streak: number; best: number; points: number; freezeUsed: boolean };
+    emitTopic('points');
+    return r;
+  },
+  async buyStreakFreeze() {
+    const n = check(await getSupabase().rpc('buy_streak_freeze')) as number;
+    emitTopic('points');
+    return n;
+  },
   async mine(locale) {
     const db = getSupabase();
     const quests = (check(await db.rpc('my_quests')) ?? []) as Row[];
@@ -102,6 +121,21 @@ export const supabaseLocker: LockerRepo = {
     check(await getSupabase().rpc('equip_cosmetics', { p_equipped: cosmetics }));
     emitTopic('session', { local: true });
   },
+  async uploadPicture(image) {
+    const { data: auth } = await getSupabase().auth.getSession();
+    const me = auth.session?.user.id;
+    if (!me) throw new RepoError('login_required');
+    const path = `${me}/p-${Date.now().toString(36)}.webp`;
+    const up = await getSupabase().storage.from('avatars').upload(path, image, { contentType: 'image/webp', upsert: false });
+    if (up.error) throw new RepoError('not_allowed', 'That picture could not be uploaded. Pictures are for adults, up to 10 an hour.');
+    check(await getSupabase().rpc('set_avatar_upload', { p_path: path }));
+    const { data: profile } = await getSupabase().from('profiles').select('avatar_cosmetics').eq('id', me).maybeSingle<Row>();
+    const current = { ...((profile?.avatar_cosmetics as Record<string, string>) ?? {}) };
+    delete current.pictureUrl;
+    check(await getSupabase().rpc('equip_cosmetics', { p_equipped: { ...current, picture: 'upload' } }));
+    emitTopic('session', { local: true });
+    emitTopic('profile');
+  },
 };
 
 let presenceChannel: RealtimeChannel | null = null;
@@ -114,7 +148,7 @@ export const supabaseSocial: SocialRepo = {
       id: String(r.id),
       username: String(r.username),
       displayName: String(r.display_name ?? ''),
-      avatar: (r.avatar_cosmetics as Record<string, string>) ?? {},
+      avatar: avatarOf(r.avatar_cosmetics),
       level: Number(r.level ?? 1),
       status: r.status as 'pending' | 'accepted',
       direction: r.direction as 'incoming' | 'outgoing',
@@ -272,7 +306,7 @@ export function supabaseProfiles(byIds: (ids: string[]) => Promise<GameSummary[]
         id: String(data.id),
         username: String(data.username),
         displayName: String(data.display_name ?? ''),
-        avatar: (data.avatar as Record<string, string>) ?? {},
+        avatar: avatarOf(data.avatar),
         level,
         brainPoints: Number(data.brain_points ?? 0),
         streakDays: Number(data.streak_days ?? 0),

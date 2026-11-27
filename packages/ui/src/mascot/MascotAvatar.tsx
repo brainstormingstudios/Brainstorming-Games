@@ -9,10 +9,13 @@ import { cn } from '../cn';
 
 export type MascotMood = 'happy' | 'sad' | 'wow';
 
-export type CosmeticSlot = 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+export type CosmeticSlot = 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame' | 'picture';
 
 /** Equipped cosmetic codes per slot. Missing slots use the defaults. */
-export type AvatarCosmetics = Partial<Record<CosmeticSlot, string>>;
+export type AvatarCosmetics = Partial<Record<CosmeticSlot, string>> & {
+  /** With picture 'upload': the uploaded picture's full URL (or its storage path). */
+  pictureUrl?: string;
+};
 
 interface Palette {
   body: string;
@@ -44,7 +47,54 @@ export const COSMETIC_CODES: Record<CosmeticSlot, string[]> = {
   headphones: ['studio', 'cat', 'neon', 'retro'],
   glow: Object.keys(MASCOT_GLOWS),
   frame: ['ring-cyan', 'ring-gold', 'hex', 'sparkle'],
+  picture: ['rocket', 'controller', 'star', 'cat', 'ghost', 'planet', 'bolt', 'flame', 'crown', 'dragon', 'trophy', 'brain'],
 };
+
+/** Profile pictures: an icon on a gradient. Drawn here, so they are crisp at any size and cost no download. */
+const PICTURES: Record<string, { from: string; to: string; icon: string }> = {
+  rocket: { from: '#00C0F0', to: '#1D4ED8', icon: 'M120 52c22 14 34 40 30 70l14 14-6 26-20-12h-36l-20 12-6-26 14-14c-4-30 8-56 30-70zm0 44a12 12 0 100 24 12 12 0 000-24zm-14 86h28l-14 24z' },
+  controller: { from: '#22C55E', to: '#0F766E', icon: 'M78 92h84c22 0 34 18 38 44 4 24-2 40-16 40-12 0-18-12-28-22H84c-10 10-16 22-28 22-14 0-20-16-16-40 4-26 16-44 38-44zm2 22v12H68v12h12v12h12v-12h12v-12H92v-12zm76 4a8 8 0 100 16 8 8 0 000-16zm-16 18a8 8 0 100 16 8 8 0 000-16z' },
+  star: { from: '#FFD24A', to: '#F97316', icon: 'M120 50l20 44 48 5-36 32 10 47-42-24-42 24 10-47-36-32 48-5z' },
+  cat: { from: '#FF7AD9', to: '#9333EA', icon: 'M70 70l26 22h48l26-22v62c0 32-22 54-50 54s-50-22-50-54zm30 56a8 8 0 100 16 8 8 0 000-16zm40 0a8 8 0 100 16 8 8 0 000-16zm-20 24l-8 8h16z' },
+  ghost: { from: '#A78BFA', to: '#312E81', icon: 'M120 52c32 0 54 24 54 56v80l-18-14-18 14-18-14-18 14-18-14-18 14v-80c0-32 22-56 54-56zm-20 50a10 10 0 100 20 10 10 0 000-20zm40 0a10 10 0 100 20 10 10 0 000-20z' },
+  planet: { from: '#38BDF8', to: '#7C3AED', icon: 'M120 70a50 50 0 110 100 50 50 0 010-100zM44 150c-12 14 6 26 40 22l8-12c-22 2-40-2-48-10zm152-60c12-14-6-26-40-22l-8 12c22-2 40 2 48 10z' },
+  bolt: { from: '#FACC15', to: '#CA8A04', icon: 'M134 44l-58 92h40l-14 60 62-96h-42z' },
+  flame: { from: '#FB923C', to: '#DC2626', icon: 'M122 44c8 30 48 46 48 92 0 32-22 56-50 56s-50-24-50-56c0-24 14-40 26-50 0 18 8 28 18 30-4-30 2-52 8-72z' },
+  crown: { from: '#FDE68A', to: '#D97706', icon: 'M52 90l36 28 32-50 32 50 36-28-12 86H64zm12 96h112v14H64z' },
+  dragon: { from: '#4ADE80', to: '#166534', icon: 'M60 150c10-40 40-70 80-74l20-22 6 26c20 8 30 24 30 44l-22-6c-8 30-40 50-78 46l-14 22-8-26c-8-2-14-6-14-10zm88-46a8 8 0 100 16 8 8 0 000-16z' },
+  trophy: { from: '#FBBF24', to: '#B45309', icon: 'M80 56h80v20h26c0 34-14 50-36 54-6 14-16 22-22 24v20h24v16H88v-16h24v-20c-6-2-16-10-22-24-22-4-36-20-36-54h26zm0 34H68c2 14 8 22 14 24zm80 0v24c6-2 12-10 14-24z' },
+  brain: { from: '#00E8FC', to: '#0C2A6E', icon: 'M96 60c-20 0-34 16-32 34-14 6-20 22-14 36-8 14-2 34 14 40 4 18 24 26 40 18 4 6 10 8 16 8V60c-8-4-16-4-24 0zm48 0c20 0 34 16 32 34 14 6 20 22 14 36 8 14 2 34-14 40-4 18-24 26-40 18-4 6-10 8-16 8V60c8-4 16-4 24 0z' },
+};
+
+function ProfilePicture({ code, url, size, label, className, style }: { code: string; url?: string; size: number | string; label?: string; className?: string; style?: CSSProperties }) {
+  if (code === 'upload' && url) {
+    return (
+      <img
+        src={url}
+        alt={label ?? ''}
+        width={typeof size === 'number' ? size : undefined}
+        height={typeof size === 'number' ? size : undefined}
+        loading="lazy"
+        className={cn('rounded-full object-cover', className)}
+        style={{ width: size, height: size, ...style }}
+      />
+    );
+  }
+  const pic = PICTURES[code] ?? PICTURES.rocket!;
+  const id = `bgp-${code}`;
+  return (
+    <svg viewBox="0 0 240 240" width={size} height={size} role={label ? 'img' : undefined} aria-label={label || undefined} aria-hidden={label ? undefined : true} className={className} style={style}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={pic.from} />
+          <stop offset="1" stopColor={pic.to} />
+        </linearGradient>
+      </defs>
+      <circle cx="120" cy="120" r="116" fill={`url(#${id})`} />
+      <path d={pic.icon} fill="#FCFCFC" fillRule="evenodd" opacity="0.95" />
+    </svg>
+  );
+}
 
 /** A colour code an admin added, like #1E90FF (colours and brain glows only). */
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -289,6 +339,10 @@ export function MascotAvatar({
   className,
   style,
 }: MascotAvatarProps) {
+  // A profile picture replaces the mascot wherever the player's avatar is shown.
+  if (cosmetics?.picture) {
+    return <ProfilePicture code={cosmetics.picture} url={cosmetics.pictureUrl} size={size} label={label} className={className} style={style} />;
+  }
   const p = paletteFor(cosmetics?.colour);
   const glow = cosmetics?.glow && HEX.test(cosmetics.glow) ? cosmetics.glow : (MASCOT_GLOWS[cosmetics?.glow ?? 'cyan'] ?? MASCOT_GLOWS.cyan!);
   const sad = mood === 'sad';

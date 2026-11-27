@@ -222,7 +222,7 @@ export interface NewQuest {
 
 /** A new Locker item: one of the drawn codes, or a new colour or glow as #RRGGBB. */
 export interface NewCosmetic {
-  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame' | 'picture';
   code: string;
   name: string;
   cost: number;

@@ -77,7 +77,8 @@
     "discover": "Early Access",
     "daily": "Daily challenge",
     "tab": {
-      "recent": "Recent"
+      "recent": "Recent",
+      "daily": "Daily"
     }
   },
   "categories": {
@@ -1717,7 +1718,7 @@
   "locker": {
     "metaTitle": "Locker",
     "title": "Locker",
-    "intro": "Dress up your mascot with looks unlocked by Brain Points.",
+    "intro": "Dress up your mascot, or pick a profile picture, with looks unlocked by Brain Points.",
     "preview": "Your mascot",
     "slots": {
       "colour": "Colour",
@@ -1725,7 +1726,8 @@
       "glasses": "Glasses",
       "headphones": "Headphones",
       "glow": "Brain glow",
-      "frame": "Frames"
+      "frame": "Frames",
+      "picture": "Profile picture"
     },
     "equip": "Wear",
     "unequip": "Take off",
@@ -1744,7 +1746,12 @@
       "wow": "Wow",
       "sad": "Sad"
     },
-    "shuffle": "Shuffle my look"
+    "shuffle": "Shuffle my look",
+    "upload": "Upload my picture",
+    "uploaded": "Your picture is on.",
+    "useMascot": "Use my mascot instead",
+    "uploadHint": "Pick a picture below, or upload your own (it is cropped to a small square). Pictures that break the rules are removed.",
+    "uploadAdults": "Pick a picture below. Uploading your own picture is for adults only."
   },
   "friends": {
     "metaTitle": "Friends",
@@ -2466,5 +2473,43 @@
     "extend": "Add time",
     "indiaOnly": "Payments are available in India only for now."
   },
-  "errors": {}
+  "errors": {},
+  "puzzles": {
+    "title": "Daily puzzles #{number}",
+    "intro": "Two new puzzles every day. Solve them to grow your streak and earn Brain Points.",
+    "introGuest": "Two new puzzles every day, free. Sign in to keep your streak and earn Brain Points.",
+    "signInToSave": "Sign in to save your streak",
+    "freezes": "{count, plural, =0 {No streak freezes} one {# streak freeze} other {# streak freezes}}",
+    "buyFreeze": "Buy a freeze · 60 BP",
+    "freezeBought": "Streak freeze added. It saves your streak if you miss a day.",
+    "freezeUsed": "A streak freeze saved your streak.",
+    "earned": "+{points} Brain Points · {streak, plural, one {# day streak} other {# day streak}}",
+    "streak": "{count, plural, one {# day} other {# days}}",
+    "solved": "Solved today",
+    "share": "Share my result",
+    "copied": "Result copied. Paste it to your friends.",
+    "enter": "ENTER",
+    "back": "Delete letter",
+    "keyboard": "Keyboard",
+    "undo": "Undo",
+    "reset": "Start again",
+    "fiveLetters": "Type five letters, then Enter.",
+    "mark": {
+      "correct": "right place",
+      "present": "in the word, wrong place",
+      "absent": "not in the word"
+    },
+    "word": {
+      "title": "Brain Word",
+      "short": "Guess the word in 6 tries",
+      "won": "Got it in {tries}! Come back tomorrow.",
+      "lost": "Today's word was {word}. A new one tomorrow."
+    },
+    "path": {
+      "title": "Brain Path",
+      "short": "One line through every square",
+      "won": "Solved in {time}! Come back tomorrow.",
+      "how": "Start at 1. Drag through every square, passing the numbers in order, and finish on the last number. Drag back to rub out."
+    }
+  }
 }

@@ -283,11 +283,26 @@ export interface QuestsRepo {
   /** The caller's quests with progress (guests get the quests with zero progress). */
   mine(locale: string): Promise<ProgressSummary>;
   ledger(): Promise<LedgerRow[]>;
+  /** Daily puzzles: streaks, today's results and streak freezes held (null for guests). */
+  dailyPuzzles(day: string): Promise<DailyPuzzleState | null>;
+  /** Records a solved daily puzzle; points once per puzzle per day. */
+  completePuzzle(kind: PuzzleKind, day: string, score: number): Promise<{ streak: number; best: number; points: number; freezeUsed: boolean }>;
+  /** Spends 60 Brain Points on a streak freeze. Resolves with the number now held (3 at most). */
+  buyStreakFreeze(): Promise<number>;
+}
+
+export type PuzzleKind = 'word' | 'path';
+
+export interface DailyPuzzleState {
+  freezes: number;
+  streaks: Partial<Record<PuzzleKind, { streak: number; best: number; lastDay: string | null }>>;
+  /** Today's scores of the puzzles already solved. */
+  done: Partial<Record<PuzzleKind, number>>;
 }
 
 export interface LockerItem {
   id: string;
-  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame';
+  slot: 'colour' | 'hat' | 'glasses' | 'headphones' | 'glow' | 'frame' | 'picture';
   code: string;
   name: string;
   cost: number;
@@ -300,6 +315,8 @@ export interface LockerRepo {
   items(locale: string): Promise<LockerItem[]>;
   unlock(itemId: string): Promise<void>;
   equip(cosmetics: AvatarCosmetics): Promise<void>;
+  /** Adults: uploads a square picture (already resized to a small .webp) and wears it. */
+  uploadPicture(image: Blob): Promise<void>;
 }
 
 export interface FriendRow {

@@ -83,7 +83,8 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
 export const TAB_NAV: NavItem[] = [
   { key: 'home', href: '/', icon: House },
   { key: 'trending', href: '/trending', icon: Flame },
-  { key: 'new', href: '/new', icon: Sparkles },
+  // The middle tab: daily puzzles and the daily game, what brings players back each day.
+  { key: 'daily', href: '/daily', icon: CalendarCheck },
   { key: 'recent', href: '/recent', icon: History },
 ];
 
