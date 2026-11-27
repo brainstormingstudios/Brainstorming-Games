@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`security audit > checks the caller in every security-definer function browsers can run 1`] = `
+[
+  "brain_profile_of",
+  "creator_handle_available",
+  "daily_challenge",
+  "game_discoverers",
+  "party_get",
+  "party_leave",
+  "rising_games",
+  "search_games",
+  "username_available",
+]
+`;
