@@ -171,7 +171,8 @@ if (CF_ANALYTICS) {
   src.connect.push('https://cloudflareinsights.com');
 }
 // The management portal shows the Google Analytics report from Looker Studio.
-if (SITE === 'manage') src.frame.push('https://lookerstudio.google.com');
+// Google sends lookerstudio.google.com embed links on to datastudio.google.com, so both are allowed.
+if (SITE === 'manage') src.frame.push('https://lookerstudio.google.com', 'https://datastudio.google.com');
 const csp = [
   "default-src 'self'",
   `script-src ${src.script.join(' ')}`,
