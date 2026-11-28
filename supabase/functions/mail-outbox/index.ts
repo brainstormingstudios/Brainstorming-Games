@@ -47,6 +47,13 @@ Deno.serve(async (req) => {
         await db.from('email_outbox').update({ error: `Gmail sender not ready (HTTP ${res.status}): ${page}` }).eq('id', row.id);
         break;
       }
+      if (out.error === 'forbidden' || out.error === 'quota') {
+        // Set-up (the two secrets differ) or Gmail's daily limit: not the e-mail's fault. Keep it
+        // queued without using up an attempt, and stop for now.
+        const why = out.error === 'forbidden' ? 'the SECRET in the Gmail script differs from MAIL_WEBHOOK_SECRET' : 'Gmail daily limit reached';
+        await db.from('email_outbox').update({ error: `Gmail sender not ready: ${why}` }).eq('id', row.id);
+        break;
+      }
       if (!res.ok || !out.ok) throw new Error(out.error ?? `mail webhook ${res.status}`);
       await db.from('email_outbox').update({ status: 'sent', sent_at: new Date().toISOString(), attempts: row.attempts + 1, error: null }).eq('id', row.id);
       sent++;
