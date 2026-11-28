@@ -684,7 +684,7 @@
     ctx.fillStyle = me.boostCd > 0 ? '#7f8bb8' : '#5ef1ff';
     ctx.fillText(me.boostCd > 0 ? 'Boost in ' + me.boostCd.toFixed(1) + 's' : 'BOOST READY' + (input.touch ? '' : ' (Space)'), W / 2 - (me.power ? 80 : 0), by + 10);
     if (me.power) { var pl = POWER_LOOK[me.power]; ctx.fillStyle = pl[1]; ctx.fillText(pl[2] + ' ' + me.powerT + 's', W / 2 + 80, by + 10); }
-    if (DEBUG) { ctx.textAlign = 'left'; ctx.fillStyle = '#7dff9e'; ctx.font = '700 11px monospace'; ctx.fillText(Math.round(loop.fps) + ' fps · ' + Math.round(net.rtt) + ' ms', 10, H - 18); }
+    if (DEBUG && !window.__nr.auto) { ctx.textAlign = 'left'; ctx.fillStyle = '#7dff9e'; ctx.font = '700 11px monospace'; ctx.fillText(Math.round(loop.fps) + ' fps · ' + Math.round(net.rtt) + ' ms', 10, H - 18); }
     if (toast) {
       var ta = Math.min(1, toast.t * 3, (toast.max - toast.t) * 8);
       ctx.globalAlpha = ta;

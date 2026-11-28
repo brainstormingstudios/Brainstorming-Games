@@ -74,7 +74,7 @@ collections have several.
 
 ## Build order
 
-Done: shared kit (`games/_kit/bs-kit.js`) and Last Light (`games/last-light`).
+Done: shared kit (`games/_kit/bs-kit.js`), Last Light (live; local copy removed) and Neon Rift.io with the `workers/rooms` multiplayer server (live).
 
 1. Shared kit (`games/_kit`): drawing, input including touch sticks, particles, sound and the
    SDK hook-up.
