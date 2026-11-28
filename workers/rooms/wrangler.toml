@@ -1,0 +1,27 @@
+# Multiplayer server for BS Originals (Neon Rift.io and later games). Deploy with:
+#   npx wrangler deploy --config workers/rooms/wrangler.toml
+# Local test server (http://127.0.0.1:8787, allows localhost games):
+#   npx wrangler dev --config workers/rooms/wrangler.toml --var ALLOW_DEV:1
+#
+# Runs on the free Workers plan: Durable Objects with SQLite storage are free there. One object per
+# room runs only while people are in it.
+name = "bg-rooms"
+main = "index.mjs"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "ARENA"
+class_name = "Arena"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Arena"]
+
+[vars]
+# Game pages that may connect, separated by spaces (the shared play origin).
+ALLOWED_ORIGINS = "https://bg-play.brainstorming-games.workers.dev"
+# Set when games get their own domain (each game on g-<id>.<domain>).
+GAMES_DOMAIN = ""
+# "1" only for local testing: also allows http://localhost and http://127.0.0.1 pages.
+ALLOW_DEV = "0"

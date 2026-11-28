@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>Neon Rift.io</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; overflow: hidden; background: #04050c; color: #eef2ff; font-family: ui-sans-serif, system-ui, 'Segoe UI', sans-serif; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none; }
+      canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+      button { font-family: inherit; }
+      .layer { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+      .layer[hidden] { display: none; }
+      .dim { background: radial-gradient(circle at 50% 40%, rgb(10 30 60 / 0.82), rgb(2 3 10 / 0.95)); }
+      .box { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; margin: auto; }
+      h1 { font-size: clamp(2.6rem, 10vw, 4.8rem); font-weight: 900; letter-spacing: 0.04em; line-height: 1; background: linear-gradient(180deg, #ffffff 5%, #5ef1ff 50%, #b47bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 20px rgb(94 241 255 / 0.5)); }
+      h1 small { font-size: 0.45em; }
+      h2 { font-size: clamp(1.8rem, 7vw, 2.8rem); font-weight: 900; letter-spacing: 0.04em; }
+      p { color: #aab3d6; line-height: 1.5; }
+      .tag { color: #5ef1ff; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.85rem; }
+      .who { font-weight: 800; color: #ffffff; }
+      .who span { color: #5ef1ff; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; }
+      button.big { border: 0; border-radius: 14px; background: linear-gradient(180deg, #7dfcff, #2f8bff); color: #00101f; font-weight: 900; font-size: 1.3rem; padding: 15px 46px; cursor: pointer; letter-spacing: 0.06em; box-shadow: 0 0 34px -6px #2fa8ff; }
+      button.small { border: 2px solid #2c3a6e; border-radius: 12px; background: #0c1230; color: #eef2ff; font-weight: 800; font-size: 1rem; padding: 11px 18px; cursor: pointer; }
+      button:active { transform: scale(0.97); }
+      button:disabled { opacity: 0.5; cursor: default; }
+      input.code { width: 130px; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; font: 800 1.1rem ui-monospace, monospace; padding: 10px; border-radius: 12px; border: 2px solid #2c3a6e; background: #070b1e; color: #fff; }
+      .keys { font-size: 0.8rem; color: #7884b0; line-height: 1.6; }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: 100%; }
+      .stats div { background: #0b1130; border: 2px solid #1b2552; border-radius: 12px; padding: 10px; }
+      .stats b { display: block; font-size: 1.4rem; font-weight: 900; }
+      .stats span { color: #7f8bb8; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+      #err { color: #ff6b8b; font-weight: 700; min-height: 1.2em; }
+      /* In-game panels */
+      #upg { position: fixed; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
+      #upg[hidden] { display: none; }
+      #upg .title { font-weight: 900; font-size: 0.8rem; color: #ffd36b; letter-spacing: 0.08em; text-shadow: 0 0 8px #000; }
+      #upg button { display: flex; align-items: center; gap: 8px; min-width: 210px; border: 2px solid #22305f; border-radius: 10px; background: rgb(8 12 34 / 0.85); color: #fff; padding: 5px 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; text-align: left; }
+      #upg button i { font-style: normal; color: #7f8bb8; width: 14px; }
+      #upg button span.n { flex: 1; }
+      #upg button span.pips { letter-spacing: 1px; font-size: 0.7rem; }
+      #upg button b { color: #00101f; background: var(--c); border-radius: 6px; padding: 0 6px; }
+      #classes { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 96vw; }
+      #classes[hidden] { display: none; }
+      #classes .title { width: 100%; text-align: center; font-weight: 900; color: #ffd36b; text-shadow: 0 0 8px #000; }
+      #classes button { border: 2px solid #ffd36b; background: rgb(30 20 0 / 0.88); color: #fff; border-radius: 12px; padding: 8px 12px; cursor: pointer; font-weight: 800; min-width: 100px; }
+      #classes button small { display: block; color: #e8d6a6; font-weight: 600; font-size: 0.72rem; }
+      #emotes { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+      #emotes[hidden], #touchbar[hidden], #topbtns[hidden] { display: none; }
+      #emotes button { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #22305f; background: rgb(8 12 34 / 0.8); color: #fff; font-size: 1.05rem; font-weight: 900; cursor: pointer; }
+      #topbtns { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+      #topbtns button { height: 36px; border-radius: 10px; border: 2px solid #22305f; background: rgb(8 12 34 / 0.8); color: #fff; font-weight: 800; font-size: 0.8rem; padding: 0 10px; cursor: pointer; }
+      #touchbar { position: fixed; right: 18px; bottom: 120px; display: flex; flex-direction: column; gap: 10px; }
+      #touchbar button { width: 66px; height: 66px; border-radius: 50%; border: 3px solid #5ef1ff; background: rgb(10 40 70 / 0.6); color: #fff; font-weight: 900; }
+      #toast { position: fixed; top: 34%; left: 0; right: 0; text-align: center; pointer-events: none; font-weight: 900; }
+      @media (max-width: 700px), (max-height: 500px) {
+        #upg button { min-width: 168px; padding: 4px 6px; font-size: 0.72rem; }
+        #emotes button { width: 34px; height: 34px; font-size: 0.9rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c" aria-label="Game area"></canvas>
+
+    <div id="topbtns" hidden>
+      <button id="btn-invite" type="button">Invite friends</button>
+      <button id="btn-auto" type="button">Auto-fire: off (E)</button>
+      <button id="btn-mute" type="button" aria-label="Sound on or off">♪</button>
+      <button id="btn-leave" type="button">Leave</button>
+    </div>
+    <div id="upg" hidden></div>
+    <div id="classes" hidden></div>
+    <div id="emotes" hidden></div>
+    <div id="touchbar" hidden><button id="btn-boost" type="button">BOOST</button></div>
+
+    <div id="menu" class="layer dim">
+      <div class="box">
+        <p class="tag">A BS Original · Online</p>
+        <h1>NEON RIFT<small>.io</small></h1>
+        <p>A neon arena full of real players. Shoot, grab orbs, level up, pick your guns and take the crown from the leader.</p>
+        <p class="who">Playing as <span id="who">…</span></p>
+        <button class="big" id="quick" type="button">PLAY</button>
+        <div class="row">
+          <button class="small" id="private" type="button">Private room with friends</button>
+          <input class="code" id="code" maxlength="5" placeholder="CODE" aria-label="Room code" autocomplete="off" />
+          <button class="small" id="join" type="button">Join</button>
+        </div>
+        <p id="err" role="status"></p>
+        <p class="keys">Move: WASD · Aim: mouse · Shoot: hold click or E for auto-fire · Boost: Space or right-click · Upgrades: 1–6<br />Phone: left thumb moves, right thumb aims and shoots</p>
+      </div>
+    </div>
+
+    <div id="dead" class="layer dim" hidden>
+      <div class="box">
+        <h2 id="dead-title">DESTROYED</h2>
+        <p id="dead-text"></p>
+        <div class="stats" id="dead-stats"></div>
+        <div class="row">
+          <button class="big" id="respawn" type="button">RESPAWN</button>
+          <button class="small" id="to-menu" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="bg-sdk.js"></script>
+    <script src="bs-kit.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>

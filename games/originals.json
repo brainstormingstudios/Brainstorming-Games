@@ -219,6 +219,83 @@
         "logic",
         "speed"
       ]
+    },
+    {
+      "slug": "neon-rift",
+      "title": "Neon Rift.io",
+      "shortDescription": "An online neon arena. Shoot real players, grab orbs, level up, unlock new guns and steal the crown from the leader.",
+      "descriptionMd": "**Neon Rift.io** is an online arena shooter: everyone in the arena is a real player (and bots fill empty places, so a match is always on).\n\nCollect glowing orbs to level up, spend points on damage, fire rate, speed and more, and unlock new guns at levels 8 and 18: Twin, Sniper, Gunner, then Hydra, Railgun, Storm or Octo. Grab power-ups, chain kills for streaks, and take down the leader for a big bonus.\n\nMake a **private room** and send the invite link to play with friends.",
+      "howToPlayMd": "1. Press **Play** to join an arena, or make a private room for friends.\n2. Move with **WASD**, aim with the mouse and hold click to shoot (or press **E** for auto-fire). On a phone, the left thumb moves and the right thumb aims and shoots.\n3. Collect orbs to level up and press **1–6** to upgrade.\n4. At levels 8 and 18, pick new guns. Boost out of trouble with **Space**.",
+      "controls": [
+        {
+          "action": "Move",
+          "keyboard": "WASD or arrow keys",
+          "touch": "Left thumb"
+        },
+        {
+          "action": "Aim and shoot",
+          "keyboard": "Mouse, hold left click",
+          "touch": "Right thumb"
+        },
+        {
+          "action": "Auto-fire on or off",
+          "keyboard": "E",
+          "touch": "Auto-fire button"
+        },
+        {
+          "action": "Boost",
+          "keyboard": "Space or right-click",
+          "touch": "BOOST button"
+        },
+        {
+          "action": "Upgrade",
+          "keyboard": "1 to 6",
+          "touch": "Tap an upgrade"
+        }
+      ],
+      "faq": [
+        {
+          "q": "Are the other players real?",
+          "a": "Yes. Bots only fill empty places, and they leave as people join, so the arena is never empty."
+        },
+        {
+          "q": "How do I play with friends?",
+          "a": "Press Private room with friends, then Invite friends to copy the link, or share the 5-letter room code. Up to 12 people per room."
+        },
+        {
+          "q": "Is there chat?",
+          "a": "No typed chat, so it is safe for everyone. You can send quick emotes like GG or a wave."
+        },
+        {
+          "q": "Does it work on phones?",
+          "a": "Yes. The left thumb moves, the right thumb aims and shoots, and there is a boost button."
+        }
+      ],
+      "category": "io",
+      "tags": [
+        "multiplayer",
+        "shooter",
+        "arena",
+        "neon",
+        "online"
+      ],
+      "orientation": "landscape",
+      "engine": "JavaScript",
+      "isMultiplayer": true,
+      "hasProgress": false,
+      "status": "featured",
+      "media": [
+        {
+          "kind": "cover_landscape",
+          "file": "cover.svg",
+          "width": 1280,
+          "height": 720
+        }
+      ],
+      "skills": [
+        "speed",
+        "strategy"
+      ]
     }
   ]
 }

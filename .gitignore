@@ -45,3 +45,6 @@ desktop.ini
 out-developers
 out-manage
 apps/web/public/downloads/
+
+# Wrangler local dev files
+.wrangler/

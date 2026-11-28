@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/out-*/**',
       '**/.next-*/**',
       'games/**',
+      '**/.wrangler/**',
       '**/dist/**',
       '.local/**',
       'apps/web/public/**',
