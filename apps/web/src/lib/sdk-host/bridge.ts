@@ -26,7 +26,7 @@ import { localizePath, type Locale } from '@/i18n/config';
 import { ADSENSE_CLIENT, INGAME_AD_PROVIDER, PLAY_ORIGIN } from '@/lib/config';
 import { requestLogin } from '@/lib/auth/loginPrompt';
 import { canPersonaliseAds } from '@/lib/ads/consent';
-import { AD_TIMING, houseAds, loadOriginalTrailers } from '@/lib/ads/houseAd';
+import { AD_TIMING, houseAds, inGameAdsOff, loadOriginalTrailers } from '@/lib/ads/houseAd';
 import type { PremiumPlan } from '@/lib/domain/premium';
 import { getRepo } from '@/lib/data';
 import { onTopic } from '@/lib/data/bus';
@@ -253,6 +253,8 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
       return null;
     },
     'ad.midgame': async () => {
+      // Breaks in games switched off in the portal.
+      if (INGAME_AD_PROVIDER === 'house' && !ctx.preview && inGameAdsOff()) return { shown: false, reason: 'disabled' };
       const reason = rules.checkMidgame();
       if (reason) return { shown: false, reason };
       event('ad_requested', { kind: 'midgame' });
@@ -278,8 +280,8 @@ export function attachHost(frame: HTMLIFrameElement, ctx: HostContext): HostBrid
         return { rewarded: true, reason: 'premium' };
       }
       const reason = rules.checkRewarded();
-      // A game in its Basic Launch shows no ads; its reward buttons still work, with no ad.
-      if (reason === 'spark') {
+      // A game in its Basic Launch, or in-game ads switched off in the portal: the reward with no ad.
+      if (reason === 'spark' || (INGAME_AD_PROVIDER === 'house' && !ctx.preview && inGameAdsOff())) {
         event('rewarded_granted', { spark: true });
         return { rewarded: true, reason: 'spark' };
       }

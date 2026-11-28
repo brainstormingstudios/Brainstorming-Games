@@ -168,6 +168,44 @@ export interface AdminUserRow {
   banned: boolean;
   isMinor: boolean;
   createdAt: string;
+  brainPoints: number;
+  premiumPlan: 'lite' | 'plus' | 'max' | null;
+  premiumUntil: string | null;
+}
+
+/** Where ads can go: the site's ad spaces, and breaks inside games. */
+export type AdPlacement = 'home-rail' | 'grid' | 'game-content' | 'game-side' | 'in-game';
+export const AD_PLACEMENTS: AdPlacement[] = ['home-rail', 'grid', 'game-content', 'game-side', 'in-game'];
+
+/** One of our own ads, set up in the management portal. */
+export interface AdCreative {
+  id: string;
+  title: string;
+  /** Picture or video address (uploaded to the ads bucket, or a /promo/ file). */
+  media: string;
+  kind: 'video' | 'image';
+  href: string;
+  cta: string;
+  kidSafe: boolean;
+  /** ISO country codes; empty for everywhere. */
+  countries: string[];
+  placements: AdPlacement[];
+  active: boolean;
+}
+
+export interface AdSettings {
+  /** A space switched off shows nothing. Missing means on. */
+  placements: Partial<Record<AdPlacement, boolean>>;
+  creatives: AdCreative[];
+}
+
+/** A page admins write, shown at /page/?s=<slug>. */
+export interface SitePage {
+  slug: string;
+  title: string;
+  bodyMd: string;
+  published: boolean;
+  updatedAt: string;
 }
 
 export interface AdminStudioRow {

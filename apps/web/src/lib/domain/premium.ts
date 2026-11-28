@@ -56,6 +56,14 @@ export const PLANS: Record<PremiumPlan, PlanDef> = {
   },
 };
 
+/** Brain Point packs for real money (adults only; on sale once payments start). */
+export const BP_PACKS = [
+  { id: 'bp200', points: 200, price: 1900, best: false },
+  { id: 'bp600', points: 600, price: 4900, best: false },
+  { id: 'bp1400', points: 1400, price: 9900, best: true },
+  { id: 'bp3000', points: 3000, price: 19900, best: false },
+] as const;
+
 /** How long a guest pass lasts, and which plan it gives. */
 export const GUEST_PASS = { days: 7, plan: 'plus' as PremiumPlan };
 

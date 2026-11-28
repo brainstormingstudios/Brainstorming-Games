@@ -35,7 +35,7 @@ export function seeded(seed: number): () => number {
 // Brain Word
 // ---------------------------------------------------------------------------------------------
 
-/** Everyday, child-friendly answers. Any five letters may be guessed. */
+/** Everyday, child-friendly answers. Guesses must be real words (words5.ts). */
 export const WORDS = `
 apple brain chair dance eagle flame grape happy juice knife lemon magic night ocean piano queen river smile
 tiger unity voice water yacht zebra adult beach bread candy cloud crown dream earth field frost ghost glass

@@ -4,6 +4,7 @@ import { getRepo } from '@/lib/data';
 import type { PremiumPlan } from '@/lib/domain/premium';
 import { gameHref } from '@/lib/format';
 import { loadCountry } from '@/lib/hooks/useCountry';
+import type { AdCreative, AdPlacement, AdSettings } from '@/lib/data/growthTypes';
 
 /**
  * Who may see an ad. `kidSafe`: fine for children and school-safe mode (anything not marked is
@@ -46,12 +47,32 @@ export const VERTICAL_PROMO: TargetedAd = {
 };
 
 let originals: TargetedAd[] = [];
+let settings: AdSettings | null = null;
+let settingsLoading: Promise<AdSettings | null> | null = null;
+
+/** The ad spaces and our own ads set in the management portal (read once per page). */
+export function loadAdSettings(): Promise<AdSettings | null> {
+  settingsLoading ??= getRepo()
+    .then((repo) => repo.growth.adSettings())
+    .then((s) => (settings = s))
+    .catch(() => null);
+  return settingsLoading;
+}
+
+/** Admins switched off breaks inside games. */
+export const inGameAdsOff = () => settings?.placements['in-game'] === false;
+
+/** Our own ads from the portal for one space, that this viewer may see. */
+export function creativesFor(placement: AdPlacement, viewer: { kid: boolean; country: string | null }): AdCreative[] {
+  return (settings?.creatives ?? []).filter((c) => c.active && c.media && c.placements.includes(placement) && allowedFor(c, viewer));
+}
 let country: string | null = null;
 let loading: Promise<void> | null = null;
 
 /** BS Originals trailers join the rotation: each one links to its game. Loaded once per page. */
 export function loadOriginalTrailers(): Promise<void> {
   void loadCountry().then((c) => (country = c));
+  void loadAdSettings();
   loading ??= getRepo()
     .then((repo) => repo.catalogue.list({ originals: true, limit: 24 }))
     .then((page) => {
@@ -83,7 +104,12 @@ export function allowedFor(ad: Targeting, viewer: { kid: boolean; country: strin
  * school-safe mode. The channel ad is listed twice, so it shows most often.
  */
 export function houseAds(viewer: { kid: boolean } = { kid: false }): HouseAd[] {
-  return [HOUSE_AD, HOUSE_AD, VERTICAL_PROMO, ...originals]
+  if (inGameAdsOff()) return [];
+  // Video ads from the portal that are set to show in games.
+  const custom: TargetedAd[] = creativesFor('in-game', { kid: viewer.kid, country })
+    .filter((c) => c.kind === 'video')
+    .map((c) => ({ video: c.media, poster: '', href: c.href, title: c.title, cta: c.cta, kidSafe: c.kidSafe, countries: c.countries }));
+  return [HOUSE_AD, HOUSE_AD, VERTICAL_PROMO, ...custom, ...custom, ...originals]
     .filter((a) => allowedFor(a, { kid: viewer.kid, country }))
     .map((a) => ({ ...a, video: abs(a.video), poster: abs(a.poster) }));
 }

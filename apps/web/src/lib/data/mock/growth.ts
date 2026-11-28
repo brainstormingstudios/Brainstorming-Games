@@ -341,7 +341,7 @@ export const mockGrowth: GrowthRepo = {
     return readTable('users')
       .filter((u) => u.username && (!q || u.username.includes(q) || u.id === q))
       .slice(0, 20)
-      .map((u) => ({ id: u.id, username: u.username!, displayName: u.displayName, role: u.role, banned: Boolean(u.bannedAt), isMinor: u.isMinor, createdAt: u.createdAt }));
+      .map((u) => ({ id: u.id, username: u.username!, displayName: u.displayName, role: u.role, banned: Boolean(u.bannedAt), isMinor: u.isMinor, createdAt: u.createdAt, brainPoints: u.brainPoints, premiumPlan: u.premiumUntil && u.premiumUntil > nowIso() ? (u.premiumPlan ?? null) : null, premiumUntil: u.premiumUntil ?? null }));
   },
   async setUser(userId, patch) {
     const staff = requireStaff();
@@ -474,6 +474,68 @@ export const mockGrowth: GrowthRepo = {
     });
     audit(staff.id, hidden ? 'hide_devlog' : 'unhide_devlog', 'devlog', id);
     emitTopic('devlogs');
+    emitTopic('admin');
+  },
+  async adjustPoints(userId, delta, reason) {
+    const staff = requireStaff();
+    if (!delta || reason.trim().length < 3) fail('invalid', 'Give a number and a reason.');
+    awardPoints(userId, Math.round(delta), 'admin', null);
+    audit(staff.id, 'adjust_points', 'user', userId, { delta, reason });
+    emitTopic('admin');
+  },
+  async setPremium(userId, plan, days) {
+    const staff = requireStaff();
+    updateUser(userId, plan ? { premiumPlan: plan, premiumUntil: new Date(Date.now() + days * 86_400_000).toISOString(), premiumAutoRenew: false, premiumFromPass: false } : { premiumPlan: null, premiumUntil: null, premiumAutoRenew: false });
+    audit(staff.id, 'set_premium', 'user', userId, { plan, days });
+    emitTopic('admin');
+  },
+  async adSettings() {
+    return readTable('adSettings')[0] ?? { placements: {}, creatives: [] };
+  },
+  async saveAdSettings(settings) {
+    const staff = requireStaff();
+    if (settings.creatives.some((c) => !/^https:\/\//.test(c.href) || !/^(https:\/\/|\/promo\/|data:)/.test(c.media))) fail('invalid', 'Each ad needs an https link and an uploaded picture or video.');
+    mutateTable('adSettings', () => [settings]);
+    audit(staff.id, 'save_ad_settings', 'site', 'ads', {});
+    emitTopic('admin');
+  },
+  async uploadAdMedia(file) {
+    requireStaff();
+    return new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(new Error('read'));
+      r.readAsDataURL(file);
+    });
+  },
+  async pages() {
+    requireStaff();
+    return readTable('sitePages');
+  },
+  async page(slug) {
+    return readTable('sitePages').find((p) => p.slug === slug && p.published) ?? null;
+  },
+  async savePage(p) {
+    const staff = requireStaff();
+    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(p.slug) || p.title.trim().length < 2) fail('invalid', 'Give the page a title and a short address (letters, numbers, dashes).');
+    mutateTable('sitePages', (rows) => [...rows.filter((r) => r.slug !== p.slug), { ...p, updatedAt: nowIso() }]);
+    audit(staff.id, 'save_page', 'page', p.slug, {});
+    emitTopic('admin');
+  },
+  async deletePage(slug) {
+    const staff = requireStaff();
+    mutateTable('sitePages', (rows) => rows.filter((r) => r.slug !== slug));
+    audit(staff.id, 'delete_page', 'page', slug, {});
+    emitTopic('admin');
+  },
+  async analyticsEmbedUrl() {
+    requireStaff();
+    return readTable('portalSettings')[0]?.analyticsEmbedUrl ?? null;
+  },
+  async saveAnalyticsEmbedUrl(url) {
+    requireStaff();
+    if (url && !/^https:\/\/lookerstudio\.google\.com\/embed\//.test(url)) fail('invalid', 'Paste the Looker Studio embed link (it starts with https://lookerstudio.google.com/embed/).');
+    mutateTable('portalSettings', () => [{ analyticsEmbedUrl: url }]);
     emitTopic('admin');
   },
   async adminQuests() {

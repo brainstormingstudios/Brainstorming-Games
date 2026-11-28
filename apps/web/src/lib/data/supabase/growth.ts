@@ -1,7 +1,7 @@
 import { emitTopic } from '../bus';
 import { rankScore, type RankInputs } from '@/lib/domain/ranking';
 import { isDrawableCosmetic } from '@brainstorming/ui';
-import { questCode, type AdminQuest, type DevlogPost, type DiscoveryReport, type DiscoveryRow, type Jam, type ReportKind, type ReportRecord, type SiteStats } from '../growthTypes';
+import { questCode, type AdSettings, type SitePage, type AdminQuest, type DevlogPost, type DiscoveryReport, type DiscoveryRow, type Jam, type ReportKind, type ReportRecord, type SiteStats } from '../growthTypes';
 import { getAnonId } from '../local';
 import { RepoError, type GrowthRepo } from '../repo';
 import type { GameStatus, GameSummary } from '../types';
@@ -79,6 +79,8 @@ async function names(view: string, column: string, ids: string[]): Promise<Map<s
 }
 
 /** Growth features against Supabase. Row-level security and the SQL functions enforce who may do what. */
+const toPage = (r: Row): SitePage => ({ slug: String(r.slug), title: String(r.title), bodyMd: String(r.body_md ?? ''), published: Boolean(r.published), updatedAt: String(r.updated_at) });
+
 export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummary[]>): GrowthRepo {
   return {
     async following(studioId) {
@@ -326,7 +328,7 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
     },
     async findUsers(query) {
       const q = query.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-      let req = getSupabase().from('profiles').select('id, username, display_name, role, banned_at, is_minor, created_at');
+      let req = getSupabase().from('profiles').select('id, username, display_name, role, banned_at, is_minor, created_at, brain_points, premium_plan, premium_until');
       if (q) req = req.ilike('username', `%${q}%`);
       const rows = (check(await req.order('created_at', { ascending: false }).limit(20)) ?? []) as Row[];
       return rows.map((r) => ({
@@ -337,7 +339,57 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
         banned: Boolean(r.banned_at),
         isMinor: Boolean(r.is_minor),
         createdAt: String(r.created_at),
+        brainPoints: Number(r.brain_points ?? 0),
+        premiumPlan: r.premium_until && String(r.premium_until) > new Date().toISOString() ? ((r.premium_plan as 'lite' | 'plus' | 'max' | null) ?? null) : null,
+        premiumUntil: (r.premium_until as string | null) ?? null,
       }));
+    },
+    async adjustPoints(userId, delta, reason) {
+      check(await getSupabase().rpc('admin_adjust_points', { p_user: userId, p_delta: Math.round(delta), p_reason: reason }));
+      emitTopic('admin');
+    },
+    async setPremium(userId, plan, days) {
+      check(await getSupabase().rpc('admin_set_premium', { p_user: userId, p_plan: plan, p_days: Math.round(days) }));
+      emitTopic('admin');
+    },
+    async adSettings() {
+      const { data } = await getSupabase().from('ad_settings').select('placements, creatives').eq('id', 1).maybeSingle<Row>();
+      return { placements: (data?.placements as AdSettings['placements']) ?? {}, creatives: (data?.creatives as AdSettings['creatives']) ?? [] };
+    },
+    async saveAdSettings(settings) {
+      check(await getSupabase().rpc('admin_save_ad_settings', { p_placements: settings.placements, p_creatives: settings.creatives }));
+      emitTopic('admin');
+    },
+    async uploadAdMedia(file) {
+      const ext = file.type === 'video/mp4' ? 'mp4' : file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'webp';
+      const path = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const up = await getSupabase().storage.from('ads').upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw new RepoError('invalid', 'Upload a .webp, .png or .jpg picture, or an .mp4 video, up to 50 MB.');
+      return getSupabase().storage.from('ads').getPublicUrl(path).data.publicUrl;
+    },
+    async pages() {
+      const rows = (check(await getSupabase().from('site_pages').select('*').order('updated_at', { ascending: false })) ?? []) as Row[];
+      return rows.map(toPage);
+    },
+    async page(slug) {
+      const { data } = await getSupabase().from('site_pages').select('*').eq('slug', slug).eq('published', true).maybeSingle<Row>();
+      return data ? toPage(data) : null;
+    },
+    async savePage(p) {
+      check(await getSupabase().from('site_pages').upsert({ slug: p.slug, title: p.title, body_md: p.bodyMd, published: p.published, updated_at: new Date().toISOString() }));
+      emitTopic('admin');
+    },
+    async deletePage(slug) {
+      check(await getSupabase().from('site_pages').delete().eq('slug', slug));
+      emitTopic('admin');
+    },
+    async analyticsEmbedUrl() {
+      const { data } = await getSupabase().from('portal_settings').select('analytics_embed_url').eq('id', 1).maybeSingle<Row>();
+      return (data?.analytics_embed_url as string | null) ?? null;
+    },
+    async saveAnalyticsEmbedUrl(url) {
+      check(await getSupabase().from('portal_settings').update({ analytics_embed_url: url, updated_at: new Date().toISOString() }).eq('id', 1));
+      emitTopic('admin');
     },
     async setUser(userId_, patch) {
       check(await getSupabase().rpc('admin_set_user', { p_user: userId_, p_banned: patch.banned ?? null, p_role: patch.role ?? null, p_reset_username: patch.resetUsername ?? false }));

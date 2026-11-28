@@ -3,6 +3,7 @@
  * It starts with no games. Each read parses the stored JSON so a write from another tab is seen
  * straight away.
  */
+import type { AdSettings, SitePage } from '../growthTypes';
 import type { CosmeticDef, QuestDef } from '@/lib/domain/progression';
 import type { Creator, CreatorMonthRow, CreatorPayoutRow } from '../creatorTypes';
 import { MOCK_DB_URL } from '@/lib/config';
@@ -353,6 +354,9 @@ export interface MockTables {
   cosmeticOverrides: { id: string; cost: number; minLevel: number; active: boolean; name?: string; deleted?: boolean }[];
   /** Quests and Locker items admins added on top of the built-in lists. */
   customQuests: QuestDef[];
+  adSettings: AdSettings[];
+  sitePages: SitePage[];
+  portalSettings: { analyticsEmbedUrl: string | null }[];
   customCosmetics: CosmeticDef[];
   creators: Creator[];
   creatorVisits: { handle: string; anonId: string; at: string }[];

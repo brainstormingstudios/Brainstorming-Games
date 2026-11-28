@@ -9,8 +9,14 @@ const env = (k: string) => (Deno.env.get(k) ?? '').trim();
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
-  if (!sameSecret(req.headers.get('x-outbox-secret'), env('MAIL_OUTBOX_SECRET'))) return new Response('forbidden', { status: 403 });
   const db = adminClient();
+  // Either the database's own timer (a token kept inside the database, migration 0034) or the
+  // older database webhook with MAIL_OUTBOX_SECRET.
+  const cron = req.headers.get('x-outbox-cron');
+  const viaTimer = cron ? (await db.rpc('check_internal_token', { p_name: 'mail_cron', p_token: cron })).data === true : false;
+  if (!viaTimer && !sameSecret(req.headers.get('x-outbox-secret'), env('MAIL_OUTBOX_SECRET'))) return new Response('forbidden', { status: 403 });
+  // Not connected to the Gmail sender yet: leave everything queued, untouched (docs/EMAIL.md).
+  if (!env('MAIL_WEBHOOK_URL')) return new Response(JSON.stringify({ sent: 0, error: 'MAIL_WEBHOOK_URL is not set' }), { status: 503, headers: { 'content-type': 'application/json' } });
   const { data: queued } = await db.from('email_outbox').select('*').eq('status', 'queued').lt('attempts', 5).order('created_at').limit(40);
   const ctx = {
     siteUrl: env('SITE_URL'),

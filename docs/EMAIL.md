@@ -47,8 +47,9 @@ Gmail account:
 4. Supabase secrets: `MAIL_WEBHOOK_URL` (that URL), `MAIL_WEBHOOK_SECRET` (the same SECRET),
    `MAIL_OUTBOX_SECRET` (another random value), `CONTACT_EMAIL`, `SITE_URL`, `DEVELOPERS_URL`.
 5. Deploy the function: `npx supabase functions deploy mail-outbox --no-verify-jwt`.
-6. Supabase > Database > Webhooks: on INSERT into `email_outbox`, call the `mail-outbox` Edge
-   Function with the header `x-outbox-secret: <MAIL_OUTBOX_SECRET>`.
+6. Nothing else: since migration 0034 the database itself wakes `mail-outbox` every minute while
+   e-mails are waiting (pg_cron + pg_net, with a token kept inside the database). Until
+   `MAIL_WEBHOOK_URL` is set, e-mails simply stay queued and nothing is lost.
 
 A personal Gmail account sends about 100 e-mails a day this way. If the site outgrows that, a
 Google Workspace account on your own domain raises it to 1,500 with no code change.

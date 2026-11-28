@@ -79,7 +79,8 @@
     "tab": {
       "recent": "Recent",
       "daily": "Daily"
-    }
+    },
+    "shop": "Brain Shop"
   },
   "categories": {
     "action": {
@@ -1045,7 +1046,10 @@
       "promotions": "Promotions",
       "payments": "Payments",
       "emails": "E-mails",
-      "creators": "Creators"
+      "creators": "Creators",
+      "ads": "Ads",
+      "pages": "Pages",
+      "analytics": "Google Analytics"
     },
     "notAllowedTitle": "This portal is for the site owners",
     "notAllowedBody": "Only admins of Brainstorming Games can open the management portal.",
@@ -1386,7 +1390,19 @@
       "deleteConfirm": "Delete for good",
       "deleted": "Deleted.",
       "transfer": "Hand over",
-      "transferPrompt": "Hand {name} to which account? Type their e-mail (they must have signed up)."
+      "transferPrompt": "Hand {name} to which account? Type their e-mail (they must have signed up).",
+      "pointsBadge": "{points} BP",
+      "roleLabel": "Role",
+      "rolePlayer": "Player",
+      "roleModerator": "Moderator",
+      "roleAdmin": "Admin",
+      "points": "Brain Points",
+      "pointsPrompt": "How many Brain Points to add? (Use a minus sign to take some away, e.g. -50.)",
+      "reasonPrompt": "Reason (kept in the audit log):",
+      "pointsSaved": "Brain Points updated.",
+      "premium": "Premium",
+      "premiumPrompt": "Plan and days, e.g. \"max 30\", \"plus 7\" or \"lite 365\". Type \"none\" to end it.",
+      "premiumSaved": "Premium updated."
     },
     "progression": {
       "title": "Quests & locker",
@@ -1667,6 +1683,72 @@
         "preview_landscape": "Landscape video",
         "preview_portrait": "Portrait video"
       }
+    },
+    "ads": {
+      "title": "Ads",
+      "intro": "Click an ad space on the preview to switch it on or off (games are shown as black boxes). Below, add your own ads and choose where each one shows. Premium members still see fewer ads or none.",
+      "save": "Save ads",
+      "saved": "Ads saved. The site uses them within a few minutes.",
+      "homePreview": "Home page",
+      "gamePreview": "Game page",
+      "placements": {
+        "home-rail": "Between home rows",
+        "grid": "In game lists",
+        "game-content": "Under the game",
+        "game-side": "Beside the game",
+        "in-game": "Breaks in games"
+      },
+      "ourAds": "Our own ads",
+      "add": "Add an ad",
+      "builtIn": "Always on",
+      "builtInWhere": "every space",
+      "trailers": "BS Originals trailers (in games)",
+      "adTitle": "Title",
+      "button": "Button text",
+      "link": "Link (https://)",
+      "countries": "Countries",
+      "countriesHint": "Leave empty for everywhere, or codes like IN, US, GB.",
+      "upload": "Upload picture or video",
+      "uploaded": "Uploaded. Save to use it.",
+      "kidSafe": "Kid-safe",
+      "active": "On",
+      "remove": "Remove",
+      "whereLabel": "Where it shows"
+    },
+    "pages": {
+      "title": "Pages",
+      "intro": "Write extra pages for the site (rules, events, announcements). Published pages are live at the address shown.",
+      "new": "New page",
+      "pageTitle": "Title",
+      "address": "Address",
+      "body": "Text",
+      "bodyHint": "Markdown: # Heading, **bold**, - lists, [link](https://...)",
+      "published": "Published",
+      "save": "Save page",
+      "saved": "Page saved.",
+      "cancel": "Cancel",
+      "live": "live",
+      "draft": "draft",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleted": "Page deleted.",
+      "none": "No pages yet.",
+      "confirmDelete": "Delete the page \"{title}\"? This cannot be undone."
+    },
+    "analytics": {
+      "title": "Google Analytics",
+      "intro": "Your Google Analytics numbers, inside the portal. Google does not allow its Analytics site inside other sites, so this shows a free Looker Studio report made from your Analytics data.",
+      "howTitle": "Set it up once (5 minutes)",
+      "how1": "Go to lookerstudio.google.com with the Google account that owns your Analytics, and click Blank report.",
+      "how2": "Choose Google Analytics as the data source and pick the Brainstorming Games property.",
+      "how3": "Add charts (for example Views by page title, Users, Sessions by channel). Or start from the free \"GA4 report\" template.",
+      "how4": "File > Embed report > tick Enable embedding > copy the Embed URL.",
+      "how5": "Paste it below and save. Only people who can open the report in Google can see the data.",
+      "embedLink": "Looker Studio embed link",
+      "save": "Save",
+      "saved": "Saved.",
+      "openGa": "Open Google Analytics"
     }
   },
   "player": {
@@ -2510,6 +2592,53 @@
       "short": "One line through every square",
       "won": "Solved in {time}! Come back tomorrow.",
       "how": "Start at 1. Drag through every square, passing the numbers in order, and finish on the last number. Drag back to rub out."
+    },
+    "notAWord": "Not in the word list. Try a real word.",
+    "hint": "Hint · 30 BP ({used}/{max})",
+    "letterHint": "Letter {place} is {letter}"
+  },
+  "shop": {
+    "metaTitle": "Brain Shop",
+    "title": "Brain Shop",
+    "intro": "Spend the Brain Points you earn by playing, and soon top up with Brain Point packs.",
+    "balance": "{points} Brain Points",
+    "signIn": "Sign in to shop",
+    "tabSpend": "Spend Brain Points",
+    "tabBuy": "Buy Brain Points",
+    "buy": "Buy",
+    "open": "Open",
+    "cost": "{points} BP",
+    "variousCosts": "From 0 BP",
+    "freezeBought": "Streak freeze added.",
+    "bestValue": "Best value",
+    "points": "Brain Points",
+    "packsSoon": "Coming soon: Brain Point packs go on sale once payments are switched on.",
+    "packsFineprint": "For adults (18+). Brain Points are used on Brain Games only and cannot be exchanged for money. Prices include GST.",
+    "items": {
+      "freeze": {
+        "name": "Streak freeze",
+        "body": "Keeps your daily puzzle streak alive if you miss a day. Hold up to 3."
+      },
+      "hint": {
+        "name": "Puzzle hints",
+        "body": "Stuck on Brain Word or Brain Path? A hint shows a letter or the next squares. Up to 3 a puzzle a day."
+      },
+      "pictures": {
+        "name": "Profile pictures",
+        "body": "12 profile pictures to pick from, or show off your mascot instead."
+      },
+      "looks": {
+        "name": "Mascot looks",
+        "body": "Hats, glasses, headphones, colours, glows and frames for your mascot."
+      },
+      "premiumDays": {
+        "name": "Premium days",
+        "body": "Swap points for days of Plus or Max: fewer ads or none."
+      }
     }
+  },
+  "page": {
+    "notFound": "This page does not exist.",
+    "back": "Back to games"
   }
 }

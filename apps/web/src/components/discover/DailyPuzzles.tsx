@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Check, Delete, Flame, Route, Share2, Snowflake, Type, Undo2 } from 'lucide-react';
+import { Check, Delete, Flame, Lightbulb, Route, Share2, Snowflake, Type, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, ConfettiBurst, cn, useToast } from '@brainstorming/ui';
 import { useAction } from '@/components/player/common';
@@ -60,6 +60,28 @@ function useFinish(kind: PuzzleKind, day: string, onDone: () => void) {
   );
 }
 
+/** "Hint · 30 BP": signed-in players spend Brain Points; guests are asked to sign in. */
+function HintButton({ kind, day, used, onHint, disabled }: { kind: PuzzleKind; day: string; used: number; onHint: (n: number) => void; disabled?: boolean }) {
+  const t = useTranslations('puzzles');
+  const act = useAction();
+  const { user } = useSession();
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      icon={<Lightbulb aria-hidden="true" className="size-4" />}
+      disabled={disabled || used >= 3}
+      data-testid={`hint-${kind}`}
+      onClick={() => {
+        if (!user?.username) return void requestLogin();
+        void act(async () => onHint(await (await getRepo()).quests.buyHint(kind, day)));
+      }}
+    >
+      {t('hint', { used, max: 3 })}
+    </Button>
+  );
+}
+
 // ---------------------------------------------------------------------------------------------
 // Brain Word
 // ---------------------------------------------------------------------------------------------
@@ -84,8 +106,19 @@ function WordGame({ day, onSolved }: { day: string; onSolved: () => void }) {
   const [burst, setBurst] = useState(0);
   const finish = useFinish('word', day, onSolved);
   useEffect(() => setGuesses(local.get<string[]>(store, [])), [store]);
+  // The dictionary (about 76 KB) loads with the puzzle, not with the page.
+  const dictionary = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    void import('@/lib/domain/words5').then((m) => (dictionary.current = new Set(m.GUESSES.split(' '))));
+  }, []);
   const won = guesses.includes(answer);
   const over = won || guesses.length >= WORD_TRIES;
+  const hintKey = `bg.puzzle.word.hints.${day}`;
+  const [hints, setHints] = useState(0);
+  useEffect(() => setHints(local.get<number>(hintKey, 0)), [hintKey]);
+  // Hints reveal letters in order, skipping places already found.
+  const found = new Set(guesses.flatMap((g) => markGuess(g, answer).flatMap((m, i) => (m === 'correct' ? [i] : []))));
+  const revealed = [0, 1, 2, 3, 4].filter((i) => !found.has(i)).slice(0, hints);
 
   const keyMarks = useMemo(() => {
     const m = new Map<string, LetterMark>();
@@ -108,6 +141,12 @@ function WordGame({ day, onSolved }: { day: string; onSolved: () => void }) {
           setShake(true);
           window.setTimeout(() => setShake(false), 400);
           toast(t('fiveLetters'));
+          return;
+        }
+        if (dictionary.current && !dictionary.current.has(typing) && typing !== answer) {
+          setShake(true);
+          window.setTimeout(() => setShake(false), 400);
+          toast(t('notAWord'));
           return;
         }
         const next = [...guesses, typing];
@@ -167,6 +206,22 @@ function WordGame({ day, onSolved }: { day: string; onSolved: () => void }) {
           </div>
         ))}
       </div>
+      {revealed.length && !over ? (
+        <p className="text-sm font-bold text-glow" data-testid="word-hints">
+          {revealed.map((i) => t('letterHint', { place: i + 1, letter: answer[i]!.toUpperCase() })).join(' · ')}
+        </p>
+      ) : null}
+      {!over ? (
+        <HintButton
+          kind="word"
+          day={day}
+          used={hints}
+          onHint={(n) => {
+            setHints(n);
+            local.set(hintKey, n);
+          }}
+        />
+      ) : null}
       {over ? (
         <div className="flex flex-col items-center gap-2 text-center" data-testid="word-result">
           <p className="font-display text-xl font-bold">{won ? t('word.won', { tries: guesses.length }) : t('word.lost', { word: answer.toUpperCase() })}</p>
@@ -180,11 +235,11 @@ function WordGame({ day, onSolved }: { day: string; onSolved: () => void }) {
           </Button>
         </div>
       ) : null}
-      <div className="flex w-full max-w-md flex-col gap-1.5" aria-label={t('keyboard')}>
+      <div className="flex w-full max-w-xl flex-col gap-2" aria-label={t('keyboard')}>
         {KEY_ROWS.map((row, i) => (
-          <div key={row} className="flex justify-center gap-1">
+          <div key={row} className="flex justify-center gap-1.5">
             {i === 2 ? (
-              <button type="button" onClick={() => press('enter')} className="h-12 rounded-md bg-primary px-2.5 text-xs font-bold text-primary-fg" data-testid="word-enter">
+              <button type="button" onClick={() => press('enter')} className="h-14 rounded-lg bg-primary px-3 text-sm font-bold text-primary-fg sm:h-16" data-testid="word-enter">
                 {t('enter')}
               </button>
             ) : null}
@@ -195,15 +250,15 @@ function WordGame({ day, onSolved }: { day: string; onSolved: () => void }) {
                   key={k}
                   type="button"
                   onClick={() => press(k)}
-                  className={cn('h-12 min-w-0 flex-1 rounded-md font-bold uppercase', m ? markClass[m] : 'bg-surface-2 text-fg')}
+                  className={cn('h-14 min-w-0 flex-1 rounded-lg text-lg font-bold uppercase active:scale-95 sm:h-16 sm:text-xl', m ? markClass[m] : 'bg-surface-2 text-fg')}
                 >
                   {k}
                 </button>
               );
             })}
             {i === 2 ? (
-              <button type="button" onClick={() => press('back')} aria-label={t('back')} className="flex h-12 items-center rounded-md bg-surface-2 px-2.5">
-                <Delete aria-hidden="true" className="size-5" />
+              <button type="button" onClick={() => press('back')} aria-label={t('back')} className="flex h-14 items-center rounded-lg bg-surface-2 px-3 sm:h-16">
+                <Delete aria-hidden="true" className="size-6" />
               </button>
             ) : null}
           </div>
@@ -228,6 +283,8 @@ function PathGame({ day, onSolved }: { day: string; onSolved: () => void }) {
   const started = useRef<number | null>(null);
   const drawing = useRef(false);
   const finish = useFinish('path', day, onSolved);
+  const [pathHints, setPathHints] = useState(0);
+  useEffect(() => setPathHints(local.get<number>(`bg.puzzle.path.hints.${day}`, 0)), [day]);
   useEffect(() => {
     const saved = local.get<{ seconds: number } | null>(store, null);
     if (saved) {
@@ -316,7 +373,23 @@ function PathGame({ day, onSolved }: { day: string; onSolved: () => void }) {
           </Button>
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
+          <HintButton
+            kind="path"
+            day={day}
+            used={pathHints}
+            onHint={(n) => {
+              setPathHints(n);
+              local.set(`bg.puzzle.path.hints.${day}`, n);
+              // Keep the part of the line that matches a solution, then draw 4 more squares.
+              setLine((cur) => {
+                let keep = 0;
+                while (keep < cur.length && cur[keep] === p.solution[keep]) keep += 1;
+                return p.solution.slice(0, Math.min(p.solution.length - 1, keep + 4));
+              });
+              started.current ??= Date.now();
+            }}
+          />
           <Button size="sm" variant="ghost" icon={<Undo2 aria-hidden="true" className="size-4" />} onClick={() => setLine((cur) => cur.slice(0, -1))} disabled={!line.length}>
             {t('undo')}
           </Button>

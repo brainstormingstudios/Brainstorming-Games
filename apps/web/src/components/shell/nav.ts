@@ -56,6 +56,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { key: 'quests', href: '/quests', icon: Target },
   { key: 'leaderboards', href: '/leaderboards', icon: Trophy },
   { key: 'jams', href: '/jams', icon: CalendarDays },
+  { key: 'shop', href: '/shop', icon: Brain },
   { key: 'premium', href: '/premium', icon: Gem },
 ];
 

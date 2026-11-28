@@ -44,6 +44,11 @@ export const supabaseQuestsExtra: Omit<QuestsRepo, 'track'> = {
     emitTopic('points');
     return r;
   },
+  async buyHint(kind, day) {
+    const n = check(await getSupabase().rpc('buy_puzzle_hint', { p_kind: kind, p_day: day })) as number;
+    emitTopic('points');
+    return n;
+  },
   async buyStreakFreeze() {
     const n = check(await getSupabase().rpc('buy_streak_freeze')) as number;
     emitTopic('points');

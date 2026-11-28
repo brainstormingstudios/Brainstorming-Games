@@ -143,6 +143,15 @@ export const mockQuestsRepo: Omit<QuestsRepo, 'track'> = {
     emitTopic('points');
     return { streak, best, points, freezeUsed };
   },
+  async buyHint(kind, day) {
+    const user = requireProfile();
+    const used = readTable('ledger').filter((l) => l.userId === user.id && l.reason === 'puzzle_hint' && (l.ref ?? '').startsWith(`${kind}:${day}:`)).length;
+    if (used >= 3) fail('conflict', 'Three hints a puzzle a day.');
+    if (user.brainPoints < 30) fail('invalid', 'A hint costs 30 Brain Points.');
+    awardPoints(user.id, -30, 'puzzle_hint', `${kind}:${day}:${used + 1}`);
+    emitTopic('points');
+    return used + 1;
+  },
   async buyStreakFreeze() {
     const user = requireProfile();
     const held = user.streakFreezes ?? 0;

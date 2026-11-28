@@ -46,6 +46,8 @@ import type {
   AdminQuest,
   AdminStudioRow,
   AdminUserRow,
+  AdSettings,
+  SitePage,
   DatabaseStats,
   DevlogPost,
   DiscoveryReport,
@@ -289,6 +291,8 @@ export interface QuestsRepo {
   completePuzzle(kind: PuzzleKind, day: string, score: number): Promise<{ streak: number; best: number; points: number; freezeUsed: boolean }>;
   /** Spends 60 Brain Points on a streak freeze. Resolves with the number now held (3 at most). */
   buyStreakFreeze(): Promise<number>;
+  /** Spends 30 Brain Points on a hint for today's puzzle (3 a puzzle a day). Resolves with hints used. */
+  buyHint(kind: PuzzleKind, day: string): Promise<number>;
 }
 
 export type PuzzleKind = 'word' | 'path';
@@ -637,6 +641,23 @@ export interface GrowthRepo {
   reports(): Promise<ReportRecord[]>;
   resolveReport(id: string, status: 'actioned' | 'dismissed'): Promise<void>;
   findUsers(query: string): Promise<AdminUserRow[]>;
+  /** Admins: adds (or with a negative number, takes away) Brain Points, with a reason. */
+  adjustPoints(userId: string, delta: number, reason: string): Promise<void>;
+  /** Admins: gives a plan for some days, or ends it (null). */
+  setPremium(userId: string, plan: 'lite' | 'plus' | 'max' | null, days: number): Promise<void>;
+  /** Ad spaces and our own ads (read by every page). */
+  adSettings(): Promise<AdSettings>;
+  saveAdSettings(settings: AdSettings): Promise<void>;
+  /** Admins: uploads an ad picture or video; resolves with its public address. */
+  uploadAdMedia(file: File): Promise<string>;
+  /** Pages: all of them for admins; `page` for anyone (published only). */
+  pages(): Promise<SitePage[]>;
+  page(slug: string): Promise<SitePage | null>;
+  savePage(page: Omit<SitePage, 'updatedAt'>): Promise<void>;
+  deletePage(slug: string): Promise<void>;
+  /** The Google Analytics (Looker Studio) report shown in the portal. */
+  analyticsEmbedUrl(): Promise<string | null>;
+  saveAnalyticsEmbedUrl(url: string | null): Promise<void>;
   /** `role` can only be changed by an admin (not by a moderator). */
   setUser(userId: string, patch: { banned?: boolean; resetUsername?: boolean; role?: UserRole }): Promise<void>;
   /** Admins: delete an account for good (not your own). */

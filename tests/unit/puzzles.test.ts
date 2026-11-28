@@ -34,3 +34,14 @@ describe('Brain Path', () => {
     expect(canExtend(p, [p.solution[0]!], p.solution[0]!)).toBe(false);
   });
 });
+
+describe('Brain Word dictionary', () => {
+  it('accepts every answer and refuses made-up words', async () => {
+    const { GUESSES } = await import('@/lib/domain/words5');
+    const all = new Set(GUESSES.split(' '));
+    expect(all.size).toBeGreaterThan(10_000);
+    for (const w of WORDS) expect(all.has(w)).toBe(true);
+    expect(all.has('qzxvb')).toBe(false);
+    expect(all.has('aaaaa')).toBe(false);
+  });
+});

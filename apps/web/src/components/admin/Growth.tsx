@@ -443,14 +443,47 @@ function Users() {
               {u.role !== 'player' ? <Badge tone="glow">{u.role}</Badge> : null}
               {u.isMinor ? <Badge>{t('minor')}</Badge> : null}
               {u.banned ? <Badge tone="danger">{t('banned')}</Badge> : null}
+              <Badge tone="glow">{t('pointsBadge', { points: u.brainPoints })}</Badge>
+              {u.premiumPlan ? <Badge tone="primary">{u.premiumPlan}</Badge> : null}
               <span className="ml-auto flex flex-wrap gap-2">
+                <select
+                  aria-label={t('roleLabel')}
+                  value={u.role}
+                  data-testid="user-role"
+                  onChange={(e) => void act(async () => (await getRepo()).growth.setUser(u.id, { role: e.target.value as 'player' | 'moderator' | 'admin' }), t('roleSaved'))}
+                  className="h-9 rounded-control border border-border bg-surface-3 px-3 text-sm font-bold"
+                >
+                  <option value="player">{t('rolePlayer')}</option>
+                  <option value="moderator">{t('roleModerator')}</option>
+                  <option value="admin">{t('roleAdmin')}</option>
+                </select>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => void act(async () => (await getRepo()).growth.setUser(u.id, { role: u.role === 'admin' ? 'player' : 'admin' }), t('roleSaved'))}
-                  data-testid="user-role"
+                  data-testid="user-points"
+                  onClick={() => {
+                    const delta = Number(window.prompt(t('pointsPrompt'), '100'));
+                    if (!delta) return;
+                    const reason = window.prompt(t('reasonPrompt'), '') ?? '';
+                    void act(async () => (await getRepo()).growth.adjustPoints(u.id, delta, reason), t('pointsSaved'));
+                  }}
                 >
-                  {u.role === 'admin' ? t('removeAdmin') : t('makeAdmin')}
+                  {t('points')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-testid="user-premium"
+                  onClick={() => {
+                    const answer = (window.prompt(t('premiumPrompt'), 'max 30') ?? '').trim().toLowerCase();
+                    if (!answer) return;
+                    if (answer === 'none') return void act(async () => (await getRepo()).growth.setPremium(u.id, null, 0), t('premiumSaved'));
+                    const [plan, days] = answer.split(/\s+/);
+                    if (plan !== 'lite' && plan !== 'plus' && plan !== 'max') return;
+                    void act(async () => (await getRepo()).growth.setPremium(u.id, plan, Number(days) || 30), t('premiumSaved'));
+                  }}
+                >
+                  {t('premium')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => void act(async () => (await getRepo()).growth.setUser(u.id, { resetUsername: true }), t('nameReset'))}>
                   {t('resetName')}
