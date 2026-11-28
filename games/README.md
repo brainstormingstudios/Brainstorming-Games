@@ -9,7 +9,6 @@ Brainstorming SDK from its own folder (`bg-sdk.js`, added when the game is serve
 | `brain-pairs` | Brain Pairs, a memory game |
 | `orbit-dodge` | Orbit Dodge, a one-button arcade game |
 | `sum-sprint` | Sum Sprint, 60 seconds of quick sums |
-| `last-light` | Last Light, horde survival with weapon evolutions and 3 bosses (BS Kit) |
 
 `_kit/bs-kit.js` is **BS Kit**, the shared toolkit of the newer originals: drawing, game loop,
 keyboard and touch input, particles, sounds made in the browser and a safe SDK wrapper. A game
