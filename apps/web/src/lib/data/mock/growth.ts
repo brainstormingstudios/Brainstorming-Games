@@ -1,5 +1,6 @@
 import { pickWinner } from '@/lib/domain/abTest';
 import { COSMETICS, QUESTS, type CosmeticDef, type QuestDef } from '@/lib/domain/progression';
+import { isLookerEmbedUrl, normaliseLookerUrl } from '@/lib/domain/analytics';
 import { emitTopic } from '../bus';
 import { isDrawableCosmetic } from '@brainstorming/ui';
 import { REPORT_KINDS, questCode, type AdminQuest, type Jam, type ReportKind, type ReportRecord } from '../growthTypes';
@@ -532,9 +533,10 @@ export const mockGrowth: GrowthRepo = {
     requireStaff();
     return readTable('portalSettings')[0]?.analyticsEmbedUrl ?? null;
   },
-  async saveAnalyticsEmbedUrl(url) {
+  async saveAnalyticsEmbedUrl(raw) {
     requireStaff();
-    if (url && !/^https:\/\/lookerstudio\.google\.com\/embed\//.test(url)) fail('invalid', 'Paste the Looker Studio embed link (it starts with https://lookerstudio.google.com/embed/).');
+    const url = raw ? normaliseLookerUrl(raw) : null;
+    if (url && !isLookerEmbedUrl(url)) fail('invalid', 'Paste the Looker Studio embed link (File > Embed report > Copy).');
     mutateTable('portalSettings', () => [{ analyticsEmbedUrl: url }]);
     emitTopic('admin');
   },

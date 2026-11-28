@@ -7,6 +7,7 @@ import { RepoError, type GrowthRepo } from '../repo';
 import type { GameStatus, GameSummary } from '../types';
 import { getSupabase } from './client';
 import { toRepoError } from './errors';
+import { isLookerEmbedUrl, normaliseLookerUrl } from '@/lib/domain/analytics';
 
 type Row = Record<string, unknown>;
 const check = <T>({ data, error }: { data: T; error: { message: string; code?: string } | null }): T => {
@@ -387,7 +388,9 @@ export function supabaseGrowth(gamesByIds: (ids: string[]) => Promise<GameSummar
       const { data } = await getSupabase().from('portal_settings').select('analytics_embed_url').eq('id', 1).maybeSingle<Row>();
       return (data?.analytics_embed_url as string | null) ?? null;
     },
-    async saveAnalyticsEmbedUrl(url) {
+    async saveAnalyticsEmbedUrl(raw) {
+      const url = raw ? normaliseLookerUrl(raw) : null;
+      if (url && !isLookerEmbedUrl(url)) throw new RepoError('invalid', 'Paste the Looker Studio embed link (File > Embed report > Copy).');
       check(await getSupabase().from('portal_settings').update({ analytics_embed_url: url, updated_at: new Date().toISOString() }).eq('id', 1));
       emitTopic('admin');
     },
