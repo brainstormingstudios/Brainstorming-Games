@@ -1127,7 +1127,7 @@
       vg.addColorStop(0, 'rgba(255,0,40,0)'); vg.addColorStop(1, 'rgba(255,0,40,' + Math.min(0.6, amt) + ')');
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     }
-    if (DEBUG) { ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = '700 11px monospace'; ctx.fillStyle = '#7dff9e'; ctx.fillText(Math.round(loop.fps) + ' fps · ' + enemies.length + ' enemies', W - 10, H - 18); }
+    if (DEBUG && !window.__auto) { ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = '700 11px monospace'; ctx.fillStyle = '#7dff9e'; ctx.fillText(Math.round(loop.fps) + ' fps · ' + enemies.length + ' enemies', W - 10, H - 18); }
   }
   /** Test helper (?debug=1 only): steer away from danger and towards gems. */
   function autopilot() {
