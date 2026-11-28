@@ -33,7 +33,20 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ secret: env('MAIL_WEBHOOK_SECRET'), to: row.to_email, subject: mail.subject, html: mail.html, text: mail.text, replyTo: ctx.contactEmail }),
         redirect: 'follow',
       });
-      const out = await res.json().catch(() => ({}));
+      const raw = await res.text();
+      let out: { ok?: boolean; error?: string } | null = null;
+      try {
+        out = JSON.parse(raw);
+      } catch {
+        out = null;
+      }
+      if (!out) {
+        // The Gmail sender answered with a web page: it is not set up yet (not shared with
+        // "Anyone", or not authorised). Not the e-mail's fault: keep it queued, try nothing else.
+        const page = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+        await db.from('email_outbox').update({ error: `Gmail sender not ready (HTTP ${res.status}): ${page}` }).eq('id', row.id);
+        break;
+      }
       if (!res.ok || !out.ok) throw new Error(out.error ?? `mail webhook ${res.status}`);
       await db.from('email_outbox').update({ status: 'sent', sent_at: new Date().toISOString(), attempts: row.attempts + 1, error: null }).eq('id', row.id);
       sent++;
