@@ -611,3 +611,18 @@ select option {
     min-height: 44px;
   }
 }
+
+/*
+ * Tables on phones: columns keep a readable width and the table slides sideways inside its box,
+ * instead of squeezing every word onto its own line.
+ */
+@media (max-width: 639px) {
+  main table th,
+  main table td {
+    min-width: 7.5rem;
+  }
+  main table th:first-child,
+  main table td:first-child {
+    min-width: 8.5rem;
+  }
+}

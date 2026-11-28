@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Check, Delete, Flame, Lightbulb, Route, Share2, Snowflake, Type, Undo2 } from 'lucide-react';
+import { ArrowLeft, Check, Delete, Flame, Grid3x3, Hash, Lightbulb, Route, Share2, Snowflake, Type, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, ConfettiBurst, cn, useToast } from '@brainstorming/ui';
 import { useAction } from '@/components/player/common';
@@ -23,10 +23,11 @@ import {
   type LetterMark,
 } from '@/lib/domain/puzzles';
 import { useRepoQuery } from '@/lib/hooks/useRepoQuery';
+import { CrosswordGame, SudokuGame } from './MorePuzzles';
 import { useSession } from '@/lib/hooks/useSession';
 
 /** Copies the share text (or opens the phone's share sheet). */
-async function share(text: string): Promise<boolean> {
+export async function share(text: string): Promise<boolean> {
   try {
     if (navigator.share) {
       await navigator.share({ text });
@@ -40,7 +41,7 @@ async function share(text: string): Promise<boolean> {
 }
 
 /** Saves a solve: points and streak for signed-in players; guests are asked to sign in to keep it. */
-function useFinish(kind: PuzzleKind, day: string, onDone: () => void) {
+export function useFinish(kind: PuzzleKind, day: string, onDone: () => void) {
   const t = useTranslations('puzzles');
   const toast = useToast();
   const { user } = useSession();
@@ -61,7 +62,7 @@ function useFinish(kind: PuzzleKind, day: string, onDone: () => void) {
 }
 
 /** "Hint · 30 BP": signed-in players spend Brain Points; guests are asked to sign in. */
-function HintButton({ kind, day, used, onHint, disabled }: { kind: PuzzleKind; day: string; used: number; onHint: (n: number) => void; disabled?: boolean }) {
+export function HintButton({ kind, day, used, onHint, disabled }: { kind: PuzzleKind; day: string; used: number; onHint: (n: number) => void; disabled?: boolean }) {
   const t = useTranslations('puzzles');
   const act = useAction();
   const { user } = useSession();
@@ -328,7 +329,7 @@ function PathGame({ day, onSolved }: { day: string; onSolved: () => void }) {
       {burst ? <ConfettiBurst key={burst} /> : null}
       <div
         className="grid touch-none select-none gap-1 rounded-card bg-surface-2 p-1.5"
-        style={{ gridTemplateColumns: `repeat(${p.size}, minmax(0, 1fr))`, width: 'min(92vw, 26rem)' }}
+        style={{ gridTemplateColumns: `repeat(${p.size}, minmax(0, 1fr))`, width: 'min(100%, 26rem)' }}
         onPointerDown={(e) => {
           const c = cellAt(e.clientX, e.clientY);
           if (c == null) return;
@@ -407,32 +408,65 @@ function PathGame({ day, onSolved }: { day: string; onSolved: () => void }) {
 // The hub at the top of the Daily page
 // ---------------------------------------------------------------------------------------------
 
-/** Brain Word and Brain Path, with streaks, Brain Points and streak freezes. */
+/** The daily puzzles: one tile each (with its own streak); a tile opens its puzzle. */
+const PUZZLES: { kind: PuzzleKind; icon: typeof Type }[] = [
+  { kind: 'word', icon: Type },
+  { kind: 'crossword', icon: Grid3x3 },
+  { kind: 'sudoku', icon: Hash },
+  { kind: 'path', icon: Route },
+];
+
 export function DailyPuzzles() {
   const t = useTranslations('puzzles');
   const act = useAction();
   const { user } = useSession();
   const [day, setDay] = useState<string | null>(null);
-  const [open, setOpen] = useState<PuzzleKind>('word');
-  useEffect(() => setDay(dayKey()), []);
+  const [open, setOpenState] = useState<PuzzleKind | null>(null);
+  useEffect(() => {
+    setDay(dayKey());
+    // ?p=word opens a puzzle directly; the browser's back button returns to the tiles.
+    const read = () => {
+      const q = new URLSearchParams(window.location.search).get('p');
+      setOpenState(PUZZLES.some((x) => x.kind === q) ? (q as PuzzleKind) : null);
+    };
+    read();
+    window.addEventListener('popstate', read);
+    return () => window.removeEventListener('popstate', read);
+  }, []);
+  const setOpen = (kind: PuzzleKind | null) => {
+    const url = new URL(window.location.href);
+    if (kind) url.searchParams.set('p', kind);
+    else url.searchParams.delete('p');
+    window.history.pushState(null, '', url);
+    setOpenState(kind);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const state = useRepoQuery((repo) => (day ? repo.quests.dailyPuzzles(day) : Promise.resolve(null)), [day, user?.id], { topics: ['points', 'session'] });
   if (!day) return null;
   const s = state.data;
-  const cards: { kind: PuzzleKind; icon: typeof Type }[] = [
-    { kind: 'word', icon: Type },
-    { kind: 'path', icon: Route },
-  ];
+  const solvedLocally = (kind: PuzzleKind) => {
+    const saved = local.get<unknown>(`bg.puzzle.${kind}.${day}`, null);
+    if (kind === 'word') return Array.isArray(saved) && saved.includes(wordOfDay(day));
+    if (!saved || typeof saved !== 'object') return false;
+    return 'seconds' in saved || ('done' in saved && (saved as { done: unknown }).done != null);
+  };
+  const game =
+    open === 'word' ? <WordGame key={`w-${day}`} day={day} onSolved={state.refresh} />
+    : open === 'path' ? <PathGame key={`p-${day}`} day={day} onSolved={state.refresh} />
+    : open === 'sudoku' ? <SudokuGame key={`s-${day}`} day={day} onSolved={state.refresh} />
+    : open === 'crossword' ? <CrosswordGame key={`c-${day}`} day={day} onSolved={state.refresh} />
+    : null;
   return (
     <section className="flex flex-col gap-4" aria-labelledby="puzzles-title" data-testid="daily-puzzles">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1 basis-64">
           <h2 id="puzzles-title" className="text-2xl font-bold">
-            {t('title', { number: puzzleNumber(day) })}
+            {open ? t(`${open}.title`) : t('title', { number: puzzleNumber(day) })}
           </h2>
-          <p className="text-sm text-fg-muted">{user?.username ? t('intro') : t('introGuest')}</p>
+          <p className="text-sm text-fg-muted">{open ? t(`${open}.short`) : user?.username ? t('intro') : t('introGuest')}</p>
         </div>
         {user?.username ? (
-          <div className="flex items-center gap-2 text-sm font-bold">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-bold">
             <Snowflake aria-hidden="true" className="size-4 text-glow" />
             <span data-testid="freezes">{t('freezes', { count: s?.freezes ?? 0 })}</span>
             <Button size="sm" variant="secondary" disabled={(s?.freezes ?? 0) >= 3} onClick={() => void act(async () => (await getRepo()).quests.buyStreakFreeze(), t('freezeBought'))} data-testid="buy-freeze">
@@ -445,41 +479,57 @@ export function DailyPuzzles() {
           </Button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {cards.map(({ kind, icon: Icon }) => {
-          const solved = s?.done[kind] != null;
-          const streak = s?.streaks[kind]?.streak ?? 0;
-          return (
-            <button
-              key={kind}
-              type="button"
-              aria-pressed={open === kind}
-              onClick={() => setOpen(kind)}
-              data-testid={`puzzle-${kind}`}
-              className={cn(
-                'flex flex-col items-start gap-1 rounded-card border-2 p-3 text-left transition-colors sm:p-4',
-                open === kind ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-fg-muted',
-              )}
-            >
-              <span className="flex w-full items-center justify-between">
-                <Icon aria-hidden="true" className="size-6 text-primary" />
-                {solved ? <Check aria-label={t('solved')} className="size-5 text-success" /> : null}
-              </span>
-              <span className="font-display text-lg font-bold">{t(`${kind}.title`)}</span>
-              <span className="text-xs text-fg-muted">{t(`${kind}.short`)}</span>
-              {streak > 0 ? (
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-xs font-bold text-warning">
-                  <Flame aria-hidden="true" className="size-3.5" />
-                  {t('streak', { count: streak })}
+      {open ? (
+        <>
+          <Button size="sm" variant="ghost" className="self-start" icon={<ArrowLeft aria-hidden="true" className="size-4" />} onClick={() => setOpen(null)} data-testid="puzzles-back">
+            {t('allPuzzles')}
+          </Button>
+          <Card className="p-3 sm:p-6">{game}</Card>
+        </>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {PUZZLES.map(({ kind, icon: Icon }) => {
+            const solved = s?.done[kind] != null || solvedLocally(kind);
+            const streak = s?.streaks[kind]?.streak ?? 0;
+            const best = s?.streaks[kind]?.best ?? 0;
+            return (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => setOpen(kind)}
+                data-testid={`puzzle-${kind}`}
+                className={cn(
+                  'group flex min-h-40 flex-col items-start gap-1.5 rounded-card border-2 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-glow',
+                  solved ? 'border-success/50 bg-success/5' : 'border-border bg-surface',
+                )}
+              >
+                <span className="flex w-full items-center justify-between">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary/15">
+                    <Icon aria-hidden="true" className="size-6 text-primary" />
+                  </span>
+                  {solved ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold text-success">
+                      <Check aria-hidden="true" className="size-3.5" />
+                      {t('solved')}
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-fg">{t('play')}</span>
+                  )}
                 </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-      <Card className="p-4 sm:p-6">
-        {open === 'word' ? <WordGame key={`w-${day}`} day={day} onSolved={state.refresh} /> : <PathGame key={`p-${day}`} day={day} onSolved={state.refresh} />}
-      </Card>
+                <span className="font-display text-lg font-bold">{t(`${kind}.title`)}</span>
+                <span className="text-xs text-fg-muted">{t(`${kind}.short`)}</span>
+                <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-1 text-xs font-bold">
+                  <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5', streak > 0 ? 'bg-warning/15 text-warning' : 'bg-surface-2 text-fg-muted')}>
+                    <Flame aria-hidden="true" className="size-3.5" />
+                    {t('streak', { count: streak })}
+                  </span>
+                  {best > 0 ? <span className="text-fg-muted">{t('best', { count: best })}</span> : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

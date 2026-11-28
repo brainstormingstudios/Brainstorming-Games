@@ -24,6 +24,13 @@ describe('daily puzzles', () => {
     expect(again).toMatchObject({ streak: 2, points: 0, first: false });
   });
 
+  it('keeps a separate streak for Sudoku and the Mini Crossword (migration 0035)', async () => {
+    expect(await complete('sudoku', await day(0))).toMatchObject({ streak: 1, first: true });
+    expect(await complete('crossword', await day(0))).toMatchObject({ streak: 1, first: true });
+    await db.query(`update public.profiles set brain_points = brain_points + 100 where id = $1`, [player]);
+    await call(`select public.buy_puzzle_hint('sudoku', current_date) as r`);
+  });
+
   it('refuses days far from today and other puzzle kinds', async () => {
     await expect(complete('word', await day(-5))).rejects.toThrow(/invalid/);
     await expect(complete('chess', await day(0))).rejects.toThrow(/invalid/);

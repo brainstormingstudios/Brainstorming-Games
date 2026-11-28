@@ -295,7 +295,7 @@ export interface QuestsRepo {
   buyHint(kind: PuzzleKind, day: string): Promise<number>;
 }
 
-export type PuzzleKind = 'word' | 'path';
+export type PuzzleKind = 'word' | 'path' | 'sudoku' | 'crossword';
 
 export interface DailyPuzzleState {
   freezes: number;

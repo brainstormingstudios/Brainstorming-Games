@@ -250,7 +250,25 @@ export function GameView({ game, related }: GameViewProps) {
               ) : null}
               {game.controls.length > 0 ? (
                 <ContentSection id="controls" title={t('sections.controls')}>
-                  <div className="overflow-x-auto">
+                  {/* Phones: one card per control, so the words never squeeze into thin columns. */}
+                  <ul className="flex flex-col gap-2 sm:hidden" data-testid="controls-list">
+                    {game.controls.map((row, i) => (
+                      <li key={i} className="rounded-control border border-border bg-surface px-3 py-2.5">
+                        <p className="font-bold">{row.action}</p>
+                        {row.keyboard ? (
+                          <p className="text-sm text-fg-muted">
+                            <span className="font-bold text-fg">{t('controlsTable.keyboard')}:</span> {row.keyboard}
+                          </p>
+                        ) : null}
+                        {row.touch ? (
+                          <p className="text-sm text-fg-muted">
+                            <span className="font-bold text-fg">{t('controlsTable.touch')}:</span> {row.touch}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden overflow-x-auto sm:block">
                     <table>
                       <thead>
                         <tr>

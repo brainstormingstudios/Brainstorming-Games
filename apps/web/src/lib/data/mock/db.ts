@@ -4,6 +4,7 @@
  * straight away.
  */
 import type { AdSettings, SitePage } from '../growthTypes';
+import type { PuzzleKind as PuzzleKindRow } from '../repo';
 import type { CosmeticDef, QuestDef } from '@/lib/domain/progression';
 import type { Creator, CreatorMonthRow, CreatorPayoutRow } from '../creatorTypes';
 import { MOCK_DB_URL } from '@/lib/config';
@@ -287,8 +288,8 @@ export interface MockTables {
   questEvents: { userId: string; event: string; value: number; at: string }[];
   friendships: { requester: string; addressee: string; status: 'pending' | 'accepted'; createdAt: string }[];
   ledger: { id: string; userId: string; delta: number; reason: string; ref: string | null; createdAt: string }[];
-  dailyResults: { userId: string; kind: 'word' | 'path'; day: string; score: number }[];
-  dailyStreaks: { userId: string; kind: 'word' | 'path'; streak: number; best: number; lastDay: string | null }[];
+  dailyResults: { userId: string; kind: PuzzleKindRow; day: string; score: number }[];
+  dailyStreaks: { userId: string; kind: PuzzleKindRow; streak: number; best: number; lastDay: string | null }[];
   userCosmetics: { userId: string; code: string; slot: string; unlockedAt: string }[];
   parties: {
     code: string;

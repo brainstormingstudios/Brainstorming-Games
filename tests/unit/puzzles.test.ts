@@ -45,3 +45,33 @@ describe('Brain Word dictionary', () => {
     expect(all.has('aaaaa')).toBe(false);
   });
 });
+
+describe('Sudoku and Mini Crossword', () => {
+  it('makes a Sudoku with exactly one solution that fits its givens', async () => {
+    const { sudokuOfDay, clashes } = await import('@/lib/domain/sudoku');
+    const p = sudokuOfDay('2026-11-28');
+    expect(p.solution.every((n) => n >= 1 && n <= 9)).toBe(true);
+    expect(clashes(p.solution).size).toBe(0);
+    p.givens.forEach((n, i) => n && expect(n).toBe(p.solution[i]));
+    const filled = p.givens.filter(Boolean).length;
+    expect(filled).toBeGreaterThanOrEqual(28);
+    expect(filled).toBeLessThan(45);
+  });
+
+  it('makes a crossword of crossing words with clues, the same all day', async () => {
+    const { crosswordOfDay, crosswordSolved, CLUES } = await import('@/lib/domain/crossword');
+    for (const day of ['2026-11-28', '2026-11-29', '2026-12-31']) {
+      const c = crosswordOfDay(day);
+      expect(c.entries.length).toBeGreaterThanOrEqual(4);
+      for (const e of c.entries) {
+        expect(CLUES[e.word]).toBe(e.clue);
+        for (let k = 0; k < e.word.length; k++) expect(c.grid[e.row + (e.across ? 0 : k)]![e.col + (e.across ? k : 0)]).toBe(e.word[k]);
+      }
+      const all: Record<string, string> = {};
+      c.grid.forEach((row, r) => row.forEach((ch, col) => ch && (all[`${r},${col}`] = ch)));
+      expect(crosswordSolved(c, all)).toBe(true);
+      expect(crosswordSolved(c, {})).toBe(false);
+    }
+    expect(JSON.stringify(crosswordOfDay('2026-11-28'))).toBe(JSON.stringify(crosswordOfDay('2026-11-28')));
+  });
+});
