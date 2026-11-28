@@ -539,6 +539,8 @@ function resolveOriginal(key) {
   const m = /^originals\/([a-z0-9-]+)\/(.*)$/.exec(key);
   if (!m) return undefined;
   if (m[2] === 'bg-sdk.js') return existsSync(SDK_FILE) ? SDK_FILE : null;
+  // BS Kit, the shared toolkit of the newer originals, is served from games/_kit to every game.
+  if (m[2] === 'bs-kit.js') return join(GAMES, '_kit', 'bs-kit.js');
   let decoded;
   try {
     decoded = decodeURIComponent(m[2] || 'index.html');

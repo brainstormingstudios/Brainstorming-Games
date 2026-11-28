@@ -12,6 +12,7 @@ import { ROOT, WEB } from './lib/run.mjs';
 const GAMES = join(ROOT, 'games');
 const OUT = join(ROOT, '.local', 'originals');
 const SDK = join(WEB, 'public', 'sdk', 'v1', 'bg-sdk.js');
+const KIT = join(GAMES, '_kit', 'bs-kit.js');
 if (!existsSync(SDK)) {
   console.error('[pack] The SDK bundle is missing. Run: npm run build:sdk');
   process.exit(1);
@@ -38,6 +39,9 @@ for (const game of manifest.games) {
     if (!media.has(rel)) zip.file(rel, readFileSync(file));
   }
   zip.file('bg-sdk.js', readFileSync(SDK));
+  // Games that load BS Kit get their own copy, so the build makes no requests outside its folder.
+  const html = readFileSync(join(dir, 'index.html'), 'utf8');
+  if (html.includes('bs-kit.js')) zip.file('bs-kit.js', readFileSync(KIT));
   const data = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
   writeFileSync(join(OUT, `${game.slug}.zip`), data);
   console.log(`[pack] ${game.slug}.zip ${(data.length / 1024).toFixed(0)} KB`);
